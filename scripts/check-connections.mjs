@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Verifie la connectivite de l'architecture SEDIMA : GitHub, Supabase, Vercel.
 // Usage : node scripts/check-connections.mjs   (lit .env.local puis .env)
+// En session Claude Code cloud, prefixer avec NODE_USE_ENV_PROXY=1 pour que fetch passe par le proxy.
 import { readFileSync, existsSync } from "node:fs";
 
 for (const f of [".env.local", ".env"]) {
@@ -42,17 +43,21 @@ async function get(url, headers = {}) {
 
 // --- Supabase ---
 {
-  const url = process.env.SUPABASE_URL;
+  // Accepte une URL de projet avec ou sans suffixe /rest/v1/ ou /auth/v1/
+  const url = (process.env.SUPABASE_URL || "").replace(/\/(rest|auth|storage)\/v1\/?$/, "").replace(/\/$/, "");
   const anon = process.env.SUPABASE_ANON_KEY;
   if (!url || !anon) skip("Supabase REST", "SUPABASE_URL ou SUPABASE_ANON_KEY manquant");
   else {
     try {
-      const r = await get(`${url.replace(/\/$/, "")}/rest/v1/`, { apikey: anon, Authorization: `Bearer ${anon}` });
+      // La racine /rest/v1/ exige desormais une cle secrete : on sonde une table inexistante.
+      // 200 = table presente, 404 PGRST205 = PostgREST repond et la cle est acceptee, 401 = cle refusee.
+      const r = await get(`${url}/rest/v1/sedima_healthcheck?select=*`, { apikey: anon, Authorization: `Bearer ${anon}` });
       if (r.status === 200) ok("Supabase REST", `${url} repond (PostgREST)`);
+      else if (r.status === 404 && /PGRST205/.test(r.body)) ok("Supabase REST", `${url} repond (PostgREST), cle acceptee`);
       else ko("Supabase REST", `HTTP ${r.status} : ${r.body.slice(0, 120)}`);
     } catch (e) { ko("Supabase REST", e.message); }
     try {
-      const r = await get(`${url.replace(/\/$/, "")}/auth/v1/health`, { apikey: anon });
+      const r = await get(`${url}/auth/v1/health`, { apikey: anon });
       if (r.status === 200) ok("Supabase Auth", "service auth en bonne sante");
       else ko("Supabase Auth", `HTTP ${r.status}`);
     } catch (e) { ko("Supabase Auth", e.message); }
