@@ -5,7 +5,8 @@ Squelette initial du projet. Architecture cible : GitHub (code) -> Vercel (deplo
 ## Verifier les connexions
 
 ```bash
-cp .env.example .env.local   # puis remplir les cles
+cp .env.example .env.local           # cles de l'application
+cp .env.check.example .env.check.local  # tokens du script de verification
 node scripts/check-connections.mjs
 ```
 

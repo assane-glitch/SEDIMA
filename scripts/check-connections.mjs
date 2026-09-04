@@ -4,7 +4,7 @@
 // En session Claude Code cloud, prefixer avec NODE_USE_ENV_PROXY=1 pour que fetch passe par le proxy.
 import { readFileSync, existsSync } from "node:fs";
 
-for (const f of [".env.local", ".env"]) {
+for (const f of [".env.check.local", ".env.local", ".env"]) {
   if (!existsSync(f)) continue;
   for (const line of readFileSync(f, "utf8").split("\n")) {
     const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
