@@ -1,4 +1,6 @@
 import { Alert, Badge, PageHeader } from "@/components/ui";
+import { SubmitButton } from "@/components/ui/SubmitButton";
+
 import { formatDate, formatMoney, today } from "@/lib/format";
 import { canEdit, canSubmit, requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
@@ -65,7 +67,7 @@ export default async function ExpensesPage({ params, searchParams }: { params: P
                 <select name="category" className="input"><option value="materiaux">Materiaux</option><option value="main_oeuvre">Main d&apos;oeuvre</option><option value="equipement">Equipement</option><option value="transport">Transport</option><option value="services">Services</option><option value="general">General</option></select></div>
               <div><label className="label">Tache</label><select name="task_id" className="input"><option value="">—</option>{tasks.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></div>
               <div><label className="label">Description</label><input name="description" className="input" /></div>
-              <button className="btn-primary w-full">Enregistrer</button>
+              <SubmitButton className="btn-primary w-full">Enregistrer</SubmitButton>
             </form>
           )}
         </div>

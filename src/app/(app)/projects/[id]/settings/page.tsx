@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 import { Alert, PageHeader } from "@/components/ui";
+import { SubmitButton } from "@/components/ui/SubmitButton";
+
 import { ProjectForm } from "@/components/ProjectForm";
 import { canEdit, requireProfile } from "@/lib/session";
 import { deleteProject, updateProject } from "../../actions";
@@ -20,7 +22,7 @@ export default async function ProjectSettingsPage({ params, searchParams }: { pa
       <ProjectForm project={project} people={people} action={updateProject} submitLabel="Enregistrer" />
       <form action={deleteProject} className="mt-6 flex justify-end">
         <input type="hidden" name="id" value={id} />
-        <button type="submit" className="btn-danger" formNoValidate>Supprimer le projet et toutes ses donnees</button>
+        <SubmitButton className="btn-danger" pendingText="Suppression…">Supprimer le projet et toutes ses donnees</SubmitButton>
       </form>
     </div>
   );

@@ -1,4 +1,6 @@
 import { Alert } from "@/components/ui";
+import { SubmitButton } from "@/components/ui/SubmitButton";
+
 import { signIn } from "./actions";
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; next?: string; info?: string }> }) {
@@ -22,7 +24,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             <label className="label" htmlFor="password">Mot de passe</label>
             <input id="password" name="password" type="password" required autoComplete="current-password" className="input" />
           </div>
-          <button type="submit" className="btn-primary w-full">Se connecter</button>
+          <SubmitButton className="btn-primary w-full" pendingText="Connexion…">Se connecter</SubmitButton>
         </form>
         <p className="mt-6 text-xs text-slate-500">Acces sur invitation. Contactez un administrateur pour obtenir un compte.</p>
       </div>

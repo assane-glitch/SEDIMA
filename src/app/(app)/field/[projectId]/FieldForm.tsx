@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Alert } from "@/components/ui";
+import { SubmitButton } from "@/components/ui/SubmitButton";
+
 
 export function FieldForm({ projectId, title, action, error, children }: { projectId: string; title: string; action: (fd: FormData) => Promise<void>; error?: string; children: React.ReactNode }) {
   return (
@@ -12,7 +14,7 @@ export function FieldForm({ projectId, title, action, error, children }: { proje
         <input type="hidden" name="source" value="mobile" />
         <input type="hidden" name="redirect" value={`/field/${projectId}`} />
         {children}
-        <button className="btn-primary w-full !py-3 !text-base">Enregistrer</button>
+        <SubmitButton className="btn-primary w-full !py-3 !text-base">Enregistrer</SubmitButton>
       </form>
     </div>
   );

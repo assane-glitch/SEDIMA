@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import type { Profile, Project } from "@/lib/types";
 import { PROJECT_STATUS_LABELS } from "@/lib/types";
 import { today } from "@/lib/format";
@@ -58,7 +59,7 @@ export function ProjectForm({ project, people, action, submitLabel }: { project?
           {managers.map((p) => <option key={p.id} value={p.id}>{p.full_name || p.email}</option>)}
         </select>
       </div>
-      <div className="flex justify-end"><button type="submit" className="btn-primary">{submitLabel}</button></div>
+      <div className="flex justify-end"><SubmitButton>{submitLabel}</SubmitButton></div>
     </form>
   );
 }

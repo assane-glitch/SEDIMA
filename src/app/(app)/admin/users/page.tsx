@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 import { Alert, PageHeader } from "@/components/ui";
+import { SubmitButton } from "@/components/ui/SubmitButton";
+
 import { requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { ROLE_LABELS, type Profile } from "@/lib/types";
@@ -35,7 +37,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
                         <select name="role" defaultValue={u.role} className="input !w-auto !py-1">
                           {Object.entries(ROLE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                         </select>
-                        <button className="btn-secondary !py-1 !text-xs">OK</button>
+                        <SubmitButton className="btn-secondary !py-1 !text-xs" pendingText="…">OK</SubmitButton>
                       </form>
                     )}
                   </td>
@@ -50,7 +52,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
           <div><label className="label">Nom complet</label><input name="full_name" className="input" /></div>
           <div><label className="label">Role</label>
             <select name="role" defaultValue="viewer" className="input">{Object.entries(ROLE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
-          <button className="btn-primary w-full">Envoyer l&apos;invitation</button>
+          <SubmitButton className="btn-primary w-full" pendingText="Envoi…">Envoyer l&apos;invitation</SubmitButton>
           <p className="text-xs text-slate-500">La personne recoit un email avec un lien pour choisir son mot de passe.</p>
         </form>
       </div>

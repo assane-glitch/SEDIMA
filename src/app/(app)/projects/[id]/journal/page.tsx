@@ -1,4 +1,6 @@
 import { Alert, Badge, PageHeader } from "@/components/ui";
+import { SubmitButton } from "@/components/ui/SubmitButton";
+
 import { formatDate, today } from "@/lib/format";
 import { canEdit, canSubmit, requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
@@ -48,7 +50,7 @@ export default async function JournalPage({ params, searchParams }: { params: Pr
             <div><label className="label">Tache</label><select name="task_id" className="input"><option value="">—</option>{tasks.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></div>
             <div><label className="label">Lieu</label><input name="location" className="input" /></div>
             <div><label className="label">Compte rendu</label><textarea name="content" rows={5} required className="input" /></div>
-            <button className="btn-primary w-full">Enregistrer</button>
+            <SubmitButton className="btn-primary w-full">Enregistrer</SubmitButton>
           </form>
         )}
       </div>

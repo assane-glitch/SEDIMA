@@ -2,7 +2,6 @@ import { Badge, PageHeader, Stat } from "@/components/ui";
 import { Gantt, type GanttRow } from "@/components/gantt/Gantt";
 import { formatDate, formatMoney, pct } from "@/lib/format";
 import { canEdit, requireProfile } from "@/lib/session";
-import { createClient } from "@/lib/supabase/server";
 import { PROJECT_STATUS_LABELS } from "@/lib/types";
 import { ProjectTabs } from "./ProjectTabs";
 import { loadProject } from "./loadProject";
@@ -10,11 +9,7 @@ import { loadProject } from "./loadProject";
 export default async function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const profile = await requireProfile();
-  const { project, stats, tasks, people } = await loadProject(id);
-  const supabase = await createClient();
-  const { data: spentRows } = await supabase.from("expenses").select("task_id,amount").eq("project_id", id);
-  const spentByTask = new Map<string, number>();
-  for (const r of spentRows ?? []) if (r.task_id) spentByTask.set(r.task_id, (spentByTask.get(r.task_id) ?? 0) + Number(r.amount));
+  const { project, stats, tasks, people, spentByTask } = await loadProject(id);
   const rows: GanttRow[] = tasks.map((t) => ({ ...t, budget: Number(t.budget), spent: spentByTask.get(t.id) ?? 0 }));
 
   const spent = Number(stats.spent);

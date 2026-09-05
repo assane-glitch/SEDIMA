@@ -1,4 +1,6 @@
 import { Alert } from "@/components/ui";
+import { SubmitButton } from "@/components/ui/SubmitButton";
+
 import { requireProfile } from "@/lib/session";
 import { setPassword } from "./actions";
 
@@ -20,7 +22,7 @@ export default async function PasswordPage({ searchParams }: { searchParams: Pro
             <label className="label" htmlFor="password">Nouveau mot de passe</label>
             <input id="password" name="password" type="password" minLength={8} required autoComplete="new-password" className="input" />
           </div>
-          <button type="submit" className="btn-primary w-full">Enregistrer</button>
+          <SubmitButton className="btn-primary w-full">Enregistrer</SubmitButton>
         </form>
       </div>
     </main>
