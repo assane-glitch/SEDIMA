@@ -7,10 +7,10 @@ export const HEALTH_LABELS: Record<Health, string> = {
   good: "Dans les temps", warn: "A surveiller", bad: "En difficulte", done: "Termine", idle: "En preparation",
 };
 export const HEALTH_DOT: Record<Health, string> = {
-  good: "bg-leaf-500", warn: "bg-sun-400", bad: "bg-brand-500", done: "bg-steel-500", idle: "bg-slate-300",
+  good: "bg-ink", warn: "bg-warn-dot", bad: "bg-alert", done: "bg-ok", idle: "bg-neutral-dot",
 };
-export const HEALTH_BADGE: Record<Health, "green" | "amber" | "red" | "slate"> = {
-  good: "green", warn: "amber", bad: "red", done: "slate", idle: "slate",
+export const HEALTH_BADGE: Record<Health, "ok" | "warn" | "alert" | "neutral" | "info"> = {
+  good: "ok", warn: "warn", bad: "alert", done: "info", idle: "neutral",
 };
 
 // Sante d'un projet : retards, budget consomme vs avancement, echeance.

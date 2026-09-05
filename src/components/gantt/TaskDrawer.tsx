@@ -21,26 +21,26 @@ export function TaskDrawer({ task, people, currency, projectId, canEdit, default
 
   return (
     <div className="fixed inset-0 z-40 flex justify-end bg-black/30" onClick={onClose}>
-      <div className="h-full w-full max-w-md overflow-y-auto bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+      <div className="h-full w-full max-w-md overflow-y-auto border-l border-line-hair bg-surface p-5" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-start justify-between">
-          <h2 className="text-lg font-semibold">{task ? task.name : "Nouvelle tache"}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700" aria-label="Fermer">✕</button>
+          <h2 className="card-title">{task ? task.name : "Nouvelle tache"}</h2>
+          <button onClick={onClose} className="btn-ghost" aria-label="Fermer">×</button>
         </div>
 
         {task && (
-          <div className="mb-6 space-y-3 rounded-lg bg-slate-50 p-4 text-sm">
-            <div className="flex justify-between"><span className="text-slate-500">Periode</span><span>{formatDate(task.start_date)} → {formatDate(task.end_date)}</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">Responsable</span><span>{responsible ? (responsible.full_name || responsible.email) : "—"}</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">Statut</span><span>{TASK_STATUS_LABELS[task.status]}</span></div>
+          <div className="mb-5 space-y-2.5 rounded-lg border border-line-hair bg-surface-alt p-3 text-[10.5px]">
+            <div className="flex justify-between"><span className="text-ink-muted">Periode</span><span>{formatDate(task.start_date)} → {formatDate(task.end_date)}</span></div>
+            <div className="flex justify-between"><span className="text-ink-muted">Responsable</span><span>{responsible ? (responsible.full_name || responsible.email) : "—"}</span></div>
+            <div className="flex justify-between"><span className="text-ink-muted">Statut</span><span>{TASK_STATUS_LABELS[task.status]}</span></div>
             <div>
-              <div className="mb-1 flex justify-between"><span className="text-slate-500">Avancement</span><span>{task.progress} %</span></div>
+              <div className="mb-1 flex justify-between"><span className="text-ink-muted">Avancement</span><span>{task.progress} %</span></div>
               <ProgressBar value={task.progress} />
             </div>
             <div>
-              <div className="mb-1 flex justify-between"><span className="text-slate-500">Budget consomme</span><span className={over ? "font-semibold text-red-700" : ""}>{formatMoney(task.spent, currency)} / {formatMoney(task.budget, currency)}</span></div>
+              <div className="mb-1 flex justify-between"><span className="text-ink-muted">Budget consomme</span><span className={over ? "font-bold text-alert" : ""}>{formatMoney(task.spent, currency)} / {formatMoney(task.budget, currency)}</span></div>
               <ProgressBar value={pct(task.spent, task.budget)} tone={over ? "bad" : pct(task.spent, task.budget) > task.progress + 15 ? "warn" : "good"} />
             </div>
-            {task.notes && <p className="whitespace-pre-wrap text-slate-700">{task.notes}</p>}
+            {task.notes && <p className="whitespace-pre-wrap text-ink-body">{task.notes}</p>}
           </div>
         )}
 

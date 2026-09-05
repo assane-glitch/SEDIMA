@@ -32,25 +32,25 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
   ];
 
   return (
-    <div className="flex min-h-screen gap-3 bg-slate-50 md:px-3">
+    <div className="flex min-h-screen gap-3 bg-canvas md:px-3">
       <Sidebar groups={groups} profile={profile} signOut={signOut} />
       <div className="flex min-w-0 flex-1 flex-col">
         {/* En-tete : logo a cote du menu, sur chaque page */}
-        <header className="flex items-center justify-between px-4 py-3 md:h-[68px] md:px-2 md:pt-3">
+        <header className="flex items-center justify-between px-4 py-3 md:h-[60px] md:px-2 md:pt-3">
           <Link href="/dashboard" className="flex items-center" aria-label="SEDIMA">
-            <Image src="/brand/logo-horizontal.png" alt="SEDIMA" width={150} height={32} priority className="h-7 w-auto md:h-8" />
+            <Image src="/brand/logo-horizontal.png" alt="SEDIMA" width={150} height={32} priority className="h-6 w-auto md:h-7" />
           </Link>
-          <div className="hidden items-center gap-3 text-sm md:flex">
+          <div className="hidden items-center gap-3 md:flex">
             <div className="text-right leading-tight">
-              <div className="font-medium text-slate-800">{profile.full_name || profile.email}</div>
-              <div className="text-xs text-slate-500">{ROLE_LABELS[profile.role]}</div>
+              <div className="text-[11px] font-semibold text-ink">{profile.full_name || profile.email}</div>
+              <div className="text-[9.5px] text-ink-faint">{ROLE_LABELS[profile.role]}</div>
             </div>
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-ink-900 text-xs font-semibold text-white">{(profile.full_name || profile.email).slice(0, 1).toUpperCase()}</div>
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-ink text-[10px] font-bold text-surface">{(profile.full_name || profile.email).slice(0, 1).toUpperCase()}</div>
           </div>
-          <form action={signOut} className="md:hidden"><button className="text-slate-500" aria-label="Se deconnecter"><Icon name="logout" className="h-5 w-5" /></button></form>
+          <form action={signOut} className="md:hidden"><button className="text-ink-muted" aria-label="Se deconnecter"><Icon name="logout" className="h-5 w-5" /></button></form>
         </header>
-        <main className="flex-1 px-4 pb-24 pt-2 md:px-2 md:pb-6">{children}</main>
-        <nav className="fixed inset-x-0 bottom-0 z-20 flex border-t border-slate-200 bg-white md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <main className="flex-1 px-4 pb-24 pt-1 md:px-2 md:pb-6">{children}</main>
+        <nav className="fixed inset-x-0 bottom-0 z-20 flex border-t border-line-hair bg-surface md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
           <NavLinks links={mobile} mobile />
         </nav>
       </div>

@@ -10,7 +10,7 @@ export function InstallHint() {
   }, []);
   if (standalone) return null;
   return (
-    <div className="mb-4 rounded-lg border border-brand-100 bg-brand-50 px-3 py-2 text-xs text-brand-700">
+    <div className="mb-4 rounded-lg border border-line-hair bg-surface-sub px-3 py-2 text-[10px] text-ink">
       Ajoutez SEDIMA a l&apos;ecran d&apos;accueil de votre telephone pour l&apos;utiliser comme une application : menu du navigateur, puis « Ajouter a l&apos;ecran d&apos;accueil ».
     </div>
   );

@@ -74,7 +74,7 @@ export function ProjectForm({ project, people, action, submitLabel }: { project?
           <option value="">—</option>
           {managers.map((p) => <option key={p.id} value={p.id}>{p.full_name || p.email}</option>)}
         </select>
-        {project?.manager_name && !project.manager_id && <p className="mt-1 text-xs text-slate-500">Referentiel : {project.manager_name} (pas encore de compte)</p>}
+        {project?.manager_name && !project.manager_id && <p className="mt-1 text-[10px] text-ink-muted">Referentiel : {project.manager_name} (pas encore de compte)</p>}
       </div>
       <div className="flex justify-end"><SubmitButton>{submitLabel}</SubmitButton></div>
     </form>

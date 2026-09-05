@@ -33,23 +33,23 @@ export default async function FieldProject({ params, searchParams }: { params: P
 
   return (
     <div className="mx-auto max-w-lg">
-      <Link href="/forms" className="text-xs text-slate-500">‹ Projets</Link>
+      <Link href="/forms" className="text-[10px] text-ink-muted">‹ Projets</Link>
       <PageHeader title={p.name} subtitle={p.code} />
       {ok && <div className="mb-4"><Alert tone="green">Entree enregistree. Merci.</Alert></div>}
       {!canSubmit(profile) && <div className="mb-4"><Alert tone="amber">Votre compte est en lecture seule.</Alert></div>}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {actions.map((a) => (
-          <Link key={a.href} href={a.href} className="card flex items-center gap-4 px-4 py-5 active:bg-slate-50 sm:flex-col sm:text-center">
-            <span className="text-2xl text-brand-600">{a.icon}</span>
-            <div><div className="font-medium">{a.label}</div><div className="text-xs text-slate-500">{a.hint}</div></div>
+          <Link key={a.href} href={a.href} className="card flex items-center gap-4 px-4 py-5 active:bg-surface-alt sm:flex-col sm:text-center">
+            <span className="text-[16px] text-ink">{a.icon}</span>
+            <div><div className="font-semibold">{a.label}</div><div className="text-[10px] text-ink-muted">{a.hint}</div></div>
           </Link>
         ))}
       </div>
       {recent.length > 0 && (
         <div className="mt-6">
-          <div className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">Mes dernieres saisies</div>
-          <div className="card divide-y divide-slate-100">
-            {recent.map((r) => <div key={r.id} className="flex items-center gap-3 px-4 py-2 text-sm"><Badge>{r.kind}</Badge><span className="text-xs text-slate-500">{formatDate(r.date)}</span><span className="truncate">{r.text}</span></div>)}
+          <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-ink-muted">Mes dernieres saisies</div>
+          <div className="card divide-y divide-line-light">
+            {recent.map((r) => <div key={r.id} className="flex items-center gap-3 px-4 py-2 text-[10.5px]"><Badge>{r.kind}</Badge><span className="text-[10px] text-ink-muted">{formatDate(r.date)}</span><span className="truncate">{r.text}</span></div>)}
           </div>
         </div>
       )}

@@ -16,10 +16,10 @@ export function ProjectTabs({ id, canEdit }: { id: string; canEdit: boolean }) {
     ...(canEdit ? [{ href: `/projects/${id}/settings`, label: "Paramètres" }] : []),
   ];
   return (
-    <div className="mb-5 flex gap-1 overflow-x-auto border-b border-slate-200">
+    <div className="mb-5 flex gap-1 overflow-x-auto border-b border-line-hair">
       {tabs.map((t) => {
         const active = pathname === t.href;
-        return <Link key={t.href} href={t.href} className={`-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm ${active ? "border-brand-600 font-medium text-brand-700" : "border-transparent text-slate-500 hover:text-slate-800"}`}>{t.label}</Link>;
+        return <Link key={t.href} href={t.href} className={`-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-[10.5px] ${active ? "border-ink font-bold text-ink" : "border-transparent text-ink-muted hover:text-ink"}`}>{t.label}</Link>;
       })}
     </div>
   );

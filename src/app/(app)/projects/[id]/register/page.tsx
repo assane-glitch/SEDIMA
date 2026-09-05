@@ -28,25 +28,25 @@ export default async function RegisterPage({ params, searchParams }: { params: P
       <ProjectTabs id={id} canEdit={canEdit(profile)} />
       {ok && <div className="mb-4"><Alert tone="green">Entree enregistree.</Alert></div>}
       <div className="mb-4 flex flex-wrap gap-2">
-        <Link href={`/projects/${id}/register`} className={`rounded-full px-3 py-1 text-xs ${!type ? "bg-slate-900 text-white" : "bg-white text-slate-700 border border-slate-300"}`}>Tous</Link>
-        {REGISTER_TYPES.map((r) => <Link key={r.value} href={`/projects/${id}/register?type=${r.value}`} className={`rounded-full px-3 py-1 text-xs ${type === r.value ? "bg-slate-900 text-white" : "bg-white text-slate-700 border border-slate-300"}`}>{r.label}</Link>)}
+        <Link href={`/projects/${id}/register`} className={`filter-chip ${!type ? "filter-chip-active" : ""}`}>Tous</Link>
+        {REGISTER_TYPES.map((r) => <Link key={r.value} href={`/projects/${id}/register?type=${r.value}`} className={`filter-chip ${type === r.value ? "filter-chip-active" : ""}`}>{r.label}</Link>)}
       </div>
       <div className="card overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+        <table className="tbl">
+          <thead>
             <tr><th className="px-4 py-2">Date</th><th className="px-4 py-2">Registre</th><th className="px-4 py-2">Donnees</th><th className="hidden px-4 py-2 md:table-cell">Tache</th><th className="hidden px-4 py-2 md:table-cell">Saisi par</th></tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody>
             {entries.map((e) => (
               <tr key={e.id}>
                 <td className="whitespace-nowrap px-4 py-2">{formatDate(e.entry_date)}</td>
                 <td className="px-4 py-2"><Badge tone="blue">{typeLabel.get(e.register_type) ?? e.register_type}</Badge></td>
-                <td className="px-4 py-2 text-slate-700">{Object.entries(e.data).map(([k, v]) => <span key={k} className="mr-3 inline-block"><span className="text-slate-400">{k} :</span> {String(v)}</span>)}</td>
-                <td className="hidden px-4 py-2 text-slate-600 md:table-cell">{e.task_id ? taskName.get(e.task_id) : "—"}</td>
-                <td className="hidden px-4 py-2 text-slate-600 md:table-cell">{e.author_id ? who.get(e.author_id) : "—"}</td>
+                <td className="px-4 py-2 text-ink-body">{Object.entries(e.data).map(([k, v]) => <span key={k} className="mr-3 inline-block"><span className="text-ink-faint">{k} :</span> {String(v)}</span>)}</td>
+                <td className="hidden px-4 py-2 text-ink-body md:table-cell">{e.task_id ? taskName.get(e.task_id) : "—"}</td>
+                <td className="hidden px-4 py-2 text-ink-body md:table-cell">{e.author_id ? who.get(e.author_id) : "—"}</td>
               </tr>
             ))}
-            {entries.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-500">Aucune entree de registre.</td></tr>}
+            {entries.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-ink-muted">Aucune entree de registre.</td></tr>}
           </tbody>
         </table>
       </div>

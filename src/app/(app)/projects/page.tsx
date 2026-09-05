@@ -54,13 +54,12 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
     const s = u.toString();
     return `/projects${s ? `?${s}` : ""}`;
   };
-  const chip = (active: boolean) => `inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs ${active ? "border-ink-900 bg-ink-900 text-white" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"}`;
   const Th = ({ col, children, className = "" }: { col: typeof SORTS[number]; children: React.ReactNode; className?: string }) => {
     const active = sort === col;
     const nextDir = active && dir === "asc" ? "desc" : active && dir === "desc" ? "asc" : col === "name" ? "asc" : "desc";
     return (
       <th className={`px-4 py-2 ${className}`}>
-        <Link href={link({ sort: col, dir: nextDir })} className={`inline-flex items-center gap-1 hover:text-slate-900 ${active ? "text-slate-900" : ""}`}>
+        <Link href={link({ sort: col, dir: nextDir })} className={`inline-flex items-center gap-1 hover:text-ink ${active ? "text-ink" : ""}`}>
           {children}{active && <span className="text-[10px]">{dir === "asc" ? "▲" : "▼"}</span>}
         </Link>
       </th>
@@ -77,7 +76,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
         {sp.sort && <input type="hidden" name="sort" value={sp.sort} />}
         {sp.dir && <input type="hidden" name="dir" value={sp.dir} />}
         <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Icon name="search" className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+          <Icon name="search" className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-ink-faint" />
           <input name="q" defaultValue={q} placeholder="Rechercher un projet ou un code" className="input !pl-9" />
         </div>
         <select name="status" defaultValue={sp.status ?? ""} className="input !w-auto">
@@ -89,12 +88,12 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
           {managers.map((m) => <option key={m.id} value={m.id}>{m.full_name || m.email}</option>)}
         </select>
         <button className="btn-secondary">Filtrer</button>
-        {(q || sp.status || sp.manager || sp.category) && <Link href="/projects" className="text-xs text-slate-500 hover:text-slate-900">Effacer</Link>}
+        {(q || sp.status || sp.manager || sp.category) && <Link href="/projects" className="text-[10px] text-ink-muted hover:text-ink">Effacer</Link>}
       </form>
       <div className="mb-4 flex flex-wrap gap-2">
-        <Link href={link({ category: undefined })} className={chip(!sp.category)}>Toutes les categories</Link>
+        <Link href={link({ category: undefined })} className={`filter-chip ${!sp.category ? "filter-chip-active" : ""}`}>Toutes les categories</Link>
         {PROJECT_CATEGORIES.map((c) => (
-          <Link key={c.value} href={link({ category: c.value })} className={chip(sp.category === c.value)}>
+          <Link key={c.value} href={link({ category: c.value })} className={`filter-chip ${sp.category === c.value ? "filter-chip-active" : ""}`}>
             <CategoryIcon category={c.value} className={`h-3.5 w-3.5 ${sp.category === c.value ? "invert" : ""}`} />{c.label}
           </Link>
         ))}
@@ -104,8 +103,8 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
         <Empty title={q || sp.category || sp.status || sp.manager ? "Aucun projet ne correspond" : "Aucun projet"} hint={canEdit(profile) && !q ? "Creez votre premier projet." : undefined} action={canEdit(profile) && !q ? { href: "/projects/new", label: "Creer un projet" } : undefined} />
       ) : (
         <div className="card overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+          <table className="tbl">
+            <thead>
               <tr>
                 <Th col="name">Projet</Th>
                 <th className="hidden px-4 py-2 md:table-cell">Chef de projet</th>
@@ -116,29 +115,29 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
                 <Th col="status" className="hidden md:table-cell">Statut</Th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody>
               {rows.map(({ p, s, health }) => {
                 const spent = Number(s?.spent ?? 0); const over = spent > Number(p.budget) && Number(p.budget) > 0;
                 const manager = p.manager_id ? peopleMap.get(p.manager_id) : undefined;
                 return (
-                  <tr key={p.id} className="hover:bg-slate-50">
+                  <tr key={p.id} className="hover:bg-surface-alt">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <CategoryIcon category={p.category} className="h-7 w-7 shrink-0 opacity-80" />
                         <div className="min-w-0">
-                          <Link href={`/projects/${p.id}`} className="font-medium text-ink-900 hover:text-brand-700 hover:underline">{p.name}</Link>
-                          <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                            <span className={`inline-block h-2 w-2 rounded-full ${HEALTH_DOT[health]}`} title={HEALTH_LABELS[health]} />
+                          <Link href={`/projects/${p.id}`} className="font-semibold text-ink-900 hover:text-ink hover:underline">{p.name}</Link>
+                          <div className="flex items-center gap-1.5 text-[10px] text-ink-muted">
+                            <span className={`dot ${HEALTH_DOT[health]}`} title={HEALTH_LABELS[health]} />
                             {p.code} · {CATEGORY_LABELS[p.category]}{s?.late_count ? ` · ${s.late_count} en retard` : ""}
                           </div>
                         </div>
                       </div>
                     </td>
                     <td className="hidden px-4 py-3 md:table-cell">{manager?.full_name || manager?.email || p.manager_name || "—"}</td>
-                    <td className="hidden whitespace-nowrap px-4 py-3 text-slate-600 md:table-cell">{formatDate(p.start_date)} → {formatDate(p.end_date)}</td>
-                    <td className="px-4 py-3"><div className="flex items-center gap-2"><div className="w-24"><ProgressBar value={Number(s?.progress ?? 0)} tone={health === "bad" ? "bad" : health === "warn" ? "warn" : "good"} /></div><span className="text-xs tabular-nums">{Number(s?.progress ?? 0)} %</span></div></td>
+                    <td className="hidden whitespace-nowrap px-4 py-3 text-ink-body md:table-cell">{formatDate(p.start_date)} → {formatDate(p.end_date)}</td>
+                    <td className="px-4 py-3"><div className="flex items-center gap-2"><div className="w-24"><ProgressBar value={Number(s?.progress ?? 0)} tone={health === "bad" ? "bad" : health === "warn" ? "warn" : "good"} /></div><span className="text-[10px] tabular-nums">{Number(s?.progress ?? 0)} %</span></div></td>
                     <td className="hidden px-4 py-3 text-right tabular-nums lg:table-cell">{formatMoney(Number(p.budget), p.currency)}</td>
-                    <td className={`px-4 py-3 text-right tabular-nums ${over ? "font-medium text-brand-700" : ""}`}>{formatMoney(spent, p.currency)}<div className="text-[11px] text-slate-400">{pct(spent, Number(p.budget))} %</div></td>
+                    <td className={`px-4 py-3 text-right tabular-nums ${over ? "font-semibold text-ink" : ""}`}>{formatMoney(spent, p.currency)}<div className="text-[11px] text-ink-faint">{pct(spent, Number(p.budget))} %</div></td>
                     <td className="hidden px-4 py-3 md:table-cell"><Badge tone={PROJECT_STATUS_TONE[p.status]}>{PROJECT_STATUS_LABELS[p.status]}</Badge></td>
                   </tr>
                 );

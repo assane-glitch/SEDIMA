@@ -38,35 +38,35 @@ export default async function ExpensesPage({ params, searchParams }: { params: P
       {ok && <div className="mb-4"><Alert tone="green">Depense enregistree.</Alert></div>}
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="card overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+          <table className="tbl">
+            <thead>
               <tr><th className="px-4 py-2">Date</th><th className="px-4 py-2">Description</th><th className="hidden px-4 py-2 md:table-cell">Tache</th><th className="hidden px-4 py-2 md:table-cell">Saisi par</th><th className="px-4 py-2 text-right">Montant</th>{canEdit(profile) && <th />}</tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody>
               {expenses.map((e) => (
                 <tr key={e.id}>
                   <td className="whitespace-nowrap px-4 py-2">{formatDate(e.spent_on)}</td>
-                  <td className="px-4 py-2">{e.description || <span className="text-slate-400">—</span>} <Badge>{e.category}</Badge> {e.source === "mobile" && <Badge tone="blue">mobile</Badge>}</td>
-                  <td className="hidden px-4 py-2 text-slate-600 md:table-cell">{e.task_id ? taskName.get(e.task_id) : "—"}</td>
-                  <td className="hidden px-4 py-2 text-slate-600 md:table-cell">{e.created_by ? who.get(e.created_by) : "—"}</td>
+                  <td className="px-4 py-2">{e.description || <span className="text-ink-faint">—</span>} <Badge>{e.category}</Badge> {e.source === "mobile" && <Badge tone="blue">mobile</Badge>}</td>
+                  <td className="hidden px-4 py-2 text-ink-body md:table-cell">{e.task_id ? taskName.get(e.task_id) : "—"}</td>
+                  <td className="hidden px-4 py-2 text-ink-body md:table-cell">{e.created_by ? who.get(e.created_by) : "—"}</td>
                   <td className="whitespace-nowrap px-4 py-2 text-right tabular-nums">{formatMoney(Number(e.amount), project.currency)}</td>
-                  {canEdit(profile) && <td className="px-2 py-2 text-right"><form action={deleteExpense}><input type="hidden" name="project_id" value={id} /><input type="hidden" name="id" value={e.id} /><button className="text-xs text-slate-400 hover:text-red-700">Suppr.</button></form></td>}
+                  {canEdit(profile) && <td className="px-2 py-2 text-right"><form action={deleteExpense}><input type="hidden" name="project_id" value={id} /><input type="hidden" name="id" value={e.id} /><button className="text-[10px] text-ink-faint hover:text-alert">Suppr.</button></form></td>}
                 </tr>
               ))}
-              {expenses.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-500">Aucune depense enregistree.</td></tr>}
+              {expenses.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-ink-muted">Aucune depense enregistree.</td></tr>}
             </tbody>
           </table>
         </div>
         <div className="space-y-4">
           {byCat.size > 0 && (
-            <div className="card p-4 text-sm">
-              <div className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">Par categorie</div>
+            <div className="card p-4 text-[10.5px]">
+              <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-ink-muted">Par categorie</div>
               {[...byCat.entries()].sort((a, b) => b[1] - a[1]).map(([c, v]) => <div key={c} className="flex justify-between py-0.5"><span>{c}</span><span className="tabular-nums">{formatMoney(v, project.currency)}</span></div>)}
             </div>
           )}
           {canSubmit(profile) && (
             <form action={addExpense} className="card space-y-3 p-4">
-              <div className="text-sm font-medium">Ajouter une depense</div>
+              <div className="text-[10.5px] font-semibold">Ajouter une depense</div>
               <input type="hidden" name="project_id" value={id} />
               <div><label className="label">Montant ({project.currency})</label><input name="amount" type="number" min={0} step="1" required className="input" /></div>
               <div><label className="label">Date</label><input name="spent_on" type="date" required defaultValue={today()} className="input" /></div>

@@ -31,21 +31,21 @@ export default async function JournalPage({ params, searchParams }: { params: Pr
         <div className="space-y-3">
           {entries.map((e) => (
             <article key={e.id} className="card p-4">
-              <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                <span className="font-medium text-slate-700">{formatDate(e.entry_date)}</span>
+              <div className="mb-1 flex flex-wrap items-center gap-2 text-[10px] text-ink-muted">
+                <span className="font-semibold text-ink-body">{formatDate(e.entry_date)}</span>
                 <span>{e.author_id ? who.get(e.author_id) : "—"}</span>
                 {e.location && <span>· {e.location}</span>}
                 {e.task_id && <Badge>{taskName.get(e.task_id)}</Badge>}
                 {e.source === "mobile" && <Badge tone="blue">mobile</Badge>}
               </div>
-              <p className="whitespace-pre-wrap text-sm">{e.content}</p>
+              <p className="whitespace-pre-wrap text-[10.5px]">{e.content}</p>
             </article>
           ))}
-          {entries.length === 0 && <div className="card px-4 py-8 text-center text-sm text-slate-500">Aucune entree de journal.</div>}
+          {entries.length === 0 && <div className="card px-4 py-8 text-center text-[10.5px] text-ink-muted">Aucune entree de journal.</div>}
         </div>
         {canSubmit(profile) && (
           <form action={addJournalEntry} className="card h-fit space-y-3 p-4">
-            <div className="text-sm font-medium">Nouvelle entree</div>
+            <div className="text-[10.5px] font-semibold">Nouvelle entree</div>
             <input type="hidden" name="project_id" value={id} />
             <div><label className="label">Date</label><input name="entry_date" type="date" required defaultValue={today()} className="input" /></div>
             <div><label className="label">Tache</label><select name="task_id" className="input"><option value="">—</option>{tasks.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></div>

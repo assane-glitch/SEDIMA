@@ -12,12 +12,12 @@ export default async function TeamPage() {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {people.map((p) => (
           <div key={p.id} className="card flex items-center gap-3 px-4 py-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink-900 text-sm font-semibold text-white">{(p.full_name || p.email).slice(0, 1).toUpperCase()}</div>
-            <div className="min-w-0"><div className="truncate font-medium">{p.full_name || "—"}</div><div className="truncate text-xs text-slate-500">{p.email} · {ROLE_LABELS[p.role]}</div></div>
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink text-[10.5px] font-semibold text-white">{(p.full_name || p.email).slice(0, 1).toUpperCase()}</div>
+            <div className="min-w-0"><div className="truncate font-semibold">{p.full_name || "—"}</div><div className="truncate text-[10px] text-ink-muted">{p.email} · {ROLE_LABELS[p.role]}</div></div>
           </div>
         ))}
       </div>
-      <p className="mt-4 text-xs text-slate-500">Charge de travail et taches par personne : etape 9.</p>
+      <p className="mt-4 text-[10px] text-ink-muted">Charge de travail et taches par personne : etape 9.</p>
     </>
   );
 }

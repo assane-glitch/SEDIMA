@@ -9,9 +9,9 @@ export default async function PasswordPage({ searchParams }: { searchParams: Pro
   const profile = await requireProfile();
   return (
     <main className="flex min-h-screen items-center justify-center p-6">
-      <div className="card w-full max-w-sm p-8">
-        <h1 className="text-xl font-semibold">Bienvenue sur SEDIMA</h1>
-        <p className="mt-1 text-sm text-slate-500">Choisissez votre mot de passe pour {profile.email}.</p>
+      <div className="card w-full max-w-sm p-7">
+        <h1 className="text-[16px] font-semibold">Bienvenue sur SEDIMA</h1>
+        <p className="mt-1 text-[10.5px] text-ink-muted">Choisissez votre mot de passe pour {profile.email}.</p>
         <form action={setPassword} className="mt-6 space-y-4">
           {error && <Alert>{error}</Alert>}
           <div>

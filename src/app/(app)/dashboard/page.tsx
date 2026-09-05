@@ -46,8 +46,8 @@ export default async function DashboardPage() {
         />
       ) : (
         <div className="card overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+          <table className="tbl">
+            <thead>
               <tr>
                 <th className="px-4 py-2">Projet</th>
                 <th className="hidden px-4 py-2 md:table-cell">Responsable</th>
@@ -58,7 +58,7 @@ export default async function DashboardPage() {
                 <th className="hidden px-4 py-2 md:table-cell">Statut</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody>
               {list.map((p) => {
                 const s = statMap.get(p.id);
                 const spent = Number(s?.spent ?? 0);
@@ -66,26 +66,26 @@ export default async function DashboardPage() {
                 const progress = Number(s?.progress ?? 0);
                 const manager = p.manager_id ? peopleMap.get(p.manager_id) : undefined;
                 return (
-                  <tr key={p.id} className="hover:bg-slate-50">
+                  <tr key={p.id} className="hover:bg-surface-alt">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <CategoryIcon category={p.category} className="h-6 w-6 shrink-0 opacity-80" />
                         <div>
-                          <Link href={`/projects/${p.id}`} className="font-medium text-ink-900 hover:text-brand-700 hover:underline">{p.name}</Link>
-                          <div className="text-xs text-slate-500">{p.code}{s?.late_count ? ` · ${s.late_count} en retard` : ""}</div>
+                          <Link href={`/projects/${p.id}`} className="font-semibold text-ink-900 hover:text-ink hover:underline">{p.name}</Link>
+                          <div className="text-[10px] text-ink-muted">{p.code}{s?.late_count ? ` · ${s.late_count} en retard` : ""}</div>
                         </div>
                       </div>
                     </td>
                     <td className="hidden px-4 py-3 md:table-cell">{manager?.full_name || manager?.email || p.manager_name || "—"}</td>
-                    <td className="hidden whitespace-nowrap px-4 py-3 text-slate-600 md:table-cell">{formatDate(p.start_date)} → {formatDate(p.end_date)}</td>
+                    <td className="hidden whitespace-nowrap px-4 py-3 text-ink-body md:table-cell">{formatDate(p.start_date)} → {formatDate(p.end_date)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <div className="w-24"><ProgressBar value={progress} tone={s?.late_count ? "warn" : "good"} /></div>
-                        <span className="text-xs tabular-nums">{progress} %</span>
+                        <span className="text-[10px] tabular-nums">{progress} %</span>
                       </div>
                     </td>
                     <td className="hidden px-4 py-3 text-right tabular-nums lg:table-cell">{formatMoney(Number(p.budget), p.currency)}</td>
-                    <td className={`px-4 py-3 text-right tabular-nums ${over ? "font-medium text-red-700" : ""}`}>{formatMoney(spent, p.currency)}</td>
+                    <td className={`px-4 py-3 text-right tabular-nums ${over ? "font-semibold text-alert" : ""}`}>{formatMoney(spent, p.currency)}</td>
                     <td className="hidden px-4 py-3 md:table-cell"><Badge tone={PROJECT_STATUS_TONE[p.status]}>{PROJECT_STATUS_LABELS[p.status]}</Badge></td>
                   </tr>
                 );

@@ -5,10 +5,10 @@ import { CATEGORY_LABELS, PROJECT_STATUS_LABELS, PROJECT_STATUS_TONE, type Profi
 export function ProjectHeader({ project, manager }: { project: Project; manager?: Profile }) {
   return (
     <div className="mb-5 flex items-start gap-4">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-100"><CategoryIcon category={project.category} className="h-7 w-7 opacity-80" /></div>
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-surface-sub"><CategoryIcon category={project.category} className="h-7 w-7 opacity-80" /></div>
       <div className="min-w-0">
-        <h1 className="truncate text-2xl font-semibold tracking-tight">{project.name}</h1>
-        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-500">
+        <h1 className="truncate text-[16px] font-semibold tracking-tight">{project.name}</h1>
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10.5px] text-ink-muted">
           <span>{project.code}</span>·<span>{CATEGORY_LABELS[project.category]}</span>·<span>{formatDate(project.start_date)} → {formatDate(project.end_date)}</span>·
           {(project.site || project.business_unit) && <><span>{[project.site, project.business_unit].filter(Boolean).join(" · ")}</span>·</>}
           <span>Chef de projet : {manager ? (manager.full_name || manager.email) : project.manager_name || "—"}</span>

@@ -1,27 +1,95 @@
 @import "tailwindcss";
 
+/* Charte SEDIMA : docs/design/dashboard-design-system.js */
 @theme {
-  /* Couleurs SEDIMA : rouge (accent), jaune, vert, gris-bleu, noir */
-  --color-brand-50: #fdeeee;
-  --color-brand-100: #fad4d4;
-  --color-brand-500: #e01818;
-  --color-brand-600: #c81414;
-  --color-brand-700: #a51010;
-  --color-sun-400: #f8d810;
-  --color-leaf-500: #78b820;
-  --color-leaf-600: #5f9a15;
-  --color-steel-500: #586070;
-  --color-ink-900: #202028;
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Encre */
+  --color-ink: #1f2937;
+  --color-ink-body: #374151;
+  --color-ink-muted: #6b7280;
+  --color-ink-faint: #9ca3af;
+  --color-ink-ghost: #c9ccd1;
+  /* Surfaces */
+  --color-canvas: #f1f2f4;
+  --color-surface: #ffffff;
+  --color-surface-alt: #fcfcfd;
+  --color-surface-mut: #fafafb;
+  --color-surface-sub: #f7f7f7;
+  --color-zebra: #f4f5f7;
+  --color-thead: #eff0f2;
+  /* Bordures */
+  --color-line: #d8dade;
+  --color-line-soft: #e3e4e7;
+  --color-line-hair: #e7e7e7;
+  --color-line-light: #f0f0f0;
+  --color-line-lock: #ececec;
+  /* Marque : traits, points, marqueurs uniquement */
+  --color-brand: #d71920;
+  --color-brand-dark: #b3141a;
+  /* Etats */
+  --color-ok: #008000;
+  --color-ok-bg: #f2f8f2;
+  --color-ok-bd: #cde3cd;
+  --color-warn: #b07a00;
+  --color-warn-bg: #fef9ec;
+  --color-warn-bd: #f4e2b8;
+  --color-warn-dot: #f9b710;
+  --color-alert: #d71920;
+  --color-alert-bg: #fdf3f3;
+  --color-alert-bd: #f3c6c8;
+  --color-neutral-dot: #bfbfbf;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 5px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
 }
 
+/* Echelle compacte : 1rem = 13px, la plupart du texte reste entre 10 et 11 px */
+html { font-size: 13px; }
 html, body { height: 100%; }
-body { @apply bg-slate-50 text-slate-900 antialiased; }
+body { @apply bg-canvas text-ink antialiased; font-size: 13px; line-height: 1.45; }
+* { box-shadow: none !important; }
 
-.input { @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:bg-slate-100; }
-.label { @apply mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500; }
-.btn { @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50; }
-.btn-primary { @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 bg-brand-600 text-white hover:bg-brand-700; }
-.btn-secondary { @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 border border-slate-300 bg-white text-slate-700 hover:bg-slate-50; }
-.btn-danger { @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 border border-red-200 bg-white text-red-700 hover:bg-red-50; }
-.card { @apply rounded-xl border border-slate-200 bg-white shadow-sm; }
+/* Boutons : primaire anthracite, jamais rouge */
+@utility btn { @apply inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md border px-[11px] py-[5px] text-[10.5px] font-bold leading-snug transition-colors disabled:cursor-not-allowed disabled:opacity-50; }
+.btn-primary { @apply btn border-ink bg-ink text-surface hover:bg-ink-body hover:border-ink-body; }
+.btn-secondary { @apply btn border-line bg-surface font-semibold text-ink-body hover:bg-surface-sub; }
+.btn-danger { @apply btn border-alert-bd bg-alert-bg font-semibold text-alert hover:bg-[#fbe6e7]; }
+.btn-ghost { @apply cursor-pointer border-0 bg-transparent p-0 text-[10.5px] font-semibold text-ink-muted hover:text-ink; }
+
+/* Champs */
+.input { @apply w-full rounded-md border border-line bg-surface px-[9px] py-[6px] text-[11.5px] leading-snug text-ink outline-none placeholder:text-ink-faint focus:border-ink-muted disabled:border-line-lock disabled:bg-surface-mut read-only:border-line-lock read-only:bg-surface-mut; }
+select.input { @apply pr-7; }
+.label { @apply mb-1 block text-[9px] font-bold uppercase tracking-[.06em] text-ink-faint; }
+
+/* Cartes : bordure 1px, rayon 8, aucune ombre */
+.card { @apply rounded-xl border border-line-hair bg-surface; }
+.card-pad { @apply px-[15px] pb-[15px] pt-[13px]; }
+.card-title { @apply text-[13.5px] font-bold tracking-[-0.01em] text-ink; }
+.eyebrow { @apply text-[9px] font-bold uppercase tracking-[.06em] text-ink-faint; }
+.hint { @apply text-[10px] leading-snug text-ink-faint; }
+
+/* Tableaux : en-tete gris, zebrures, filets, nombres tabulaires */
+.tbl { @apply w-full border-collapse text-[10.5px] leading-tight; }
+.tbl thead th { @apply border-b border-line-hair bg-thead px-2 py-[6px] text-left text-[9px] font-bold uppercase tracking-[.06em] text-ink-faint; }
+.tbl tbody td { @apply border-b border-line-light px-2 py-[6px] align-middle; }
+.tbl tbody tr:nth-child(even) td { @apply bg-zebra; }
+.tbl tbody tr:hover td { @apply bg-surface-alt; }
+.tbl .num { @apply text-right tabular-nums; }
+
+/* Puces d'etat : fond pale, bordure pale, texte sature */
+@utility chip { @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-[2px] text-[9.5px] font-bold; }
+.chip-neutral { @apply chip border-line-soft bg-surface-sub text-ink-muted; }
+.chip-info { @apply chip border-line-hair bg-surface-alt text-ink-body; }
+.chip-ok { @apply chip border-ok-bd bg-ok-bg text-ok; }
+.chip-warn { @apply chip border-warn-bd bg-warn-bg text-warn; }
+.chip-alert { @apply chip border-alert-bd bg-alert-bg text-alert; }
+.dot { @apply inline-block h-[6px] w-[6px] shrink-0 rounded-full; }
+
+/* Puce de filtre : neutre, anthracite quand active */
+.filter-chip { @apply inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-line bg-surface px-[9px] py-[3px] text-[10px] font-semibold text-ink-body hover:bg-surface-sub; }
+.filter-chip-active { @apply border-ink bg-ink text-surface hover:bg-ink; }

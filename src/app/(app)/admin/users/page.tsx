@@ -23,13 +23,13 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
       {ok && <div className="mb-4"><Alert tone="green">{ok}</Alert></div>}
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         <div className="card overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-2">Nom</th><th className="px-4 py-2">Email</th><th className="px-4 py-2">Role</th></tr></thead>
-            <tbody className="divide-y divide-slate-100">
+          <table className="tbl">
+            <thead><tr><th className="px-4 py-2">Nom</th><th className="px-4 py-2">Email</th><th className="px-4 py-2">Role</th></tr></thead>
+            <tbody>
               {users.map((u) => (
                 <tr key={u.id}>
-                  <td className="px-4 py-2 font-medium">{u.full_name || "—"}</td>
-                  <td className="px-4 py-2 text-slate-600">{u.email}</td>
+                  <td className="px-4 py-2 font-semibold">{u.full_name || "—"}</td>
+                  <td className="px-4 py-2 text-ink-body">{u.email}</td>
                   <td className="px-4 py-2">
                     {u.id === me.id ? ROLE_LABELS[u.role] : (
                       <form action={setRole} className="flex items-center gap-2">
@@ -37,7 +37,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
                         <select name="role" defaultValue={u.role} className="input !w-auto !py-1">
                           {Object.entries(ROLE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                         </select>
-                        <SubmitButton className="btn-secondary !py-1 !text-xs" pendingText="…">OK</SubmitButton>
+                        <SubmitButton className="btn-secondary !py-1 !text-[10px]" pendingText="…">OK</SubmitButton>
                       </form>
                     )}
                   </td>
@@ -47,13 +47,13 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
           </table>
         </div>
         <form action={inviteUser} className="card h-fit space-y-3 p-4">
-          <div className="text-sm font-medium">Inviter un utilisateur</div>
+          <div className="text-[10.5px] font-semibold">Inviter un utilisateur</div>
           <div><label className="label">Email</label><input name="email" type="email" required className="input" /></div>
           <div><label className="label">Nom complet</label><input name="full_name" className="input" /></div>
           <div><label className="label">Role</label>
             <select name="role" defaultValue="viewer" className="input">{Object.entries(ROLE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
           <SubmitButton className="btn-primary w-full" pendingText="Envoi…">Envoyer l&apos;invitation</SubmitButton>
-          <p className="text-xs text-slate-500">La personne recoit un email avec un lien pour choisir son mot de passe.</p>
+          <p className="text-[10px] text-ink-muted">La personne recoit un email avec un lien pour choisir son mot de passe.</p>
         </form>
       </div>
     </>
