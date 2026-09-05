@@ -195,3 +195,40 @@ export async function addRegisterEntry(formData: FormData) {
   revalidatePath(`/projects/${projectId}/register`);
   redirect(`${back}?ok=1`);
 }
+
+// ---------- Jalons ----------
+export async function saveMilestone(formData: FormData) {
+  const profile = await requireProfile();
+  if (!canEdit(profile)) return;
+  const projectId = str(formData, "project_id");
+  const id = str(formData, "id");
+  const supabase = await createClient();
+  const payload = { project_id: projectId, name: str(formData, "name"), due_date: str(formData, "due_date"), notes: str(formData, "notes") };
+  if (!payload.name || !payload.due_date) return;
+  if (id) await supabase.from("milestones").update(payload).eq("id", id);
+  else await supabase.from("milestones").insert(payload);
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/planning`);
+}
+
+export async function toggleMilestone(formData: FormData) {
+  const profile = await requireProfile();
+  if (!canEdit(profile)) return;
+  const projectId = str(formData, "project_id");
+  const id = str(formData, "id");
+  const reached = str(formData, "reached") === "1";
+  const supabase = await createClient();
+  await supabase.from("milestones").update({ reached_on: reached ? new Date().toISOString().slice(0, 10) : null }).eq("id", id);
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/planning`);
+}
+
+export async function deleteMilestone(formData: FormData) {
+  const profile = await requireProfile();
+  if (!canEdit(profile)) return;
+  const projectId = str(formData, "project_id");
+  const supabase = await createClient();
+  await supabase.from("milestones").delete().eq("id", str(formData, "id"));
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/planning`);
+}
