@@ -20,3 +20,7 @@ Application de gestion de projets : Next.js 15 (App Router, TypeScript, Tailwind
 - Variables : `SUPABASE_URL`, `SUPABASE_ANON_KEY` (cle publishable), `SUPABASE_SERVICE_ROLE_KEY` (serveur seulement, invitations). `next.config.ts` derive les `NEXT_PUBLIC_*`.
 - Branche de production : `main`. Les previews Vercel se font sur les autres branches.
 - UI en francais.
+
+## Base de donnees depuis une session cloud
+- `python3 scripts/supabase-sql.py <fichier.sql>` execute un fichier SQL sur le projet Supabase via l'API de gestion (variable `SUPABASE_ACCESS_TOKEN` dans l'environnement cloud). Autorise par `.claude/settings.json`.
+- Ordre des scripts : `supabase/migrations/*` dans l'ordre des noms, puis `supabase/seed/*`. Tous sont idempotents.

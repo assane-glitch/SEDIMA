@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 scripts/supabase-sql.py:*)",
+      "Bash(python3 scripts/import-referentiel.py:*)",
+      "Bash(node scripts/check-connections.mjs:*)"
+    ]
+  }
+}
