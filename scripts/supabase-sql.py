@@ -16,7 +16,7 @@ sql = open(arg, encoding="utf-8").read() if os.path.exists(arg) else arg
 req = urllib.request.Request(
     f"https://api.supabase.com/v1/projects/{REF}/database/query",
     data=json.dumps({"query": sql}).encode(),
-    headers={"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"},
+    headers={"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json", "User-Agent": "sedima-supabase-sql/1.0"},
     method="POST",
 )
 try:
