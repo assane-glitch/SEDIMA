@@ -1,5 +1,6 @@
 export type UserRole = "admin" | "manager" | "viewer" | "field";
 export type ProjectStatus = "planning" | "active" | "on_hold" | "completed" | "cancelled";
+export type ProjectCategory = "oac_poussins" | "poulet_chair" | "oeufs_table" | "industriels" | "autres";
 export type TaskStatus = "todo" | "in_progress" | "done" | "blocked";
 
 export interface Profile {
@@ -15,12 +16,69 @@ export interface Project {
   name: string;
   description: string;
   status: ProjectStatus;
+  category: ProjectCategory;
   start_date: string;
   end_date: string;
   budget: number;
   currency: string;
   manager_id: string | null;
 }
+
+export interface Milestone {
+  id: string;
+  project_id: string;
+  name: string;
+  due_date: string;
+  reached_on: string | null;
+  notes: string;
+}
+
+export interface Document {
+  id: string;
+  project_id: string;
+  task_id: string | null;
+  name: string;
+  doc_type: string;
+  storage_path: string;
+  mime_type: string;
+  size_bytes: number;
+  tags: string[];
+  source: "web" | "mobile";
+  uploaded_by: string | null;
+  created_at: string;
+}
+
+export interface AuditEntry {
+  id: number;
+  table_name: string;
+  record_id: string;
+  project_id: string | null;
+  action: "insert" | "update" | "delete";
+  changed_by: string | null;
+  changed_at: string;
+  old_data: Record<string, unknown> | null;
+  new_data: Record<string, unknown> | null;
+  changed_fields: string[] | null;
+}
+
+export const PROJECT_CATEGORIES: { value: ProjectCategory; label: string; icon: string }[] = [
+  { value: "oac_poussins", label: "OAC & Poussins", icon: "/brand/poussin.png" },
+  { value: "poulet_chair", label: "Poulet de chair", icon: "/brand/coq.png" },
+  { value: "oeufs_table", label: "Oeufs de table", icon: "/brand/oeuf.png" },
+  { value: "industriels", label: "Industriels", icon: "/brand/industry.png" },
+  { value: "autres", label: "Autres", icon: "/brand/autres.png" },
+];
+export const CATEGORY_LABELS = Object.fromEntries(PROJECT_CATEGORIES.map((c) => [c.value, c.label])) as Record<ProjectCategory, string>;
+export const CATEGORY_ICONS = Object.fromEntries(PROJECT_CATEGORIES.map((c) => [c.value, c.icon])) as Record<ProjectCategory, string>;
+
+export const DOC_TYPES: { value: string; label: string }[] = [
+  { value: "photo", label: "Photo" },
+  { value: "plan", label: "Plan" },
+  { value: "contrat", label: "Contrat" },
+  { value: "facture", label: "Facture" },
+  { value: "rapport", label: "Rapport" },
+  { value: "autre", label: "Autre" },
+];
 
 export interface ProjectStats {
   project_id: string;
@@ -30,6 +88,9 @@ export interface ProjectStats {
   done_count: number;
   progress: number;
   late_count: number;
+  milestone_count: number;
+  milestone_reached: number;
+  next_milestone: string | null;
 }
 
 export interface Task {

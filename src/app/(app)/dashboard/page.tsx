@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Badge, Empty, PageHeader, ProgressBar, Stat } from "@/components/ui";
+import { Badge, CategoryIcon, Empty, PageHeader, ProgressBar, Stat } from "@/components/ui";
 import { formatDate, formatMoney, pct } from "@/lib/format";
 import { canEdit, requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
@@ -27,9 +27,9 @@ export default async function DashboardPage() {
   return (
     <>
       <PageHeader
-        title="Portefeuille de projets"
+        title="Tableau de bord"
         subtitle={`${list.length} projet${list.length > 1 ? "s" : ""}, ${active} en cours`}
-        actions={canEdit(profile) && <Link href="/projects/new" className="btn-primary">Nouveau projet</Link>}
+        actions={<Link href="/projects" className="btn-secondary">Tous les projets</Link>}
       />
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Budget total" value={formatMoney(totalBudget)} />
@@ -68,8 +68,13 @@ export default async function DashboardPage() {
                 return (
                   <tr key={p.id} className="hover:bg-slate-50">
                     <td className="px-4 py-3">
-                      <Link href={`/projects/${p.id}`} className="font-medium text-brand-700 hover:underline">{p.name}</Link>
-                      <div className="text-xs text-slate-500">{p.code}{s?.late_count ? ` · ${s.late_count} en retard` : ""}</div>
+                      <div className="flex items-center gap-3">
+                        <CategoryIcon category={p.category} className="h-6 w-6 shrink-0 opacity-80" />
+                        <div>
+                          <Link href={`/projects/${p.id}`} className="font-medium text-ink-900 hover:text-brand-700 hover:underline">{p.name}</Link>
+                          <div className="text-xs text-slate-500">{p.code}{s?.late_count ? ` · ${s.late_count} en retard` : ""}</div>
+                        </div>
+                      </div>
                     </td>
                     <td className="hidden px-4 py-3 md:table-cell">{manager?.full_name || manager?.email || "—"}</td>
                     <td className="hidden whitespace-nowrap px-4 py-3 text-slate-600 md:table-cell">{formatDate(p.start_date)} → {formatDate(p.end_date)}</td>

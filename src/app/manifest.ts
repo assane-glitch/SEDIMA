@@ -2,13 +2,13 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "SEDIMA Terrain",
+    name: "SEDIMA",
     short_name: "SEDIMA",
-    description: "Saisie terrain : journal, registres, depenses",
-    start_url: "/field",
+    description: "Gestion de projets SEDIMA",
+    start_url: "/projects",
     display: "standalone",
     background_color: "#f8fafc",
-    theme_color: "#1d4ed8",
+    theme_color: "#e01818",
     lang: "fr",
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },

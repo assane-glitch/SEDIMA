@@ -22,16 +22,16 @@ function health(t: GanttRow, todayIso: string): "good" | "warn" | "bad" | "done"
 }
 
 const BAR: Record<ReturnType<typeof health>, string> = {
-  good: "bg-brand-500",
-  warn: "bg-amber-500",
-  bad: "bg-red-500",
-  done: "bg-emerald-500",
+  good: "bg-leaf-500",
+  warn: "bg-sun-400",
+  bad: "bg-brand-500",
+  done: "bg-steel-500",
 };
 const TRACK: Record<ReturnType<typeof health>, string> = {
-  good: "bg-brand-500/30",
-  warn: "bg-amber-500/30",
-  bad: "bg-red-500/30",
-  done: "bg-emerald-500/30",
+  good: "bg-leaf-500/30",
+  warn: "bg-sun-400/40",
+  bad: "bg-brand-500/30",
+  done: "bg-steel-500/30",
 };
 
 export function Gantt({ tasks, people, currency, canEdit, projectId, projectStart, projectEnd }: {
@@ -104,10 +104,10 @@ export function Gantt({ tasks, people, currency, canEdit, projectId, projectStar
     <div className="card overflow-hidden">
       <div className="flex items-center justify-between border-b border-slate-200 px-4 py-2 text-xs text-slate-500">
         <div className="flex flex-wrap gap-3">
-          <Legend color="bg-brand-500" label="Dans les temps" />
-          <Legend color="bg-amber-500" label="En retard sur l'avancement" />
-          <Legend color="bg-red-500" label="Echeance depassee / bloque" />
-          <Legend color="bg-emerald-500" label="Termine" />
+          <Legend color="bg-leaf-500" label="Dans les temps" />
+          <Legend color="bg-sun-400" label="En retard sur l'avancement" />
+          <Legend color="bg-brand-500" label="Echeance depassee / bloque" />
+          <Legend color="bg-steel-500" label="Termine" />
         </div>
         {canEdit && <button onClick={() => setSelected("new")} className="btn-primary !py-1 !text-xs">Ajouter une tache</button>}
       </div>
@@ -149,8 +149,8 @@ export function Gantt({ tasks, people, currency, canEdit, projectId, projectStar
           ))}
           {/* Ligne aujourd'hui */}
           {todayLeft >= 0 && todayLeft <= width && (
-            <div className="absolute bottom-0 top-[52px] z-[5] w-px bg-red-500" style={{ left: todayLeft }}>
-              <div className="absolute -left-[22px] -top-4 rounded bg-red-500 px-1 text-[9px] font-medium text-white">Auj.</div>
+            <div className="absolute bottom-0 top-[52px] z-[5] w-px bg-ink-900" style={{ left: todayLeft }}>
+              <div className="absolute -left-[22px] -top-4 rounded bg-ink-900 px-1 text-[9px] font-medium text-white">Auj.</div>
             </div>
           )}
           {tasks.map((t, i) => {

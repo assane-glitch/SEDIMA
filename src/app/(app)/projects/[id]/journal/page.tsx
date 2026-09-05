@@ -1,4 +1,5 @@
-import { Alert, Badge, PageHeader } from "@/components/ui";
+import { Alert, Badge } from "@/components/ui";
+import { ProjectHeader } from "../ProjectHeader";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 
 import { formatDate, today } from "@/lib/format";
@@ -22,7 +23,7 @@ export default async function JournalPage({ params, searchParams }: { params: Pr
 
   return (
     <>
-      <PageHeader title={project.name} subtitle="Journal de terrain" />
+      <ProjectHeader project={project} manager={people.find((p) => p.id === project.manager_id)} />
       <ProjectTabs id={id} canEdit={canEdit(profile)} />
       {error && <div className="mb-4"><Alert>{error}</Alert></div>}
       {ok && <div className="mb-4"><Alert tone="green">Entree enregistree.</Alert></div>}

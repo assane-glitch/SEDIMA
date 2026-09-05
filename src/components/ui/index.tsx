@@ -58,3 +58,19 @@ export function Alert({ children, tone = "red" }: { children: ReactNode; tone?: 
   const t = { red: "border-red-200 bg-red-50 text-red-800", green: "border-emerald-200 bg-emerald-50 text-emerald-800", amber: "border-amber-200 bg-amber-50 text-amber-800" }[tone];
   return <div className={`rounded-lg border px-3 py-2 text-sm ${t}`}>{children}</div>;
 }
+
+export function ComingSoon({ title, step, hint }: { title: string; step: number; hint: string }) {
+  return (
+    <div className="card flex flex-col items-center justify-center px-6 py-16 text-center">
+      <div className="text-base font-medium">{title}</div>
+      <div className="mt-1 max-w-md text-sm text-slate-500">{hint}</div>
+      <div className="mt-4"><Badge tone="amber">Prevu a l&apos;etape {step}</Badge></div>
+    </div>
+  );
+}
+
+export function CategoryIcon({ category, className = "h-6 w-6" }: { category: string; className?: string }) {
+  const src: Record<string, string> = { oac_poussins: "/brand/poussin.png", poulet_chair: "/brand/coq.png", oeufs_table: "/brand/oeuf.png", industriels: "/brand/industry.png", autres: "/brand/autres.png" };
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={src[category] ?? src.autres} alt="" className={`${className} object-contain`} />;
+}

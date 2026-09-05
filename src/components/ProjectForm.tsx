@@ -1,6 +1,6 @@
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import type { Profile, Project } from "@/lib/types";
-import { PROJECT_STATUS_LABELS } from "@/lib/types";
+import { PROJECT_CATEGORIES, PROJECT_STATUS_LABELS } from "@/lib/types";
 import { today } from "@/lib/format";
 
 export function ProjectForm({ project, people, action, submitLabel }: { project?: Project; people: Profile[]; action: (fd: FormData) => Promise<void>; submitLabel: string }) {
@@ -17,6 +17,12 @@ export function ProjectForm({ project, people, action, submitLabel }: { project?
           <label className="label" htmlFor="name">Nom du projet</label>
           <input id="name" name="name" required defaultValue={project?.name} className="input" />
         </div>
+      </div>
+      <div>
+        <label className="label" htmlFor="category">Categorie</label>
+        <select id="category" name="category" defaultValue={project?.category ?? "autres"} className="input">
+          {PROJECT_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+        </select>
       </div>
       <div>
         <label className="label" htmlFor="description">Description</label>

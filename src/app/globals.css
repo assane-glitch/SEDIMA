@@ -1,11 +1,17 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-50: #eef6ff;
-  --color-brand-100: #d9eaff;
-  --color-brand-500: #2563eb;
-  --color-brand-600: #1d4ed8;
-  --color-brand-700: #1e40af;
+  /* Couleurs SEDIMA : rouge (accent), jaune, vert, gris-bleu, noir */
+  --color-brand-50: #fdeeee;
+  --color-brand-100: #fad4d4;
+  --color-brand-500: #e01818;
+  --color-brand-600: #c81414;
+  --color-brand-700: #a51010;
+  --color-sun-400: #f8d810;
+  --color-leaf-500: #78b820;
+  --color-leaf-600: #5f9a15;
+  --color-steel-500: #586070;
+  --color-ink-900: #202028;
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 

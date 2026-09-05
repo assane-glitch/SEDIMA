@@ -16,6 +16,7 @@ export async function createProject(formData: FormData) {
     name: str(formData, "name"),
     description: str(formData, "description"),
     status: str(formData, "status") || "planning",
+    category: str(formData, "category") || "autres",
     start_date: str(formData, "start_date"),
     end_date: str(formData, "end_date"),
     budget: num(formData, "budget"),
@@ -39,6 +40,7 @@ export async function updateProject(formData: FormData) {
     name: str(formData, "name"),
     description: str(formData, "description"),
     status: str(formData, "status"),
+    category: str(formData, "category") || "autres",
     start_date: str(formData, "start_date"),
     end_date: str(formData, "end_date"),
     budget: num(formData, "budget"),
@@ -131,7 +133,7 @@ export async function addExpense(formData: FormData) {
     source: str(formData, "source") === "mobile" ? "mobile" : "web",
     created_by: profile.id,
   });
-  const back = str(formData, "redirect") || `/projects/${projectId}/expenses`;
+  const back = str(formData, "redirect") || `/projects/${projectId}/budget`;
   if (error) redirect(`${back}?error=${encodeURIComponent(error.message)}`);
   revalidatePath(`/projects/${projectId}`);
   revalidatePath("/dashboard");
@@ -145,7 +147,7 @@ export async function deleteExpense(formData: FormData) {
   const supabase = await createClient();
   await supabase.from("expenses").delete().eq("id", str(formData, "id"));
   revalidatePath(`/projects/${projectId}`);
-  revalidatePath(`/projects/${projectId}/expenses`);
+  revalidatePath(`/projects/${projectId}/budget`);
   revalidatePath("/dashboard");
 }
 

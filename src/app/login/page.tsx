@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Alert } from "@/components/ui";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 
@@ -8,9 +9,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <main className="flex min-h-screen items-center justify-center p-6">
       <div className="card w-full max-w-sm p-8">
-        <div className="mb-6">
-          <div className="text-2xl font-semibold tracking-tight">SEDIMA</div>
-          <div className="text-sm text-slate-500">Gestion de projets</div>
+        <div className="mb-8">
+          <Image src="/brand/logo-horizontal.png" alt="SEDIMA" width={200} height={43} priority />
+          <div className="mt-2 text-sm text-slate-500">Gestion de projets</div>
         </div>
         <form action={signIn} className="space-y-4">
           <input type="hidden" name="next" value={next ?? "/dashboard"} />

@@ -1,4 +1,5 @@
-import { Alert, Badge, PageHeader } from "@/components/ui";
+import { Alert, Badge } from "@/components/ui";
+import { ProjectHeader } from "../ProjectHeader";
 import { formatDate } from "@/lib/format";
 import { canEdit, requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
@@ -23,7 +24,7 @@ export default async function RegisterPage({ params, searchParams }: { params: P
 
   return (
     <>
-      <PageHeader title={project.name} subtitle="Registres" actions={<Link href={`/field/${id}/register`} className="btn-secondary">Saisir une entree</Link>} />
+      <ProjectHeader project={project} manager={people.find((p) => p.id === project.manager_id)} />
       <ProjectTabs id={id} canEdit={canEdit(profile)} />
       {ok && <div className="mb-4"><Alert tone="green">Entree enregistree.</Alert></div>}
       <div className="mb-4 flex flex-wrap gap-2">

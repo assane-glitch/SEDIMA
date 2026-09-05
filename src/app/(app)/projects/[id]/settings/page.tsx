@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { Alert, PageHeader } from "@/components/ui";
+import { Alert } from "@/components/ui";
+import { ProjectHeader } from "../ProjectHeader";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 
 import { ProjectForm } from "@/components/ProjectForm";
@@ -16,7 +17,7 @@ export default async function ProjectSettingsPage({ params, searchParams }: { pa
   const { project, people } = await loadProject(id);
   return (
     <div className="mx-auto max-w-2xl">
-      <PageHeader title={project.name} subtitle="Parametres du projet" />
+      <ProjectHeader project={project} manager={people.find((p) => p.id === project.manager_id)} />
       <ProjectTabs id={id} canEdit />
       {error && <div className="mb-4"><Alert>{error}</Alert></div>}
       <ProjectForm project={project} people={people} action={updateProject} submitLabel="Enregistrer" />

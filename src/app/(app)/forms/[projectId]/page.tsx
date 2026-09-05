@@ -26,14 +26,14 @@ export default async function FieldProject({ params, searchParams }: { params: P
   ].sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, 8);
 
   const actions = [
-    { href: `/field/${projectId}/journal`, label: "Journal", hint: "Compte rendu du jour", icon: "✎" },
-    { href: `/field/${projectId}/register`, label: "Registre", hint: "Presence, materiel, livraison, incident", icon: "☰" },
-    { href: `/field/${projectId}/expense`, label: "Depense", hint: "Montant et justificatif", icon: "¤" },
+    { href: `/forms/${projectId}/journal`, label: "Journal", hint: "Compte rendu du jour", icon: "✎" },
+    { href: `/forms/${projectId}/register`, label: "Registre", hint: "Presence, materiel, livraison, incident", icon: "☰" },
+    { href: `/forms/${projectId}/expense`, label: "Depense", hint: "Montant et justificatif", icon: "¤" },
   ];
 
   return (
     <div className="mx-auto max-w-lg">
-      <Link href="/field" className="text-xs text-slate-500">‹ Projets</Link>
+      <Link href="/forms" className="text-xs text-slate-500">‹ Projets</Link>
       <PageHeader title={p.name} subtitle={p.code} />
       {ok && <div className="mb-4"><Alert tone="green">Entree enregistree. Merci.</Alert></div>}
       {!canSubmit(profile) && <div className="mb-4"><Alert tone="amber">Votre compte est en lecture seule.</Alert></div>}
