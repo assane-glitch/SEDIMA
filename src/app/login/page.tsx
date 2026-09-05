@@ -1,0 +1,31 @@
+import { Alert } from "@/components/ui";
+import { signIn } from "./actions";
+
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; next?: string; info?: string }> }) {
+  const { error, next, info } = await searchParams;
+  return (
+    <main className="flex min-h-screen items-center justify-center p-6">
+      <div className="card w-full max-w-sm p-8">
+        <div className="mb-6">
+          <div className="text-2xl font-semibold tracking-tight">SEDIMA</div>
+          <div className="text-sm text-slate-500">Gestion de projets</div>
+        </div>
+        <form action={signIn} className="space-y-4">
+          <input type="hidden" name="next" value={next ?? "/dashboard"} />
+          {error && <Alert>{error}</Alert>}
+          {info && <Alert tone="green">{info}</Alert>}
+          <div>
+            <label className="label" htmlFor="email">Email</label>
+            <input id="email" name="email" type="email" required autoComplete="email" className="input" />
+          </div>
+          <div>
+            <label className="label" htmlFor="password">Mot de passe</label>
+            <input id="password" name="password" type="password" required autoComplete="current-password" className="input" />
+          </div>
+          <button type="submit" className="btn-primary w-full">Se connecter</button>
+        </form>
+        <p className="mt-6 text-xs text-slate-500">Acces sur invitation. Contactez un administrateur pour obtenir un compte.</p>
+      </div>
+    </main>
+  );
+}

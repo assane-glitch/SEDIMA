@@ -1,0 +1,94 @@
+import Link from "next/link";
+import { Badge, Empty, PageHeader, ProgressBar, Stat } from "@/components/ui";
+import { formatDate, formatMoney, pct } from "@/lib/format";
+import { canEdit, requireProfile } from "@/lib/session";
+import { createClient } from "@/lib/supabase/server";
+import { PROJECT_STATUS_LABELS, type Profile, type Project, type ProjectStats } from "@/lib/types";
+
+export const metadata = { title: "Tableau de bord" };
+
+export default async function DashboardPage() {
+  const profile = await requireProfile();
+  const supabase = await createClient();
+  const [{ data: projects }, { data: stats }, { data: people }] = await Promise.all([
+    supabase.from("projects").select("*").order("start_date", { ascending: false }),
+    supabase.from("project_stats").select("*"),
+    supabase.from("profiles").select("id,email,full_name,role"),
+  ]);
+  const list = (projects ?? []) as Project[];
+  const statMap = new Map(((stats ?? []) as ProjectStats[]).map((s) => [s.project_id, s]));
+  const peopleMap = new Map(((people ?? []) as Profile[]).map((p) => [p.id, p]));
+
+  const totalBudget = list.reduce((s, p) => s + Number(p.budget), 0);
+  const totalSpent = list.reduce((s, p) => s + Number(statMap.get(p.id)?.spent ?? 0), 0);
+  const active = list.filter((p) => p.status === "active").length;
+  const late = list.reduce((s, p) => s + Number(statMap.get(p.id)?.late_count ?? 0), 0);
+
+  return (
+    <>
+      <PageHeader
+        title="Portefeuille de projets"
+        subtitle={`${list.length} projet${list.length > 1 ? "s" : ""}, ${active} en cours`}
+        actions={canEdit(profile) && <Link href="/projects/new" className="btn-primary">Nouveau projet</Link>}
+      />
+      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Stat label="Budget total" value={formatMoney(totalBudget)} />
+        <Stat label="Depense" value={formatMoney(totalSpent)} hint={`${pct(totalSpent, totalBudget)} % du budget`} tone={totalSpent > totalBudget ? "bad" : "default"} />
+        <Stat label="Projets en cours" value={active} />
+        <Stat label="Taches en retard" value={late} tone={late > 0 ? "warn" : "good"} />
+      </div>
+
+      {list.length === 0 ? (
+        <Empty
+          title="Aucun projet pour le moment"
+          hint={canEdit(profile) ? "Creez votre premier projet pour afficher le Gantt, le budget et l'avancement." : "Un chef de projet doit d'abord creer un projet."}
+          action={canEdit(profile) ? { href: "/projects/new", label: "Creer un projet" } : undefined}
+        />
+      ) : (
+        <div className="card overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="px-4 py-2">Projet</th>
+                <th className="hidden px-4 py-2 md:table-cell">Responsable</th>
+                <th className="hidden px-4 py-2 md:table-cell">Periode</th>
+                <th className="px-4 py-2">Avancement</th>
+                <th className="hidden px-4 py-2 text-right lg:table-cell">Budget</th>
+                <th className="px-4 py-2 text-right">Depense</th>
+                <th className="hidden px-4 py-2 md:table-cell">Statut</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {list.map((p) => {
+                const s = statMap.get(p.id);
+                const spent = Number(s?.spent ?? 0);
+                const over = spent > Number(p.budget) && Number(p.budget) > 0;
+                const progress = Number(s?.progress ?? 0);
+                const manager = p.manager_id ? peopleMap.get(p.manager_id) : undefined;
+                return (
+                  <tr key={p.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-3">
+                      <Link href={`/projects/${p.id}`} className="font-medium text-brand-700 hover:underline">{p.name}</Link>
+                      <div className="text-xs text-slate-500">{p.code}{s?.late_count ? ` · ${s.late_count} en retard` : ""}</div>
+                    </td>
+                    <td className="hidden px-4 py-3 md:table-cell">{manager?.full_name || manager?.email || "—"}</td>
+                    <td className="hidden whitespace-nowrap px-4 py-3 text-slate-600 md:table-cell">{formatDate(p.start_date)} → {formatDate(p.end_date)}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-24"><ProgressBar value={progress} tone={s?.late_count ? "warn" : "good"} /></div>
+                        <span className="text-xs tabular-nums">{progress} %</span>
+                      </div>
+                    </td>
+                    <td className="hidden px-4 py-3 text-right tabular-nums lg:table-cell">{formatMoney(Number(p.budget), p.currency)}</td>
+                    <td className={`px-4 py-3 text-right tabular-nums ${over ? "font-medium text-red-700" : ""}`}>{formatMoney(spent, p.currency)}</td>
+                    <td className="hidden px-4 py-3 md:table-cell"><Badge tone={p.status === "active" ? "green" : p.status === "on_hold" ? "amber" : "slate"}>{PROJECT_STATUS_LABELS[p.status]}</Badge></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </>
+  );
+}
