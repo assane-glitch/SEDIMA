@@ -46,7 +46,7 @@ export function Sidebar({ groups, profile, signOut }: { groups: NavGroup[]; prof
 
       <div className="flex flex-col gap-1.5">
         <Divider />
-        <Link href="/account/password" title={expanded ? undefined : (profile.full_name || profile.email)}
+        <Link href="/account" title={expanded ? undefined : (profile.full_name || profile.email)}
           className={`flex items-center rounded-xl text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-900 ${expanded ? "gap-3 px-3 py-2.5" : "h-11 w-11 justify-center"}`}>
           <Icon name="user" className="h-[22px] w-[22px] shrink-0" strokeWidth={1.6} />
           {expanded && <span className="truncate font-medium">{profile.full_name || profile.email}</span>}
