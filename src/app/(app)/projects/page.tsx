@@ -5,7 +5,7 @@ import { formatDate, formatMoney, pct } from "@/lib/format";
 import { HEALTH_DOT, HEALTH_LABELS, projectHealth } from "@/lib/health";
 import { canEdit, requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { CATEGORY_LABELS, PROJECT_CATEGORIES, PROJECT_STATUS_LABELS, type Profile, type Project, type ProjectStats } from "@/lib/types";
+import { CATEGORY_LABELS, PROJECT_CATEGORIES, PROJECT_STATUS_LABELS, PROJECT_STATUS_TONE, type Profile, type Project, type ProjectStats } from "@/lib/types";
 
 export const metadata = { title: "Projets" };
 
@@ -134,12 +134,12 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
                         </div>
                       </div>
                     </td>
-                    <td className="hidden px-4 py-3 md:table-cell">{manager?.full_name || manager?.email || "—"}</td>
+                    <td className="hidden px-4 py-3 md:table-cell">{manager?.full_name || manager?.email || p.manager_name || "—"}</td>
                     <td className="hidden whitespace-nowrap px-4 py-3 text-slate-600 md:table-cell">{formatDate(p.start_date)} → {formatDate(p.end_date)}</td>
                     <td className="px-4 py-3"><div className="flex items-center gap-2"><div className="w-24"><ProgressBar value={Number(s?.progress ?? 0)} tone={health === "bad" ? "bad" : health === "warn" ? "warn" : "good"} /></div><span className="text-xs tabular-nums">{Number(s?.progress ?? 0)} %</span></div></td>
                     <td className="hidden px-4 py-3 text-right tabular-nums lg:table-cell">{formatMoney(Number(p.budget), p.currency)}</td>
                     <td className={`px-4 py-3 text-right tabular-nums ${over ? "font-medium text-brand-700" : ""}`}>{formatMoney(spent, p.currency)}<div className="text-[11px] text-slate-400">{pct(spent, Number(p.budget))} %</div></td>
-                    <td className="hidden px-4 py-3 md:table-cell"><Badge tone={p.status === "active" ? "green" : p.status === "on_hold" ? "amber" : "slate"}>{PROJECT_STATUS_LABELS[p.status]}</Badge></td>
+                    <td className="hidden px-4 py-3 md:table-cell"><Badge tone={PROJECT_STATUS_TONE[p.status]}>{PROJECT_STATUS_LABELS[p.status]}</Badge></td>
                   </tr>
                 );
               })}

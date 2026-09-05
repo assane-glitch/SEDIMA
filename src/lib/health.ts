@@ -15,8 +15,9 @@ export const HEALTH_BADGE: Record<Health, "green" | "amber" | "red" | "slate"> =
 
 // Sante d'un projet : retards, budget consomme vs avancement, echeance.
 export function projectHealth(p: Project, s?: ProjectStats | null): Health {
-  if (p.status === "completed") return "done";
-  if (p.status === "cancelled" || p.status === "planning" || p.status === "on_hold") return "idle";
+  if (p.status === "cloture") return "done";
+  if (p.status === "plan" || p.status === "hors_perimetre") return "idle";
+  if ((p.status === "cadrage" || p.status === "approuve") && Number(s?.spent ?? 0) === 0) return "idle";
   const t = today();
   const progress = Number(s?.progress ?? 0);
   const spent = Number(s?.spent ?? 0);

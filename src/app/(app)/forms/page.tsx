@@ -8,7 +8,7 @@ export const metadata = { title: "Formulaires" };
 
 export default async function FieldHome() {
   const supabase = await createClient();
-  const { data } = await supabase.from("projects").select("id,code,name,status").in("status", ["planning", "active"]).order("name");
+  const { data } = await supabase.from("projects").select("id,code,name,status").in("status", ["cadrage", "approuve", "engage", "execution"]).order("name");
   const projects = (data ?? []) as Pick<Project, "id" | "code" | "name" | "status">[];
   return (
     <div className="mx-auto max-w-lg">

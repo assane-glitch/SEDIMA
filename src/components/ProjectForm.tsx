@@ -53,9 +53,19 @@ export function ProjectForm({ project, people, action, submitLabel }: { project?
         </div>
         <div>
           <label className="label" htmlFor="status">Statut</label>
-          <select id="status" name="status" defaultValue={project?.status ?? "planning"} className="input">
+          <select id="status" name="status" defaultValue={project?.status ?? "plan"} className="input">
             {Object.entries(PROJECT_STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
+        </div>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className="label" htmlFor="site">Site</label>
+          <input id="site" name="site" defaultValue={project?.site} placeholder="Notto, Ndiar, Siege…" className="input" />
+        </div>
+        <div>
+          <label className="label" htmlFor="business_unit">Business unit</label>
+          <input id="business_unit" name="business_unit" defaultValue={project?.business_unit} placeholder="OAC, Abattoir, ODT…" className="input" />
         </div>
       </div>
       <div>
@@ -64,6 +74,7 @@ export function ProjectForm({ project, people, action, submitLabel }: { project?
           <option value="">—</option>
           {managers.map((p) => <option key={p.id} value={p.id}>{p.full_name || p.email}</option>)}
         </select>
+        {project?.manager_name && !project.manager_id && <p className="mt-1 text-xs text-slate-500">Referentiel : {project.manager_name} (pas encore de compte)</p>}
       </div>
       <div className="flex justify-end"><SubmitButton>{submitLabel}</SubmitButton></div>
     </form>

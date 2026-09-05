@@ -3,7 +3,7 @@ import { Badge, CategoryIcon, Empty, PageHeader, ProgressBar, Stat } from "@/com
 import { formatDate, formatMoney, pct } from "@/lib/format";
 import { canEdit, requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { PROJECT_STATUS_LABELS, type Profile, type Project, type ProjectStats } from "@/lib/types";
+import { ACTIVE_STATUSES, PROJECT_STATUS_LABELS, PROJECT_STATUS_TONE, type Profile, type Project, type ProjectStats } from "@/lib/types";
 
 export const metadata = { title: "Tableau de bord" };
 
@@ -21,7 +21,7 @@ export default async function DashboardPage() {
 
   const totalBudget = list.reduce((s, p) => s + Number(p.budget), 0);
   const totalSpent = list.reduce((s, p) => s + Number(statMap.get(p.id)?.spent ?? 0), 0);
-  const active = list.filter((p) => p.status === "active").length;
+  const active = list.filter((p) => ACTIVE_STATUSES.includes(p.status)).length;
   const late = list.reduce((s, p) => s + Number(statMap.get(p.id)?.late_count ?? 0), 0);
 
   return (
@@ -76,7 +76,7 @@ export default async function DashboardPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="hidden px-4 py-3 md:table-cell">{manager?.full_name || manager?.email || "—"}</td>
+                    <td className="hidden px-4 py-3 md:table-cell">{manager?.full_name || manager?.email || p.manager_name || "—"}</td>
                     <td className="hidden whitespace-nowrap px-4 py-3 text-slate-600 md:table-cell">{formatDate(p.start_date)} → {formatDate(p.end_date)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
@@ -86,7 +86,7 @@ export default async function DashboardPage() {
                     </td>
                     <td className="hidden px-4 py-3 text-right tabular-nums lg:table-cell">{formatMoney(Number(p.budget), p.currency)}</td>
                     <td className={`px-4 py-3 text-right tabular-nums ${over ? "font-medium text-red-700" : ""}`}>{formatMoney(spent, p.currency)}</td>
-                    <td className="hidden px-4 py-3 md:table-cell"><Badge tone={p.status === "active" ? "green" : p.status === "on_hold" ? "amber" : "slate"}>{PROJECT_STATUS_LABELS[p.status]}</Badge></td>
+                    <td className="hidden px-4 py-3 md:table-cell"><Badge tone={PROJECT_STATUS_TONE[p.status]}>{PROJECT_STATUS_LABELS[p.status]}</Badge></td>
                   </tr>
                 );
               })}

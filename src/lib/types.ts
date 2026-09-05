@@ -1,5 +1,5 @@
 export type UserRole = "admin" | "manager" | "viewer" | "field";
-export type ProjectStatus = "planning" | "active" | "on_hold" | "completed" | "cancelled";
+export type ProjectStatus = "plan" | "cadrage" | "approuve" | "engage" | "execution" | "cloture" | "hors_perimetre";
 export type ProjectCategory = "oac_poussins" | "poulet_chair" | "oeufs_table" | "industriels" | "autres";
 export type TaskStatus = "todo" | "in_progress" | "done" | "blocked";
 
@@ -22,6 +22,16 @@ export interface Project {
   budget: number;
   currency: string;
   manager_id: string | null;
+  site: string;
+  business_unit: string;
+  pillar: string;
+  plan_objective: string;
+  wbs_nature: string;
+  data_quality: string;
+  budget_kpmg: number;
+  manager_name: string;
+  source_note: string;
+  comment: string;
 }
 
 export interface Milestone {
@@ -88,6 +98,7 @@ export interface ProjectStats {
   done_count: number;
   progress: number;
   late_count: number;
+  rebuilt_cost: number;
   milestone_count: number;
   milestone_reached: number;
   next_milestone: string | null;
@@ -106,6 +117,14 @@ export interface Task {
   responsible_id: string | null;
   sort_order: number;
   notes: string;
+  wbs_code: string | null;
+  responsible_role: string;
+  depends_on: string | null;
+  link_type: string;
+  customs: number;
+  vat: number;
+  estimate_method: string;
+  confidence: string;
 }
 
 export interface Expense {
@@ -153,12 +172,19 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 };
 
 export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
-  planning: "En preparation",
-  active: "En cours",
-  on_hold: "En pause",
-  completed: "Termine",
-  cancelled: "Annule",
+  plan: "Plan",
+  cadrage: "Cadrage",
+  approuve: "Approuve",
+  engage: "Engage",
+  execution: "En execution",
+  cloture: "Cloture",
+  hors_perimetre: "Hors perimetre",
 };
+export const PROJECT_STATUS_TONE: Record<ProjectStatus, "slate" | "blue" | "green" | "amber" | "red"> = {
+  plan: "slate", cadrage: "amber", approuve: "blue", engage: "green", execution: "green", cloture: "slate", hors_perimetre: "slate",
+};
+// Statuts consideres comme "en cours" pour la saisie terrain et les compteurs
+export const ACTIVE_STATUSES: ProjectStatus[] = ["cadrage", "approuve", "engage", "execution"];
 
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   todo: "A faire",

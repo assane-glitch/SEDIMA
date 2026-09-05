@@ -1,6 +1,6 @@
 import { Badge, CategoryIcon } from "@/components/ui";
 import { formatDate } from "@/lib/format";
-import { CATEGORY_LABELS, PROJECT_STATUS_LABELS, type Profile, type Project } from "@/lib/types";
+import { CATEGORY_LABELS, PROJECT_STATUS_LABELS, PROJECT_STATUS_TONE, type Profile, type Project } from "@/lib/types";
 
 export function ProjectHeader({ project, manager }: { project: Project; manager?: Profile }) {
   return (
@@ -10,8 +10,9 @@ export function ProjectHeader({ project, manager }: { project: Project; manager?
         <h1 className="truncate text-2xl font-semibold tracking-tight">{project.name}</h1>
         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-500">
           <span>{project.code}</span>·<span>{CATEGORY_LABELS[project.category]}</span>·<span>{formatDate(project.start_date)} → {formatDate(project.end_date)}</span>·
-          <span>Chef de projet : {manager ? (manager.full_name || manager.email) : "—"}</span>
-          <Badge tone={project.status === "active" ? "green" : project.status === "on_hold" ? "amber" : "slate"}>{PROJECT_STATUS_LABELS[project.status]}</Badge>
+          {(project.site || project.business_unit) && <><span>{[project.site, project.business_unit].filter(Boolean).join(" · ")}</span>·</>}
+          <span>Chef de projet : {manager ? (manager.full_name || manager.email) : project.manager_name || "—"}</span>
+          <Badge tone={PROJECT_STATUS_TONE[project.status]}>{PROJECT_STATUS_LABELS[project.status]}</Badge>
         </div>
       </div>
     </div>
