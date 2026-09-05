@@ -1,29 +1,44 @@
-# Journal d'import du referentiel
+# Journal d'import du referentiel (execution)
 
-Date (UTC) : 2026-09-05 14:34:31 UTC
-Projet Supabase : kfsnobycokmqfzfhubir (SEDIMA_PM, eu-central-1, Postgres 17.6)
-Methode : API de gestion Supabase, POST /v1/projects/kfsnobycokmqfzfhubir/database/query
+Date (UTC) : 2026-09-05 14:37:09 UTC
+Projet Supabase : kfsnobycokmqfzfhubir
+Methode : `python3 scripts/supabase-sql.py <argument>` (API de gestion Supabase, POST /v1/projects/kfsnobycokmqfzfhubir/database/query)
+Variable SUPABASE_ACCESS_TOKEN : presente dans l'environnement de la session.
 
 ## Resultat des etapes
 
 | Etape | Action | Statut HTTP | Resultat |
 |---|---|---|---|
-| 1 | SUPABASE_ACCESS_TOKEN defini + GET /v1/projects/kfsnobycokmqfzfhubir | 200 | OK, projet ACTIVE_HEALTHY |
-| 2 | Execution de supabase/migrations/20260905_step2b_import_model.sql | non envoye | BLOQUE (voir erreur ci-dessous) |
-| 3 | Execution de supabase/seed/referentiel_2026_2030.sql | non execute | Non tente (etape 2 en echec) |
-| 4 | Requete de controle | non execute | Non tente |
+| 1 | `select current_database(), version()` | 403 | ECHEC (Cloudflare, error code 1010), reproduit a l'identique sur une seconde tentative |
+| 2 | Execution de supabase/migrations/20260905_step2b_import_model.sql | non envoye | Non tente (etape 1 en echec) |
+| 3 | Execution de supabase/seed/referentiel_2026_2030.sql | non envoye | Non tente (etape 1 en echec) |
+| 4 | Requete de controle (comptages) | non envoye | Non tente (etape 1 en echec) |
 
-## Erreur complete (etape 2)
+## Erreur complete (etape 1)
 
-L'appel HTTP n'a jamais ete emis : la commande a ete refusee par le classifieur de permissions de Claude Code (mode auto), deux fois, sous deux formes differentes (script bash + curl, puis python3 + urllib). Message renvoye :
+Commande : `python3 scripts/supabase-sql.py "select current_database(), version()"`
+
+Premiere tentative (2026-09-05 14:36:27 UTC) :
 
 ```
-Permission for this action was denied by the Claude Code auto mode classifier.
-Reason: Blocked by classifier.
-[...] To allow this type of action in the future, the user can add a Bash permission rule to their settings.
+HTTP 403
+error code: 1010
 ```
 
-Cause : l'execution de SQL sur une base de production distante via un jeton personnel est consideree comme une action sensible et n'est pas autorisee sans regle de permission explicite dans la session.
+Seconde tentative (2026-09-05 14:37:09 UTC), resultat identique :
+
+```
+HTTP 403
+error code: 1010
+```
+
+Code de sortie du script : 1.
+
+## Analyse
+
+- Le statut n'est ni 401 (jeton invalide) ni une erreur du proxy sortant de la session : le tunnel TLS a ete etabli et c'est le serveur api.supabase.com qui a repondu.
+- Le corps « error code: 1010 » est la reponse Cloudflare « Access denied: the owner of this website has banned your access based on your browser's signature ». Le script envoie l'en-tete User-Agent par defaut de Python (`Python-urllib/3.11`), que le WAF Cloudflare devant api.supabase.com refuse.
+- Le jeton n'a donc pas ete evalue : on ne peut rien conclure sur sa validite.
 
 ## Tableau de controle
 
@@ -31,8 +46,10 @@ Non disponible (requete non executee). Attendu : 28 projets, 150 lots, 605 tache
 
 ## Etat de la base
 
-Aucune modification n'a ete appliquee a la base par cette session. Les deux fichiers SQL sont idempotents et peuvent etre executes manuellement dans Supabase > SQL Editor, dans l'ordre :
+Aucune requete n'a atteint la base ; aucune modification n'a ete appliquee par cette session.
+
+## Piste de correction
+
+Ajouter un en-tete `User-Agent` explicite (par exemple `sedima-supabase-sql/1.0`) dans la requete construite par scripts/supabase-sql.py, puis relancer la mission. Le script n'a pas ete modifie par cette session, conformement a la consigne. A defaut, les deux fichiers SQL, idempotents, peuvent etre executes manuellement dans Supabase > SQL Editor dans l'ordre :
 1. supabase/migrations/20260905_step2b_import_model.sql
 2. supabase/seed/referentiel_2026_2030.sql
-
-Pour relancer l'import automatise, ajouter une regle de permission Bash autorisant les appels POST vers https://api.supabase.com dans les parametres de la session, puis relancer la mission.
