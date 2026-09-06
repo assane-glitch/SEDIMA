@@ -3,14 +3,14 @@ import { useMemo, useState } from "react";
 import { addExpense } from "@/app/(app)/projects/actions";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { today } from "@/lib/format";
-import { EXPENSE_CATEGORIES, EXPENSE_STATUS_LABELS, type ExpenseStatus } from "@/lib/types";
+import type { RefItem } from "@/lib/reference-types";
 
 export interface TaskOption { id: string; name: string; wbs_code: string | null; parent_id: string | null; project_id: string }
 export interface ProjectOption { id: string; code: string; name: string; currency: string }
 
 /** Formulaire du journal des depenses. Utilise dans le tiroir de tache, l'onglet Budget, les Formulaires et le mobile. */
-export function ExpenseForm({ projects, tasks, projectId, taskId, redirect, source = "web", compact, onSubmitted, mobile }: {
-  projects: ProjectOption[]; tasks: TaskOption[]; projectId?: string; taskId?: string; redirect?: string; source?: "web" | "mobile";
+export function ExpenseForm({ projects, tasks, categories, statuses, projectId, taskId, redirect, source = "web", compact, onSubmitted, mobile }: {
+  projects: ProjectOption[]; tasks: TaskOption[]; categories: RefItem[]; statuses: RefItem[]; projectId?: string; taskId?: string; redirect?: string; source?: "web" | "mobile";
   compact?: boolean; onSubmitted?: () => void; mobile?: boolean;
 }) {
   const [pid, setPid] = useState(projectId ?? projects[0]?.id ?? "");
@@ -48,11 +48,11 @@ export function ExpenseForm({ projects, tasks, projectId, taskId, redirect, sour
           </select></div>
       )}
       <div className="grid grid-cols-2 gap-2">
-        <div><label className="label">Categorie</label><select name="category" defaultValue="materiaux" className={`input${big}`}>{EXPENSE_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}</select></div>
+        <div><label className="label">Categorie</label><select name="category" defaultValue={categories[0]?.value} className={`input${big}`}>{categories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}</select></div>
         <div><label className="label">Numero de DA</label><input name="da_number" placeholder="DA-2026-…" className={`input${big}`} /></div>
       </div>
       <div><label className="label">Statut</label>
-        <select name="status" defaultValue="facturee" className={`input${big}`}>{(Object.keys(EXPENSE_STATUS_LABELS) as ExpenseStatus[]).map((k) => <option key={k} value={k}>{EXPENSE_STATUS_LABELS[k]}</option>)}</select></div>
+        <select name="status" defaultValue={statuses[0]?.value ?? "da_emise"} className={`input${big}`}>{statuses.map((k) => <option key={k.value} value={k.value}>{k.label}</option>)}</select></div>
       <div className="flex justify-end pt-1"><SubmitButton className={mobile ? "btn-primary w-full !py-3 !text-[13px]" : "btn-primary"}>Enregistrer la depense</SubmitButton></div>
     </form>
   );

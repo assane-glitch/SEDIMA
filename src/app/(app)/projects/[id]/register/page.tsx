@@ -3,7 +3,8 @@ import { ProjectHeader } from "../ProjectHeader";
 import { formatDate } from "@/lib/format";
 import { canEdit, requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { REGISTER_TYPES, type RegisterEntry } from "@/lib/types";
+import type { RegisterEntry } from "@/lib/types";
+import { getLists, registerFields } from "@/lib/reference";
 import { ProjectTabs } from "../ProjectTabs";
 import { loadProject } from "../loadProject";
 import Link from "next/link";
@@ -13,6 +14,8 @@ export default async function RegisterPage({ params, searchParams }: { params: P
   const { type, ok } = await searchParams;
   const profile = await requireProfile();
   const { project, tasks, people } = await loadProject(id);
+  const lists = await getLists();
+  const REGISTER_TYPES = lists.register_type.map((r) => ({ value: r.value, label: r.label, fields: registerFields(r) }));
   const supabase = await createClient();
   let q = supabase.from("register_entries").select("*").eq("project_id", id).order("entry_date", { ascending: false }).order("created_at", { ascending: false }).limit(300);
   if (type) q = q.eq("register_type", type);
@@ -41,7 +44,7 @@ export default async function RegisterPage({ params, searchParams }: { params: P
               <tr key={e.id}>
                 <td className="whitespace-nowrap px-4 py-2">{formatDate(e.entry_date)}</td>
                 <td className="px-4 py-2"><Badge tone="blue">{typeLabel.get(e.register_type) ?? e.register_type}</Badge></td>
-                <td className="px-4 py-2 text-ink-body">{Object.entries(e.data).map(([k, v]) => <span key={k} className="mr-3 inline-block"><span className="text-ink-faint">{k} :</span> {String(v)}</span>)}</td>
+                <td className="px-4 py-2 text-ink-body">{Object.entries(e.data).map(([k, v]) => <span key={k} className="mr-3 inline-block"><span className="text-ink-faint">{REGISTER_TYPES.find((r) => r.value === e.register_type)?.fields.find((f) => f.key === k)?.label ?? k} :</span> {String(v)}</span>)}</td>
                 <td className="hidden px-4 py-2 text-ink-body md:table-cell">{e.task_id ? taskName.get(e.task_id) : "—"}</td>
                 <td className="hidden px-4 py-2 text-ink-body md:table-cell">{e.author_id ? who.get(e.author_id) : "—"}</td>
               </tr>

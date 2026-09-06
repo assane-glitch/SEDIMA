@@ -1,10 +1,11 @@
 "use client";
 import { useState } from "react";
-import type { REGISTER_TYPES } from "@/lib/types";
+type RegisterType = { value: string; label: string; fields: { key: string; label: string; type: "text" | "number" }[] };
 
-export function RegisterFields({ types }: { types: typeof REGISTER_TYPES }) {
-  const [type, setType] = useState(types[0].value);
+export function RegisterFields({ types }: { types: RegisterType[] }) {
+  const [type, setType] = useState(types[0]?.value ?? "");
   const def = types.find((t) => t.value === type) ?? types[0];
+  if (!def) return <p className="hint">Aucun type de registre defini. Ajoutez-en dans Administration, Listes de reference.</p>;
   return (
     <>
       <div>

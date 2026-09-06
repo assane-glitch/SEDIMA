@@ -127,7 +127,7 @@ export interface Task {
   confidence: string;
 }
 
-export type ExpenseStatus = "da_emise" | "commandee" | "livree" | "facturee" | "payee" | "annulee";
+export type ExpenseStatus = string; // pilote par la liste de reference expense_status
 
 export interface Expense {
   id: string;
@@ -146,10 +146,10 @@ export interface Expense {
   created_at: string;
 }
 
-export const EXPENSE_STATUS_LABELS: Record<ExpenseStatus, string> = {
+export const EXPENSE_STATUS_LABELS: Record<string, string> = {
   da_emise: "DA emise", commandee: "Commandee", livree: "Livree", facturee: "Facturee", payee: "Payee", annulee: "Annulee",
 };
-export const EXPENSE_STATUS_TONE: Record<ExpenseStatus, "neutral" | "info" | "ok" | "warn" | "alert"> = {
+export const EXPENSE_STATUS_TONE: Record<string, "neutral" | "info" | "ok" | "warn" | "alert"> = {
   da_emise: "neutral", commandee: "info", livree: "info", facturee: "warn", payee: "ok", annulee: "alert",
 };
 export const EXPENSE_CATEGORIES: { value: string; label: string }[] = [

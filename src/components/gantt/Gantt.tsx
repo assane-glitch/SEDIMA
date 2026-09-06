@@ -3,7 +3,8 @@ import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { addDays, daysBetween, formatDate, formatMoney, today } from "@/lib/format";
 import { HEALTH_DOT, HEALTH_LABELS, type Health } from "@/lib/health";
-import type { Expense, Milestone, Profile, Task } from "@/lib/types";
+import type { AuditEntry, Expense, JournalEntry, Milestone, Profile, RegisterEntry, Task } from "@/lib/types";
+import type { Lists } from "@/lib/reference-types";
 import { TaskDrawer } from "./TaskDrawer";
 import { MilestoneDrawer } from "./MilestoneDrawer";
 
@@ -17,7 +18,9 @@ export interface GanttMilestone { id: string; name: string; due: string; reached
 type Scale = "day" | "week" | "month" | "year";
 
 const MS_DAY = 86_400_000;
-const ROW_H = 30;
+const ROW_LOT = 26;
+const ROW_TASK = 20;
+const ROW_MS = 22;
 const HEAD_H = 44;
 const PX: Record<Scale, number> = { day: 26, week: 8, month: 3.2, year: 1.2 };
 const SCALE_LABEL: Record<Scale, string> = { day: "Jour", week: "Semaine", month: "Mois", year: "Trimestre" };
@@ -29,8 +32,8 @@ function isoWeek(d: Date) {
   return Math.ceil(((t.getTime() - y0.getTime()) / MS_DAY + 1) / 7);
 }
 
-export function Gantt({ rows, milestones, expenses = [], people, currency, canEdit, projectId, projectCode, projectStart, projectEnd, mode }: {
-  rows: GanttRow[]; milestones: GanttMilestone[]; expenses?: Expense[]; people: Profile[]; currency: string; canEdit: boolean;
+export function Gantt({ rows, milestones, expenses = [], journal = [], registers = [], audit = [], lists, people, currency, canEdit, projectId, projectCode, projectStart, projectEnd, mode }: {
+  rows: GanttRow[]; milestones: GanttMilestone[]; expenses?: Expense[]; journal?: JournalEntry[]; registers?: RegisterEntry[]; audit?: AuditEntry[]; lists?: Lists; people: Profile[]; currency: string; canEdit: boolean;
   projectId?: string; projectCode?: string; projectStart: string; projectEnd: string; mode: "project" | "portfolio";
 }) {
   const t0 = today();
@@ -59,7 +62,9 @@ export function Gantt({ rows, milestones, expenses = [], people, currency, canEd
   const visible = useMemo(() => rows.filter((r) => !r.parentId || !collapsed.has(r.parentId)), [rows, collapsed]);
   const rowIndex = useMemo(() => new Map(visible.map((r, i) => [r.id, i])), [visible]);
   const msRow = mode === "project" && milestones.length > 0 ? 1 : 0;
-  const rowTop = (i: number) => HEAD_H + (i + msRow) * ROW_H;
+  const rowH = (r: GanttRow) => (r.kind === "task" && r.parentId ? ROW_TASK : ROW_LOT);
+  const tops = useMemo(() => { let y = HEAD_H + msRow * ROW_MS; return visible.map((r) => { const t = y; y += rowH(r); return t; }); }, [visible, msRow]);
+  const rowTop = (i: number) => tops[i] ?? HEAD_H;
   const toggle = (id: string) => setCollapsed((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
   // ---- Graduations : bandes (haut) et ticks (bas) ----
@@ -89,7 +94,8 @@ export function Gantt({ rows, milestones, expenses = [], people, currency, canEd
     for (const r of visible) {
       if (!r.dependsOn) continue;
       const p = byId.get(r.dependsOn); if (!p) continue;
-      const y1 = rowTop(rowIndex.get(p.id)!) + ROW_H / 2 - HEAD_H, y2 = rowTop(rowIndex.get(r.id)!) + ROW_H / 2 - HEAD_H;
+      const i1 = rowIndex.get(p.id)!, i2 = rowIndex.get(r.id)!;
+      const y1 = rowTop(i1) + rowH(visible[i1]) / 2 - HEAD_H, y2 = rowTop(i2) + rowH(visible[i2]) / 2 - HEAD_H;
       const x2 = x(r.start);
       if (r.linkType === "DD") {
         const x1 = x(p.start); const gx = Math.min(x1, x2) - 8;
@@ -97,16 +103,16 @@ export function Gantt({ rows, milestones, expenses = [], people, currency, canEd
       } else {
         const x1 = x(addDays(p.end, 1));
         if (x2 >= x1 + 12) out.push({ key: r.id, d: `M${x1},${y1} H${x1 + 6} V${y2} H${x2}` });
-        else { const ym = y1 + (y2 > y1 ? ROW_H / 2 : -ROW_H / 2); out.push({ key: r.id, d: `M${x1},${y1} H${x1 + 8} V${ym} H${x2 - 8} V${y2} H${x2}` }); }
+        else { const ym = y1 + (y2 > y1 ? ROW_TASK / 2 : -ROW_TASK / 2); out.push({ key: r.id, d: `M${x1},${y1} H${x1 + 8} V${ym} H${x2 - 8} V${y2} H${x2}` }); }
       }
     }
     return out;
-  }, [visible, rowIndex, showLinks, mode, px, rangeStart]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [visible, rowIndex, showLinks, mode, px, rangeStart, tops]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const todayX = x(t0) + px / 2;
-  const gridH = HEAD_H + (visible.length + msRow) * ROW_H;
-  const cols = mode === "project" ? "grid-cols-[44px_minmax(200px,1fr)_118px_54px_100px_100px]" : "grid-cols-[18px_minmax(220px,1fr)_120px_54px_110px_110px]";
-  const leftW = mode === "project" ? "w-[616px]" : "w-[622px]";
+  const gridH = (tops.length ? tops[tops.length - 1] + rowH(visible[visible.length - 1]) : HEAD_H + msRow * ROW_MS);
+  const cols = mode === "project" ? "grid-cols-[44px_1fr_116px_52px_104px_104px]" : "grid-cols-[18px_1fr_120px_52px_110px_110px]";
+  const leftW = mode === "project" ? "w-[640px]" : "w-[640px]";
   const headRef = useRef<HTMLDivElement>(null);
   const weekLabel = (a: string, b: string) => `S${isoWeek(new Date(a + "T00:00:00Z"))} → S${isoWeek(new Date(b + "T00:00:00Z"))}`;
 
@@ -115,9 +121,6 @@ export function Gantt({ rows, milestones, expenses = [], people, currency, canEd
       {/* Barre d'outils, hors zone de defilement */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line-hair px-3 py-1.5 text-[10px] text-ink-muted">
         <div className="flex flex-wrap items-center gap-3">
-          <span className="inline-flex items-center gap-1.5"><span className="inline-block h-[7px] w-4 rounded-xs bg-brand" />Lot</span>
-          <span className="inline-flex items-center gap-1.5"><span className="inline-block h-[7px] w-4 rounded-xs bg-ink-muted" />Tache</span>
-          <span className="mx-1 h-4 w-px bg-line-hair" />
           {(["good", "warn", "bad", "done", "idle"] as Health[]).map((h) => <span key={h} className="inline-flex items-center gap-1.5"><span className={`dot ${HEALTH_DOT[h]}`} />{HEALTH_LABELS[h]}</span>)}
           <span className="inline-flex items-center gap-1.5"><span className="inline-block h-2 w-2 rotate-45 border border-ink bg-surface" />Jalon</span>
         </div>
@@ -140,24 +143,24 @@ export function Gantt({ rows, milestones, expenses = [], people, currency, canEd
       <div className="relative overflow-y-auto" style={{ maxHeight: "calc(100vh - 210px)" }}>
         {/* En-tete fige : colonnes a gauche, graduations a droite (synchronisees avec le defilement des barres) */}
         <div className="sticky top-0 z-30 flex border-b border-line-hair bg-thead">
-          <div className={`grid ${cols} shrink-0 items-end border-r border-line-hair px-2 pb-1.5 eyebrow`} style={{ height: HEAD_H }}>
+          <div className={`grid ${cols} ${leftW} shrink-0 items-end overflow-hidden border-r-2 border-line px-2 pb-1.5 eyebrow`} style={{ height: HEAD_H }}>
             <div>{mode === "project" ? "WBS" : ""}</div>
-            <div>{mode === "project" ? "Lot / tache" : "Projet"}</div><div>{mode === "project" ? "Responsable" : "Chef de projet"}</div><div className="text-right">Avanc.</div><div className="text-right">Budget</div><div className="text-right">Depense</div>
+            <div className="truncate">{mode === "project" ? "Lot / tache" : "Projet"}</div><div className="truncate">{mode === "project" ? "Responsable" : "Chef de projet"}</div><div className="truncate text-right">Avanc.</div><div className="truncate text-right">Budget</div><div className="truncate text-right">Depense</div>
           </div>
           <div ref={headRef} className="relative min-w-0 flex-1 overflow-hidden" style={{ height: HEAD_H }}>
             <div className="relative" style={{ width, height: HEAD_H }}>
               {bands.map((b, i) => <div key={i} className="absolute top-0 h-5 overflow-hidden whitespace-nowrap border-r border-line-hair px-1.5 text-[9.5px] font-semibold capitalize leading-5 text-ink-body" style={{ left: b.left, width: b.width }}>{b.width > 40 ? b.label : ""}</div>)}
-              {ticks.map((t, i) => <div key={i} className={`absolute bottom-0 h-6 overflow-hidden border-r text-center text-[9px] leading-6 text-ink-faint ${t.major ? "border-line-hair" : "border-line-light"}`} style={{ left: t.left, width: t.width }}>{t.width > 16 ? t.label : ""}</div>)}
-              {todayX >= 0 && todayX <= width && <div className="absolute bottom-0 -ml-[18px] rounded-xs bg-brand px-1 text-[8px] font-bold leading-[13px] text-surface" style={{ left: todayX }}>Auj.</div>}
+              {ticks.map((t, i) => { const cur = todayX >= t.left && todayX < t.left + t.width && scale !== "day"; return <div key={i} className={`absolute bottom-0 h-6 overflow-hidden border-r text-center text-[9px] leading-6 ${cur ? "bg-brand font-bold text-surface" : t.major ? "border-line-hair text-ink-faint" : "border-line-light text-ink-faint"}`} style={{ left: t.left, width: t.width }}>{t.width > 16 ? t.label : ""}</div>; })}
+              {scale === "day" && todayX >= 0 && todayX <= width && <div className="absolute bottom-0 -ml-[18px] rounded-xs bg-brand px-1 text-[8px] font-bold leading-[13px] text-surface" style={{ left: todayX }}>Auj.</div>}
             </div>
           </div>
         </div>
 
         <div className="flex">
           {/* Panneau gauche : toujours visible */}
-          <div className={`shrink-0 border-r border-line-hair bg-surface ${leftW}`}>
+          <div className={`shrink-0 border-r-2 border-line bg-surface ${leftW}`}>
             {msRow === 1 && (
-              <div className={`grid ${cols} items-center border-b border-line-light bg-surface-alt px-2 text-[10.5px]`} style={{ height: ROW_H }}>
+              <div className={`grid ${cols} items-center border-b border-line-light bg-surface-alt px-2 text-[10.5px]`} style={{ height: ROW_MS }}>
                 <div /><div className="font-bold">Jalons <span className="font-normal text-ink-faint">{milestones.filter((m) => m.reached).length}/{milestones.length}</span></div><div /><div /><div /><div />
               </div>
             )}
@@ -166,7 +169,7 @@ export function Gantt({ rows, milestones, expenses = [], people, currency, canEd
               const over = r.budget > 0 && r.spent > r.budget;
               const h = r.health ?? "idle";
               return (
-                <div key={r.id} className={`grid ${cols} items-center border-b border-line-light px-2 text-[10.5px] ${isLot ? "bg-surface-alt font-bold" : "hover:bg-surface-alt"}`} style={{ height: ROW_H }}>
+                <div key={r.id} className={`grid ${cols} items-center border-b border-line-light px-2 ${isLot ? "bg-surface-alt text-[11px] font-bold" : "text-[10px] hover:bg-surface-alt"}`} style={{ height: rowH(r) }}>
                   <div className="flex items-center gap-1 truncate pr-1">
                     <span className={`dot ${HEALTH_DOT[h]}`} title={HEALTH_LABELS[h]} />
                     {mode === "project" && <span className={`font-mono text-[9px] ${isLot ? "text-ink" : "text-ink-faint"}`}>{r.code}</span>}
@@ -189,12 +192,14 @@ export function Gantt({ rows, milestones, expenses = [], people, currency, canEd
 
           {/* Barres : seul element a defilement horizontal */}
           <div className="min-w-0 flex-1 overflow-x-auto" onScroll={(e) => { if (headRef.current) headRef.current.scrollLeft = e.currentTarget.scrollLeft; }}>
-            <div className="relative" style={{ width, height: Math.max(gridH - HEAD_H, ROW_H) }}>
-              {msRow === 1 && <div className="absolute inset-x-0 top-0 border-b border-line-light bg-surface-alt" style={{ height: ROW_H }}>
-                {milestones.map((m) => <Diamond key={m.id} m={m} left={x(m.due) + px / 2} top={ROW_H / 2} t0={t0} onClick={() => canEdit && setSelMilestone(m)} />)}
+            <div className="relative" style={{ width, height: Math.max(gridH - HEAD_H, ROW_LOT) }}>
+              {msRow === 1 && <div className="absolute inset-x-0 top-0 border-b border-line-light bg-surface-alt" style={{ height: ROW_MS }}>
+                {milestones.map((m) => <Diamond key={m.id} m={m} left={x(m.due) + px / 2} top={ROW_MS / 2} t0={t0} onClick={() => canEdit && setSelMilestone(m)} />)}
               </div>}
+              {/* Bande de la semaine en cours */}
+              {(() => { const wk = ticks.find((t) => todayX >= t.left && todayX < t.left + t.width); return wk && scale !== "day" ? <div className="absolute bottom-0 top-0 bg-alert-bg/70" style={{ left: wk.left, width: wk.width }} /> : null; })()}
               {ticks.map((t, i) => <div key={i} className={`absolute bottom-0 top-0 border-r ${t.major ? "border-line-hair" : "border-line-light"}`} style={{ left: t.left + t.width - 1 }} />)}
-              {visible.map((_, i) => <div key={i} className="absolute left-0 right-0 border-b border-line-light" style={{ top: rowTop(i) - HEAD_H, height: ROW_H }} />)}
+              {visible.map((r, i) => <div key={i} className={`absolute left-0 right-0 border-b border-line-light ${r.kind === "lot" ? "bg-surface-alt/50" : ""}`} style={{ top: rowTop(i) - HEAD_H, height: rowH(r) }} />)}
               {todayX >= 0 && todayX <= width && <div className="absolute bottom-0 top-0 z-[6] w-px bg-brand" style={{ left: todayX }} />}
               {links.length > 0 && (
                 <svg className="pointer-events-none absolute left-0 top-0 z-[4]" width={width} height={gridH - HEAD_H}>
@@ -205,15 +210,17 @@ export function Gantt({ rows, milestones, expenses = [], people, currency, canEd
               {visible.map((r, i) => {
                 const left = x(r.start), w = Math.max(px, (daysBetween(r.start, r.end) + 1) * px), top = rowTop(i) - HEAD_H;
                 const title = `${r.name}\n${formatDate(r.start)} → ${formatDate(r.end)}\n${r.progress} %${r.responsible ? `\n${r.responsible}` : ""}`;
-                const weeks = <span className="pointer-events-none absolute whitespace-nowrap text-[9px] tabular-nums text-ink-faint" style={{ left: left + w + 5, top: top + 9 }}>{weekLabel(r.start, r.end)}</span>;
+                const h = rowH(r), barH = 8, barTop = top + (h - barH) / 2;
+                const atEdge = left + w + 60 > width;
+                const weeks = <span className="pointer-events-none absolute whitespace-nowrap text-[9px] tabular-nums text-ink-muted" style={atEdge ? { right: width - left + 5, top: barTop - 2 } : { left: left + w + 6, top: barTop - 2 }}>{weekLabel(r.start, r.end)}</span>;
                 if (r.kind === "lot" || r.kind === "project") {
-                  const fill = r.kind === "lot" ? "bg-brand" : "bg-ink-muted", track = r.kind === "lot" ? "bg-alert-bg border border-alert-bd" : "bg-line-soft border border-line";
+                  const fill = r.kind === "lot" ? "bg-brand" : "bg-ink-body", track = r.kind === "lot" ? "bg-alert-bd" : "bg-line-soft";
                   return (
                     <div key={r.id}>
-                      <div className="absolute" style={{ top: top + 9, left, width: w, height: 12 }}>
-                        {r.href ? <Link href={r.href} title={title} className="relative block h-full w-full"><LotBar fill={fill} track={track} progress={r.progress} /></Link>
-                          : <button onClick={() => setSelected(r)} title={title} className="relative block h-full w-full cursor-pointer"><LotBar fill={fill} track={track} progress={r.progress} /></button>}
-                        {mode === "portfolio" && milestones.filter((m) => m.rowId === r.id).map((m) => <Diamond key={m.id} m={m} left={x(m.due) - left + px / 2} top={4} t0={t0} small />)}
+                      <div className="absolute" style={{ top: barTop, left, width: w, height: barH }}>
+                        {r.href ? <Link href={r.href} title={title} className="relative block h-full w-full"><Bar fill={fill} track={track} progress={r.progress} /></Link>
+                          : <button onClick={() => setSelected(r)} title={title} className="relative block h-full w-full cursor-pointer"><Bar fill={fill} track={track} progress={r.progress} /></button>}
+                        {mode === "portfolio" && milestones.filter((m) => m.rowId === r.id).map((m) => <Diamond key={m.id} m={m} left={x(m.due) - left + px / 2} top={barH / 2} t0={t0} small />)}
                       </div>
                       {weeks}
                     </div>
@@ -221,8 +228,8 @@ export function Gantt({ rows, milestones, expenses = [], people, currency, canEd
                 }
                 return (
                   <div key={r.id}>
-                    <button onClick={() => setSelected(r)} title={title} className="absolute cursor-pointer overflow-hidden rounded-xs border border-line bg-line-soft" style={{ top: top + 7, left, width: w, height: 16 }}>
-                      <div className="h-full bg-ink-muted" style={{ width: `${r.progress}%` }} />
+                    <button onClick={() => setSelected(r)} title={title} className="absolute cursor-pointer" style={{ top: barTop, left, width: w, height: barH }}>
+                      <Bar fill="bg-ink-body" track="bg-line" progress={r.progress} />
                     </button>
                     {weeks}
                   </div>
@@ -235,7 +242,10 @@ export function Gantt({ rows, milestones, expenses = [], people, currency, canEd
 
       {selected && projectId && (
         <TaskDrawer task={selected === "new" ? null : (selected.task ?? null)} isLot={selected !== "new" && selected.kind === "lot"} lots={lots.map((l) => ({ id: l.id, name: l.name }))}
-          tasks={rows.filter((r) => r.kind === "task" && r.task).map((r) => r.task!)} expenses={selected === "new" ? [] : expenses.filter((e) => e.task_id === selected.id || (selected.kind === "lot" && rows.some((c) => c.parentId === selected.id && c.id === e.task_id)))}
+          tasks={rows.filter((r) => r.kind === "task" && r.task).map((r) => r.task!)} lists={lists}
+          expenses={selected === "new" ? [] : expenses.filter((e) => e.task_id === selected.id || (selected.kind === "lot" && rows.some((c) => c.parentId === selected.id && c.id === e.task_id)))}
+          journal={selected === "new" ? [] : journal.filter((e) => e.task_id === selected.id)} registers={selected === "new" ? [] : registers.filter((e) => e.task_id === selected.id)}
+          audit={selected === "new" ? [] : audit.filter((a) => (a.table_name === "tasks" && a.record_id === selected.id) || (a.table_name === "expenses" && (a.new_data?.task_id === selected.id || a.old_data?.task_id === selected.id)))}
           people={people} currency={currency} projectId={projectId} projectCode={projectCode} canEdit={canEdit} defaults={{ start: projectStart, end: projectEnd }} spent={selected === "new" ? 0 : selected.spent} onClose={() => setSelected(null)} />
       )}
       {selMilestone && projectId && <MilestoneDrawer milestone={selMilestone === "new" ? null : (selMilestone.milestone ?? null)} projectId={projectId} defaultDate={projectEnd} onClose={() => setSelMilestone(null)} />}
@@ -243,14 +253,12 @@ export function Gantt({ rows, milestones, expenses = [], people, currency, canEd
   );
 }
 
-function LotBar({ fill, track, progress }: { fill: string; track: string; progress: number }) {
+function Bar({ fill, track, progress }: { fill: string; track: string; progress: number }) {
+  // Barre pleine de la couleur du type ; l'avancement assombrit la partie realisee
   return (
-    <>
-      <div className={`absolute inset-x-0 top-0 h-[7px] rounded-xs ${track}`} />
-      <div className={`absolute left-0 top-0 h-[7px] rounded-xs ${fill}`} style={{ width: `${progress}%` }} />
-      <div className="absolute -bottom-px left-0 h-0 w-0 border-l-[5px] border-t-[6px] border-l-transparent border-t-ink-muted" />
-      <div className="absolute -bottom-px right-0 h-0 w-0 border-r-[5px] border-t-[6px] border-r-transparent border-t-ink-muted" />
-    </>
+    <div className={`relative h-full w-full overflow-hidden rounded-full ${progress >= 100 ? "bg-ok" : fill}`}>
+      {progress > 0 && progress < 100 && <div className={`absolute inset-y-0 right-0 ${track}`} style={{ width: `${100 - progress}%` }} />}
+    </div>
   );
 }
 

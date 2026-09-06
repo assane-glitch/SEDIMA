@@ -3,6 +3,7 @@ import { Alert } from "@/components/ui";
 import { ExpenseForm } from "@/components/ExpenseForm";
 import { canSubmit, requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
+import { getLists } from "@/lib/reference";
 
 export const metadata = { title: "Journal des depenses" };
 
@@ -10,6 +11,7 @@ export default async function GlobalExpensePage({ searchParams }: { searchParams
   const { ok, error } = await searchParams;
   const profile = await requireProfile();
   const supabase = await createClient();
+  const lists = await getLists();
   const [{ data: projects }, { data: tasks }] = await Promise.all([
     supabase.from("projects").select("id,code,name,currency").neq("status", "hors_perimetre").neq("status", "cloture").order("code"),
     supabase.from("tasks").select("id,name,wbs_code,parent_id,project_id").order("sort_order"),
@@ -23,7 +25,7 @@ export default async function GlobalExpensePage({ searchParams }: { searchParams
       {error && <div className="mb-3"><Alert>{error}</Alert></div>}
       {canSubmit(profile) ? (
         <div className="card card-pad">
-          <ExpenseForm projects={projects ?? []} tasks={tasks ?? []} redirect="/forms/expense" mobile />
+          <ExpenseForm projects={projects ?? []} tasks={tasks ?? []} redirect="/forms/expense" mobile categories={lists.expense_category} statuses={lists.expense_status} />
         </div>
       ) : <Alert tone="warn">Votre compte est en lecture seule.</Alert>}
     </div>

@@ -4,9 +4,10 @@ import { ExpenseForm } from "@/components/ExpenseForm";
 import { ExpenseTable } from "@/components/ExpenseTable";
 import { describeAudit, relativeTime } from "@/lib/audit";
 import { formatDate, formatMoney } from "@/lib/format";
+import { excludedStatuses, getLists, labelOf, registerFields } from "@/lib/reference";
 import { canEdit, canSubmit, requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { REGISTER_TYPES, type AuditEntry, type Expense, type JournalEntry, type Milestone, type RegisterEntry } from "@/lib/types";
+import type { AuditEntry, Expense, JournalEntry, Milestone, RegisterEntry } from "@/lib/types";
 import { ProjectHeader } from "../ProjectHeader";
 import { ProjectTabs } from "../ProjectTabs";
 import { loadProject } from "../loadProject";
@@ -23,6 +24,8 @@ export default async function ProjectEventsPage({ params, searchParams }: { para
   const kind = (KINDS.some((k) => k.value === sp.type) ? sp.type : "all") as Kind;
   const profile = await requireProfile();
   const { project, tasks, people } = await loadProject(id);
+  const lists = await getLists();
+  const excluded = excludedStatuses(lists.expense_status);
   const supabase = await createClient();
   const [{ data: exp }, { data: jr }, { data: rg }, { data: ms }, { data: au }] = await Promise.all([
     supabase.from("expenses").select("*").eq("project_id", id).order("spent_on", { ascending: false }).order("created_at", { ascending: false }),
@@ -34,15 +37,16 @@ export default async function ProjectEventsPage({ params, searchParams }: { para
   const expenses = (exp ?? []) as Expense[];
   const who = new Map(people.map((p) => [p.id, p.full_name || p.email]));
   const taskName = new Map(tasks.map((t) => [t.id, `${t.wbs_code ? t.wbs_code + " · " : ""}${t.name}`]));
-  const typeLabel = new Map(REGISTER_TYPES.map((r) => [r.value, r.label]));
+  const typeLabel = new Map(lists.register_type.map((r) => [r.value, r.label]));
+  const fieldLabel = new Map(lists.register_type.flatMap((r) => registerFields(r).map((f) => [`${r.value}.${f.key}`, f.label] as [string, string])));
   const editor = canEdit(profile);
 
   // Fil unifie
   type Ev = { at: string; kind: Exclude<Kind, "all">; title: string; detail?: string; who?: string; tone?: string };
   const events: Ev[] = [
-    ...expenses.map((e) => ({ at: e.spent_on, kind: "expenses" as const, title: `${e.ref} · ${e.description || e.category} · ${formatMoney(Number(e.amount), project.currency)}`, detail: [e.supplier, e.task_id ? taskName.get(e.task_id) : "Projet entier", e.da_number].filter(Boolean).join(" · "), who: e.created_by ? who.get(e.created_by) : undefined, tone: e.status === "annulee" ? "alert" : e.status === "payee" ? "ok" : "neutral" })),
+    ...expenses.map((e) => ({ at: e.spent_on, kind: "expenses" as const, title: `${e.ref} · ${e.description || labelOf(lists.expense_category, e.category)} · ${formatMoney(Number(e.amount), project.currency)}`, detail: [e.supplier, e.task_id ? taskName.get(e.task_id) : "Projet entier", e.da_number].filter(Boolean).join(" · "), who: e.created_by ? who.get(e.created_by) : undefined, tone: excluded.has(e.status) ? "alert" : e.status === "payee" ? "ok" : "neutral" })),
     ...((jr ?? []) as JournalEntry[]).map((e) => ({ at: e.entry_date, kind: "journal" as const, title: e.content.length > 140 ? e.content.slice(0, 140) + "…" : e.content, detail: [e.location, e.task_id ? taskName.get(e.task_id) : ""].filter(Boolean).join(" · "), who: e.author_id ? who.get(e.author_id) : undefined })),
-    ...((rg ?? []) as RegisterEntry[]).map((e) => ({ at: e.entry_date, kind: "register" as const, title: `Registre ${typeLabel.get(e.register_type) ?? e.register_type}`, detail: Object.entries(e.data).map(([k, v]) => `${k} : ${String(v)}`).join(" · "), who: e.author_id ? who.get(e.author_id) : undefined })),
+    ...((rg ?? []) as RegisterEntry[]).map((e) => ({ at: e.entry_date, kind: "register" as const, title: `Registre ${typeLabel.get(e.register_type) ?? e.register_type}`, detail: Object.entries(e.data).map(([k, v]) => `${fieldLabel.get(`${e.register_type}.${k}`) ?? k} : ${String(v)}`).join(" · "), who: e.author_id ? who.get(e.author_id) : undefined })),
     ...((ms ?? []) as Milestone[]).map((m) => ({ at: m.reached_on ?? m.due_date, kind: "milestones" as const, title: `${m.reached_on ? "Jalon atteint" : "Jalon prevu"} · ${m.name}`, detail: m.notes, tone: m.reached_on ? "ok" : "neutral" })),
     ...((au ?? []) as AuditEntry[]).filter((a) => a.table_name !== "expenses" || a.action !== "insert").map((a) => { const d = describeAudit(a, project.currency); return { at: a.changed_at, kind: "changes" as const, title: `${(a.changed_by && who.get(a.changed_by)) || "Systeme"} ${d.what}`, detail: d.details.join(" · ") }; }),
   ].sort((a, b) => (a.at < b.at ? 1 : -1));
@@ -61,11 +65,11 @@ export default async function ProjectEventsPage({ params, searchParams }: { para
 
       {kind === "expenses" ? (
         <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-          <ExpenseTable expenses={expenses} currency={project.currency} taskName={taskName} canEdit={editor} />
+          <ExpenseTable expenses={expenses} currency={project.currency} taskName={taskName} canEdit={editor} categories={lists.expense_category} statuses={lists.expense_status} />
           {canSubmit(profile) && (
             <div className="card card-pad h-fit">
               <div className="card-title mb-3">Enregistrer une depense</div>
-              <ExpenseForm projects={[{ id, code: project.code, name: project.name, currency: project.currency }]} tasks={tasks.map((t) => ({ id: t.id, name: t.name, wbs_code: t.wbs_code, parent_id: t.parent_id, project_id: id }))} projectId={id} redirect={`/projects/${id}/events?type=expenses`} />
+              <ExpenseForm projects={[{ id, code: project.code, name: project.name, currency: project.currency }]} tasks={tasks.map((t) => ({ id: t.id, name: t.name, wbs_code: t.wbs_code, parent_id: t.parent_id, project_id: id }))} projectId={id} redirect={`/projects/${id}/events?type=expenses`} categories={lists.expense_category} statuses={lists.expense_status} />
             </div>
           )}
         </div>
