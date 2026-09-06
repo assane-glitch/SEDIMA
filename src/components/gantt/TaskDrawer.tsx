@@ -82,7 +82,18 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, regist
                 ) : (
                   <form action={(fd) => start(async () => { await setTaskProgress(fd); onClose(); })} className="flex items-end gap-4">
                     <input type="hidden" name="project_id" value={projectId} /><input type="hidden" name="id" value={task.id} />
-                    <Field label="Nouvelle valeur (%)"><input name="progress" type="number" min={0} max={100} value={progress} onChange={(e) => setProgress(e.target.value)} disabled={!canEdit} className="input !w-28 !text-[13px] font-bold" /></Field>
+                    <Field label="Nouvelle valeur (%)">
+                      <div className="flex items-center gap-1">
+                        <button type="button" disabled={!canEdit} onClick={() => setProgress(String(Math.max(0, progressNum - 10)))} className="btn-secondary !px-2 !py-[5px]" aria-label="Moins 10">−</button>
+                        <input name="progress" type="text" inputMode="numeric" pattern="[0-9]*" value={progress} disabled={!canEdit}
+                          onFocus={(e) => e.target.select()}
+                          onChange={(e) => { const d = e.target.value.replace(/[^\d]/g, "").replace(/^0+(?=\d)/, ""); setProgress(d === "" ? "" : String(Math.min(100, Number(d)))); }}
+                          onBlur={() => setProgress(String(progressNum))}
+                          className="input !w-20 text-center !text-[13px] font-bold" />
+                        <button type="button" disabled={!canEdit} onClick={() => setProgress(String(Math.min(100, progressNum + 10)))} className="btn-secondary !px-2 !py-[5px]" aria-label="Plus 10">+</button>
+                      </div>
+                      <div className="mt-1.5 flex gap-1">{[0, 25, 50, 75, 100].map((v) => <button key={v} type="button" disabled={!canEdit} onClick={() => setProgress(String(v))} className={`filter-chip !px-2 !py-[1px] ${progressNum === v ? "filter-chip-active" : ""}`}>{v}</button>)}</div>
+                    </Field>
                     <div className="pb-1.5 text-ink-muted">Valeur enregistree : <span className="text-[13px] font-bold text-ink">{task.progress} %</span></div>
                     <div className="flex-1" />
                     {canEdit && <button type="submit" disabled={pending || !changed} className="btn-primary">{pending ? "…" : "Enregistrer"}</button>}
