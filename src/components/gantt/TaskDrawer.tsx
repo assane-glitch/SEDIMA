@@ -100,7 +100,7 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, regist
                     <Field label="Fin reelle"><DateInput name="actual_end" value={actualEnd} onChange={(e) => setActualEnd(e.target.value)} disabled={!canEdit} className="input" /></Field>
                     {canEdit && <button type="submit" disabled={pending || !actualsChanged} className="btn-primary">{pending ? "…" : "Enregistrer"}</button>}
                   </div>
-                  <div className="hint mt-2">Planifie : {week(task.start_date)} → {week(task.end_date)}{task.baseline_start ? ` · Reference : ${week(task.baseline_start)} → ${week(task.baseline_end ?? task.baseline_start)}` : ""}. Le reel apparait en trait noir au-dessus de la barre du Gantt.</div>
+                  <div className="hint mt-2">Planifie : {week(task.start_date)} → {week(task.end_date)}{task.baseline_start ? ` · Reference : ${week(task.baseline_start)} → ${week(task.baseline_end ?? task.baseline_start)}` : ""}.</div>
                 </form>
               )}
 
