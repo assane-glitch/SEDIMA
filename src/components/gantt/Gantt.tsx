@@ -44,6 +44,15 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
   const [scaleChoice, setScaleChoice] = useState<Scale | "auto">("auto");
   const [showLinks, setShowLinks] = useState(true);
   const [showBaseline, setShowBaseline] = useState(false);
+  // Semaine surlignee (lundi en ISO), memorisee par projet
+  const HL_KEY = `sedima.gantt.hl.${projectId ?? "portfolio"}`;
+  const [hlWeek, setHlWeek] = useState<string | null>(null);
+  useEffect(() => { try { setHlWeek(localStorage.getItem(HL_KEY) || null); } catch {} }, [HL_KEY]);
+  const toggleHlWeek = (iso: string) => {
+    const d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+    const monday = d.toISOString().slice(0, 10);
+    setHlWeek((cur) => { const next = cur === monday ? null : monday; try { if (next) localStorage.setItem(HL_KEY, next); else localStorage.removeItem(HL_KEY); } catch {} return next; });
+  };
   const bodyRef = useRef<HTMLDivElement>(null);
   // Largeurs des colonnes de gauche, redimensionnables et memorisees
   const COLS_KEY = `sedima.gantt.cols.${mode}`;
@@ -90,15 +99,15 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
     const off = (d: Date) => Math.round((d.getTime() - start.getTime()) / MS_DAY) * px;
     const clampW = (a: Date, b: Date) => (Math.min(totalDays, Math.round((b.getTime() - start.getTime()) / MS_DAY)) - Math.max(0, Math.round((a.getTime() - start.getTime()) / MS_DAY))) * px;
     const bands: { left: number; width: number; label: string }[] = [];
-    const ticks: { left: number; width: number; label: string; major?: boolean }[] = [];
+    const ticks: { left: number; width: number; label: string; major?: boolean; iso?: string }[] = [];
     if (scale === "year") {
       for (const d = new Date(Date.UTC(start.getUTCFullYear(), 0, 1)); d <= end; d.setUTCFullYear(d.getUTCFullYear() + 1)) { const n = new Date(Date.UTC(d.getUTCFullYear() + 1, 0, 1)); bands.push({ left: Math.max(0, off(d)), width: clampW(d, n), label: String(d.getUTCFullYear()) }); }
       for (const d = new Date(Date.UTC(start.getUTCFullYear(), Math.floor(start.getUTCMonth() / 3) * 3, 1)); d <= end; d.setUTCMonth(d.getUTCMonth() + 3)) { const n = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 3, 1)); ticks.push({ left: off(d), width: Math.round((n.getTime() - d.getTime()) / MS_DAY) * px, label: `T${Math.floor(d.getUTCMonth() / 3) + 1}`, major: d.getUTCMonth() === 0 }); }
     } else {
       // Bandes = mois (avec l'annee), ticks = semaines ou jours
       for (const d = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1)); d <= end; d.setUTCMonth(d.getUTCMonth() + 1)) { const n = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)); bands.push({ left: Math.max(0, off(d)), width: clampW(d, n), label: d.toLocaleDateString("fr-FR", { month: scale === "month" ? "short" : "long", year: "numeric", timeZone: "UTC" }) }); }
-      if (scale === "day") for (const d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) ticks.push({ left: off(d), width: px, label: String(d.getUTCDate()), major: d.getUTCDay() === 1 });
-      else { const d = new Date(start); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); for (; d <= end; d.setUTCDate(d.getUTCDate() + 7)) ticks.push({ left: off(d), width: 7 * px, label: `S${isoWeek(d)}`, major: d.getUTCDate() <= 7 }); }
+      if (scale === "day") for (const d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) ticks.push({ left: off(d), width: px, label: String(d.getUTCDate()), major: d.getUTCDay() === 1, iso: d.toISOString().slice(0, 10) });
+      else { const d = new Date(start); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); for (; d <= end; d.setUTCDate(d.getUTCDate() + 7)) ticks.push({ left: off(d), width: 7 * px, label: `S${isoWeek(d)}`, major: d.getUTCDate() <= 7, iso: d.toISOString().slice(0, 10) }); }
     }
     return { bands, ticks };
   }, [rangeStart, rangeEnd, scale, px, totalDays]);
@@ -130,6 +139,7 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
 
   const todayX = x(t0) + px / 2;
   todayXRef.current = todayX;
+  const hl = hlWeek ? { left: x(hlWeek), width: 7 * px, label: `S${isoWeek(new Date(hlWeek + "T00:00:00Z"))} ${hlWeek.slice(0, 4)}` } : null;
   const gridH = (tops.length ? tops[tops.length - 1] + rowH(visible[visible.length - 1]) : HEAD_H + msRow * ROW_MS);
   const gridStyle = { gridTemplateColumns: widths.map((w) => `${w}px`).join(" ") };
   const leftPx = widths.reduce((a, b) => a + b, 0) + 16;
@@ -144,8 +154,11 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
         <div className="flex flex-wrap items-center gap-3">
           {(["good", "warn", "bad", "done", "idle"] as Health[]).map((h) => <span key={h} className="inline-flex items-center gap-1.5"><span className={`dot ${HEALTH_DOT[h]}`} />{HEALTH_LABELS[h]}</span>)}
           <span className="inline-flex items-center gap-1.5"><span className="inline-block h-2 w-2 rotate-45 border border-ink bg-surface" />Jalon</span>
-          {showBaseline && <span className="inline-flex items-center gap-1.5"><span className="inline-block h-[3px] w-4 rounded-full bg-line-soft" />Reference</span>}
+          {showBaseline && <span className="inline-flex items-center gap-1.5"><span className="inline-block h-[4px] w-4 rounded-full border border-ink-faint bg-surface" />Reference</span>}
           <span className="inline-flex items-center gap-1.5"><span className="inline-block h-[2px] w-4 rounded-full bg-ink" />Reel</span>
+          {hl
+            ? <button onClick={() => setHlWeek(null)} className="inline-flex cursor-pointer items-center gap-1.5 rounded-sm border border-accent bg-accent-bg px-1.5 py-[1px] font-semibold text-ink hover:bg-accent/30" title="Retirer le surlignage"><span className="inline-block h-2 w-2 border-x border-accent bg-accent-bg" />{hl.label} ×</button>
+            : <span className="text-ink-faint">Cliquer une semaine dans l&apos;en-tete pour la surligner</span>}
         </div>
         <div className="flex flex-wrap items-center gap-1">
           {(["day", "week", "month", "year"] as Scale[]).map((s) => <button key={s} onClick={() => setScaleChoice(s)} className={`filter-chip !py-[2px] ${scale === s ? "filter-chip-active" : ""}`}>{SCALE_LABEL[s]}</button>)}
@@ -181,7 +194,13 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
           <div ref={headRef} className="relative min-w-0 flex-1 overflow-hidden" style={{ height: HEAD_H }}>
             <div className="relative" style={{ width, height: HEAD_H }}>
               {bands.map((b, i) => <div key={i} className="absolute top-0 h-5 overflow-hidden whitespace-nowrap border-r border-line-hair px-1.5 text-[9.5px] font-semibold capitalize leading-5 text-ink-body" style={{ left: b.left, width: b.width }}>{b.width > 40 ? b.label : ""}</div>)}
-              {ticks.map((t, i) => { const cur = todayX >= t.left && todayX < t.left + t.width && scale !== "day"; return <div key={i} className={`absolute bottom-0 h-6 overflow-hidden border-r text-center text-[9px] leading-6 ${cur ? "rounded-t-xs bg-brand font-bold text-surface" : t.major ? "border-line-hair text-ink-faint" : "border-line-light text-ink-faint"}`} style={{ left: t.left, width: t.width }}>{t.width > 16 ? t.label : ""}</div>; })}
+              {ticks.map((t, i) => {
+                const cur = todayX >= t.left && todayX < t.left + t.width && scale !== "day";
+                const isHl = !!hl && t.iso !== undefined && t.left >= hl.left - 1 && t.left + t.width <= hl.left + hl.width + 1;
+                const cls = cur ? "border-x border-brand bg-alert-bg font-bold text-brand" : isHl ? "border-x border-accent bg-accent-bg font-bold text-ink" : t.major ? "border-r border-line-hair text-ink-faint" : "border-r border-line-light text-ink-faint";
+                return <div key={i} role={t.iso ? "button" : undefined} onClick={t.iso ? () => toggleHlWeek(t.iso!) : undefined} title={t.iso ? "Surligner cette semaine" : undefined}
+                  className={`absolute bottom-0 h-6 overflow-hidden text-center text-[9px] leading-6 ${t.iso ? "cursor-pointer hover:bg-surface-sub" : ""} ${cls}`} style={{ left: t.left, width: t.width }}>{t.width > 16 ? t.label : ""}</div>;
+              })}
               {scale === "day" && todayX >= 0 && todayX <= width && <div className="absolute bottom-0 -ml-[18px] rounded-xs bg-brand px-1 text-[8px] font-bold leading-[13px] text-surface" style={{ left: todayX }}>Auj.</div>}
             </div>
           </div>
@@ -228,7 +247,9 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
                 {milestones.map((m) => <Diamond key={m.id} m={m} left={x(m.due) + px / 2} top={ROW_MS / 2} t0={t0} onClick={() => canEdit && setSelMilestone(m)} />)}
               </div>}
               {/* Bande de la semaine en cours */}
-              {(() => { const wk = ticks.find((t) => todayX >= t.left && todayX < t.left + t.width); return wk && scale !== "day" ? <div className="absolute bottom-0 top-0 z-[6] border-l-2 border-r border-l-brand border-r-alert-bd bg-alert-bg/80" style={{ left: wk.left, width: wk.width }} /> : null; })()}
+              {(() => { const wk = ticks.find((t) => todayX >= t.left && todayX < t.left + t.width); return wk && scale !== "day" ? <div className="pointer-events-none absolute bottom-0 top-0 z-[6] border-x border-brand bg-alert-bg/70" style={{ left: wk.left, width: wk.width }} /> : null; })()}
+              {/* Semaine surlignee par l'utilisateur */}
+              {hl && hl.left + hl.width > 0 && hl.left < width && <div className="pointer-events-none absolute bottom-0 top-0 z-[6] border-x border-accent bg-accent-bg/70" style={{ left: hl.left, width: hl.width }} />}
               {ticks.map((t, i) => <div key={i} className={`absolute bottom-0 top-0 border-r ${t.major ? "border-line-hair" : "border-line-light"}`} style={{ left: t.left + t.width - 1 }} />)}
               {visible.map((r, i) => <div key={i} className={`absolute left-0 right-0 border-b border-line-light ${r.kind === "lot" ? "bg-surface-alt/50" : ""}`} style={{ top: rowTop(i) - HEAD_H, height: rowH(r) }} />)}
               {scale === "day" && todayX >= 0 && todayX <= width && <div className="absolute bottom-0 top-0 z-[6] w-px bg-brand" style={{ left: todayX }} />}
@@ -242,7 +263,7 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
                 const left = x(r.start), w = Math.max(px, (daysBetween(r.start, r.end) + 1) * px), top = rowTop(i) - HEAD_H;
                 const title = `${r.name}\n${formatDate(r.start)} → ${formatDate(r.end)}\n${r.progress} %${r.responsible ? `\n${r.responsible}` : ""}`;
                 const h = rowH(r), barH = 8, barTop = top + (h - barH) / 2 - (showBaseline && r.baselineStart ? 2 : 0);
-                const baseline = showBaseline && r.baselineStart && r.baselineEnd ? <div className="pointer-events-none absolute rounded-full bg-line-soft" title={`Reference : ${formatDate(r.baselineStart)} → ${formatDate(r.baselineEnd)}`} style={{ top: barTop + barH + 1, left: x(r.baselineStart), width: Math.max(px, (daysBetween(r.baselineStart, r.baselineEnd) + 1) * px), height: 3 }} /> : null;
+                const baseline = showBaseline && r.baselineStart && r.baselineEnd ? <div className="pointer-events-none absolute rounded-full border border-ink-faint bg-surface" title={`Reference : ${formatDate(r.baselineStart)} → ${formatDate(r.baselineEnd)}`} style={{ top: barTop + barH + 1, left: x(r.baselineStart), width: Math.max(px, (daysBetween(r.baselineStart, r.baselineEnd) + 1) * px), height: 4 }} /> : null;
                 const actual = r.actualStart ? <div className="pointer-events-none absolute rounded-full bg-ink" title={`Reel : ${formatDate(r.actualStart)} → ${r.actualEnd ? formatDate(r.actualEnd) : "en cours"}`} style={{ top: barTop - 3, left: x(r.actualStart), width: Math.max(2, (daysBetween(r.actualStart, r.actualEnd ?? t0) + 1) * px), height: 2 }} /> : null;
                 const atEdge = left + w + 60 > width;
                 const weeks = <span className="pointer-events-none absolute whitespace-nowrap text-[9px] tabular-nums text-ink-muted" style={atEdge ? { right: width - left + 5, top: barTop - 2 } : { left: left + w + 6, top: barTop - 2 }}>{weekLabel(r.start, r.end)}</span>;

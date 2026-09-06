@@ -25,6 +25,8 @@
   /* Marque : traits, points, marqueurs uniquement */
   --color-brand: #d71920;
   --color-brand-dark: #b3141a;
+  --color-accent: #fcd814;      /* jaune du logo SEDIMA */
+  --color-accent-bg: #fff8cc;
   /* Etats */
   --color-ok: #008000;
   --color-ok-bg: #f2f8f2;

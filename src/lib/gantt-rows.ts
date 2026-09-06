@@ -11,6 +11,7 @@ export function buildRows(tasks: Task[], spentByTask: Map<string, number>, who: 
     id: t.id, kind: "task", parentId, code: t.wbs_code, name: t.name, start: t.start_date, end: t.end_date, progress: t.progress,
     budget: Number(t.budget), spent: spentByTask.get(t.id) ?? 0, responsible: t.responsible_id ? who.get(t.responsible_id) : t.responsible_role,
     health: taskHealth({ status: t.status, progress: t.progress, start: t.start_date, end: t.end_date }), dependsOn: t.depends_on, linkType: t.link_type, task: t,
+    baselineStart: t.baseline_start, baselineEnd: t.baseline_end, actualStart: t.actual_start, actualEnd: t.actual_end,
   });
   for (const top of (byParent.get(null) ?? []).sort(sortT)) {
     const children = (byParent.get(top.id) ?? []).sort(sortT);
@@ -21,7 +22,12 @@ export function buildRows(tasks: Task[], spentByTask: Map<string, number>, who: 
     const progress = budget > 0 ? Math.round(childRows.reduce((s, c) => s + c.progress * c.budget, 0) / budget) : Math.round(childRows.reduce((s, c) => s + c.progress, 0) / childRows.length);
     const start = childRows.reduce((m, c) => (c.start < m ? c.start : m), childRows[0].start);
     const end = childRows.reduce((m, c) => (c.end > m ? c.end : m), childRows[0].end);
-    rows.push({ id: top.id, kind: "lot", code: top.wbs_code, name: top.name, start, end, progress, budget, spent,
+    const minOf = (v: (string | null | undefined)[]) => v.filter((d): d is string => !!d).sort()[0] ?? null;
+    const maxOf = (v: (string | null | undefined)[]) => v.filter((d): d is string => !!d).sort().at(-1) ?? null;
+    const baselineStart = minOf(childRows.map((c) => c.baselineStart)), baselineEnd = maxOf(childRows.map((c) => c.baselineEnd));
+    const actualStart = minOf(childRows.map((c) => c.actualStart));
+    const actualEnd = childRows.every((c) => !c.actualStart || c.actualEnd) ? maxOf(childRows.map((c) => c.actualEnd)) : null;
+    rows.push({ id: top.id, kind: "lot", code: top.wbs_code, name: top.name, start, end, progress, budget, spent, baselineStart, baselineEnd, actualStart, actualEnd,
       responsible: top.responsible_id ? who.get(top.responsible_id) : top.responsible_role, health: lotHealth(childRows.map((c) => c.health!)), task: { ...top, progress, budget, start_date: start, end_date: end } });
     rows.push(...childRows);
   }

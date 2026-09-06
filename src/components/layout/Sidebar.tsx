@@ -33,7 +33,7 @@ export function Sidebar({ groups, profile, signOut }: { groups: NavGroup[]; prof
   const Divider = () => <div className="my-2.5 h-px w-full bg-line-hair" />;
 
   return (
-    <aside className="sticky top-3 hidden h-[calc(100vh-1.5rem)] w-14 shrink-0 flex-col rounded-xl border border-line-hair bg-surface p-2 md:flex">
+    <aside className="sticky top-3 z-[35] hidden h-[calc(100vh-1.5rem)] w-14 shrink-0 flex-col rounded-xl border border-line-hair bg-surface p-2 md:flex">
       <nav className="flex flex-1 flex-col pt-1">
         {groups.map((group, gi) => (
           <div key={gi} className="flex flex-col gap-1.5">
