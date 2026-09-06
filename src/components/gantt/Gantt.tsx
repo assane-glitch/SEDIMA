@@ -170,7 +170,7 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
         <div className="sticky top-0 z-30 flex border-b border-line-hair bg-thead">
           <div className="relative grid shrink-0 overflow-hidden border-r-2 border-line px-2 eyebrow" style={{ ...gridStyle, width: leftPx, height: HEAD_H }}>
             {[mode === "project" ? "WBS" : "", mode === "project" ? "Lot / tache" : "Projet", mode === "project" ? "Responsable" : "Chef de projet", "Avanc.", "Budget (k FCFA)", "Depense (k FCFA)"].map((label, i) => (
-              <div key={i} className={`relative h-full truncate pr-2 leading-[44px] ${i >= 3 ? "text-right" : ""}`}>
+              <div key={i} className={`relative h-full truncate pr-3.5 leading-[44px] ${i >= 3 ? "text-right" : ""}`}>
                 {label}
                 <div onMouseDown={(e) => startResize(i, e)} className="group absolute -right-[3px] bottom-0 top-0 flex w-[7px] cursor-col-resize items-center justify-center" title="Glisser pour redimensionner">
                   <div className="h-5 w-px bg-line group-hover:w-[2px] group-hover:bg-ink-muted" />
@@ -212,9 +212,9 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
                       : <button onClick={() => setSelected(r)} className={`min-w-0 cursor-pointer truncate text-left ${isLot ? "font-bold text-ink" : "font-normal text-ink-body"}`}>{r.name}</button>}
                   </div>
                   <div className={`truncate pr-1 text-[10px] ${isLot ? "text-ink-body" : "text-ink-muted"}`}>{r.responsible || "—"}</div>
-                  <div className="text-right tabular-nums">{r.progress} %</div>
-                  <div className={`truncate text-right tabular-nums ${isLot ? "" : "text-ink-muted"}`}>{r.budget ? kMoney(r.budget) : "—"}</div>
-                  <div className={`truncate text-right tabular-nums ${over ? "font-bold text-alert" : isLot ? "" : "text-ink-muted"}`}>{r.spent ? kMoney(r.spent) : "—"}</div>
+                  <div className="pr-3.5 text-right tabular-nums">{r.progress} %</div>
+                  <div className={`truncate pr-3.5 text-right tabular-nums ${isLot ? "" : "text-ink-muted"}`}>{r.budget ? kMoney(r.budget) : "—"}</div>
+                  <div className={`truncate pr-3.5 text-right tabular-nums ${over ? "font-bold text-alert" : isLot ? "" : "text-ink-muted"}`}>{r.spent ? kMoney(r.spent) : "—"}</div>
                 </div>
               );
             })}

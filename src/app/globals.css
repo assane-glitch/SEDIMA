@@ -51,6 +51,7 @@
 /* Echelle compacte : 1rem = 13px, la plupart du texte reste entre 10 et 11 px */
 html { font-size: 13px; }
 html, body { height: 100%; }
+* { scrollbar-width: thin; }
 body { @apply bg-canvas text-ink antialiased; font-size: 13px; line-height: 1.45; }
 * { box-shadow: none !important; }
 
