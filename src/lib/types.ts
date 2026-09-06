@@ -127,18 +127,35 @@ export interface Task {
   confidence: string;
 }
 
+export type ExpenseStatus = "da_emise" | "commandee" | "livree" | "facturee" | "payee" | "annulee";
+
 export interface Expense {
   id: string;
+  ref: string;
   project_id: string;
   task_id: string | null;
   amount: number;
   spent_on: string;
   category: string;
   description: string;
+  supplier: string;
+  da_number: string;
+  status: ExpenseStatus;
   source: "web" | "mobile";
   created_by: string | null;
   created_at: string;
 }
+
+export const EXPENSE_STATUS_LABELS: Record<ExpenseStatus, string> = {
+  da_emise: "DA emise", commandee: "Commandee", livree: "Livree", facturee: "Facturee", payee: "Payee", annulee: "Annulee",
+};
+export const EXPENSE_STATUS_TONE: Record<ExpenseStatus, "neutral" | "info" | "ok" | "warn" | "alert"> = {
+  da_emise: "neutral", commandee: "info", livree: "info", facturee: "warn", payee: "ok", annulee: "alert",
+};
+export const EXPENSE_CATEGORIES: { value: string; label: string }[] = [
+  { value: "materiaux", label: "Materiaux" }, { value: "main_oeuvre", label: "Main d'oeuvre" }, { value: "equipement", label: "Equipement" },
+  { value: "transport", label: "Transport" }, { value: "services", label: "Services" }, { value: "etudes", label: "Etudes" }, { value: "general", label: "General" },
+];
 
 export interface JournalEntry {
   id: string;

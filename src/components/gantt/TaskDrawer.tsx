@@ -1,14 +1,13 @@
 "use client";
 import { useEffect, useState, useTransition } from "react";
-import { addExpense, deleteExpense, deleteTask, saveTask, setTaskProgress } from "@/app/(app)/projects/actions";
-import { formatDate, formatMoney, pct, today } from "@/lib/format";
-import { TASK_STATUS_LABELS, type Expense, type Profile, type Task } from "@/lib/types";
+import { deleteExpense, deleteTask, saveTask, setTaskProgress } from "@/app/(app)/projects/actions";
+import { ExpenseForm } from "@/components/ExpenseForm";
+import { formatDate, formatMoney, pct } from "@/lib/format";
+import { EXPENSE_STATUS_LABELS, TASK_STATUS_LABELS, type Expense, type Profile, type Task } from "@/lib/types";
 import { ProgressBar } from "@/components/ui";
 
-const CATEGORIES = [["materiaux", "Materiaux"], ["main_oeuvre", "Main d'oeuvre"], ["equipement", "Equipement"], ["transport", "Transport"], ["services", "Services"], ["general", "General"]];
-
-export function TaskDrawer({ task, isLot, lots, tasks, expenses, people, currency, projectId, canEdit, defaults, spent, onClose }: {
-  task: Task | null; isLot: boolean; lots: { id: string; name: string }[]; tasks: Task[]; expenses: Expense[]; people: Profile[]; currency: string; projectId: string; canEdit: boolean;
+export function TaskDrawer({ task, isLot, lots, tasks, expenses, people, currency, projectId, projectCode, canEdit, defaults, spent, onClose }: {
+  task: Task | null; isLot: boolean; lots: { id: string; name: string }[]; tasks: Task[]; expenses: Expense[]; people: Profile[]; currency: string; projectId: string; projectCode?: string; canEdit: boolean;
   defaults: { start: string; end: string }; spent: number; onClose: () => void;
 }) {
   const [pending, start] = useTransition();
@@ -64,17 +63,10 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, people, currenc
                 {!isLot && (Number(task.customs) > 0 || Number(task.vat) > 0) && <div className="hint mt-1">Douanes {formatMoney(Number(task.customs), currency)} · TVA {formatMoney(Number(task.vat), currency)} · TTC {formatMoney(budget + Number(task.customs) + Number(task.vat), currency)}</div>}
               </div>
               {!isLot && canEdit && (
-                <form action={(fd) => start(async () => { await addExpense(fd); onClose(); })} className="rounded-lg border border-line-hair p-3">
-                  <div className="eyebrow mb-2">Ajouter une depense</div>
-                  <input type="hidden" name="project_id" value={projectId} /><input type="hidden" name="task_id" value={task.id} /><input type="hidden" name="redirect" value="none" />
-                  <div className="grid grid-cols-2 gap-2">
-                    <div><label className="label">Montant ({currency})</label><input name="amount" type="number" min={0} step="1" required autoFocus className="input" /></div>
-                    <div><label className="label">Date</label><input name="spent_on" type="date" required defaultValue={today()} className="input" /></div>
-                    <div><label className="label">Categorie</label><select name="category" className="input">{CATEGORIES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
-                    <div><label className="label">Description</label><input name="description" placeholder="Fournisseur, objet" className="input" /></div>
-                  </div>
-                  <div className="mt-2 flex justify-end"><button type="submit" disabled={pending} className="btn-primary">{pending ? "…" : "Enregistrer la depense"}</button></div>
-                </form>
+                <div className="rounded-lg border border-line-hair p-3">
+                  <div className="eyebrow mb-2">Enregistrer une depense sur cette tache</div>
+                  <ExpenseForm projects={[{ id: projectId, code: projectCode ?? "", name: "", currency }]} tasks={[]} projectId={projectId} taskId={task.id} compact onSubmitted={onClose} />
+                </div>
               )}
               <div className="grid grid-cols-2 gap-2 text-ink-muted">
                 <div><div className="eyebrow">Statut</div><div className="text-ink">{TASK_STATUS_LABELS[task.status]}</div></div>
@@ -90,17 +82,19 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, people, currenc
             <div className="text-[10.5px]">
               {expenses.length === 0 ? <p className="hint">Aucune depense sur cette tache.</p> : (
                 <table className="tbl">
-                  <thead><tr><th>Date</th><th>Description</th><th className="num">Montant</th>{canEdit && <th />}</tr></thead>
+                  <thead><tr><th>ID</th><th>Designation</th><th>Date</th><th className="num">Montant</th><th>Statut</th>{canEdit && <th />}</tr></thead>
                   <tbody>
                     {expenses.map((e) => (
                       <tr key={e.id}>
+                        <td className="font-mono text-[9.5px] text-ink-muted">{e.ref}</td>
+                        <td>{e.description || <span className="text-ink-faint">{e.category}</span>}<div className="hint">{[e.supplier, e.da_number, e.category, e.created_by ? who.get(e.created_by) : ""].filter(Boolean).join(" · ")}</div></td>
                         <td className="whitespace-nowrap">{formatDate(e.spent_on)}</td>
-                        <td>{e.description || <span className="text-ink-faint">{e.category}</span>}<div className="hint">{e.category}{e.created_by ? ` · ${who.get(e.created_by)}` : ""}{e.source === "mobile" ? " · mobile" : ""}</div></td>
                         <td className="num">{formatMoney(Number(e.amount), currency)}</td>
+                        <td className="whitespace-nowrap text-ink-muted">{EXPENSE_STATUS_LABELS[e.status]}</td>
                         {canEdit && <td className="num"><button className="btn-ghost text-ink-faint hover:text-alert" title="Supprimer" onClick={() => { if (!confirm("Supprimer cette depense ?")) return; const fd = new FormData(); fd.set("project_id", projectId); fd.set("id", e.id); start(async () => { await deleteExpense(fd); onClose(); }); }}>×</button></td>}
                       </tr>
                     ))}
-                    <tr><td colSpan={2} className="font-bold">Total</td><td className="num font-bold">{formatMoney(expenses.reduce((s, e) => s + Number(e.amount), 0), currency)}</td>{canEdit && <td />}</tr>
+                    <tr><td colSpan={3} className="font-bold">Total hors annulees</td><td className="num font-bold">{formatMoney(expenses.filter((e) => e.status !== "annulee").reduce((s, e) => s + Number(e.amount), 0), currency)}</td><td />{canEdit && <td />}</tr>
                   </tbody>
                 </table>
               )}

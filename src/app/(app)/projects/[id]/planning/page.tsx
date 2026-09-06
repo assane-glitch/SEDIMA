@@ -24,7 +24,7 @@ export default async function ProjectPlanningPage({ params }: { params: Promise<
     <>
       <ProjectHeader project={project} manager={people.find((p) => p.id === project.manager_id)} />
       <ProjectTabs id={id} canEdit={editor} />
-      <Gantt mode="project" rows={rows} milestones={milestones} expenses={(exp ?? []) as Expense[]} people={people} currency={project.currency} canEdit={editor} projectId={id} projectStart={project.start_date} projectEnd={project.end_date} />
+      <Gantt mode="project" rows={rows} milestones={milestones} expenses={(exp ?? []) as Expense[]} people={people} currency={project.currency} canEdit={editor} projectId={id} projectCode={project.code} projectStart={project.start_date} projectEnd={project.end_date} />
     </>
   );
 }

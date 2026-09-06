@@ -14,6 +14,11 @@ export default async function FieldHome() {
     <div className="mx-auto max-w-lg">
       <PageHeader title="Formulaires" subtitle="Journal, registres et depenses : choisissez un projet" />
       <InstallHint />
+      <Link href="/forms/expense" className="card mb-4 flex items-center justify-between px-4 py-4 active:bg-surface-alt">
+        <div><div className="font-semibold">Journal des depenses</div><div className="hint">Enregistrer une depense sur n&apos;importe quel projet</div></div>
+        <span className="text-ink-faint">›</span>
+      </Link>
+      <div className="eyebrow mb-2">Journal, registre, depense par projet</div>
       {projects.length === 0 ? <Empty title="Aucun projet actif" /> : (
         <div className="space-y-2">
           {projects.map((p) => (

@@ -158,6 +158,9 @@ export async function addExpense(formData: FormData) {
     spent_on: str(formData, "spent_on"),
     category: str(formData, "category") || "general",
     description: str(formData, "description"),
+    supplier: str(formData, "supplier"),
+    da_number: str(formData, "da_number"),
+    status: str(formData, "status") || "facturee",
     source: str(formData, "source") === "mobile" ? "mobile" : "web",
     created_by: profile.id,
   });
@@ -166,6 +169,20 @@ export async function addExpense(formData: FormData) {
   revalidatePath(`/projects/${projectId}`);
   revalidatePath("/dashboard");
   redirect(`${back}?ok=1`);
+}
+
+export async function updateExpense(formData: FormData) {
+  const profile = await requireProfile();
+  if (!canEdit(profile)) return;
+  const projectId = str(formData, "project_id");
+  const id = str(formData, "id");
+  const supabase = await createClient();
+  const patch: Record<string, unknown> = {};
+  for (const k of ["description", "supplier", "da_number", "category", "status", "spent_on"]) if (formData.has(k)) patch[k] = str(formData, k);
+  if (formData.has("amount")) patch.amount = num(formData, "amount");
+  if (formData.has("task_id")) patch.task_id = str(formData, "task_id") || null;
+  await supabase.from("expenses").update(patch).eq("id", id);
+  for (const p of [`/projects/${projectId}`, `/projects/${projectId}/planning`, `/projects/${projectId}/budget`, `/projects/${projectId}/events`, "/dashboard"]) revalidatePath(p);
 }
 
 export async function deleteExpense(formData: FormData) {
