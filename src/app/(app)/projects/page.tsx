@@ -6,7 +6,7 @@ import { HEALTH_DOT, HEALTH_LABELS, projectHealth } from "@/lib/health";
 import { canEdit, requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { ViewToggle } from "./ViewToggle";
-import { CATEGORY_LABELS, PROJECT_CATEGORIES, PROJECT_STATUS_LABELS, PROJECT_STATUS_TONE, type Profile, type Project, type ProjectStats } from "@/lib/types";
+import { PROJECT_CATEGORIES, PROJECT_STATUS_LABELS, PROJECT_STATUS_TONE, type Profile, type Project, type ProjectStats } from "@/lib/types";
 
 export const metadata = { title: "Projets" };
 
@@ -55,18 +55,8 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
     const s = u.toString();
     return `/projects${s ? `?${s}` : ""}`;
   };
-  const Th = ({ col, children, className = "" }: { col: typeof SORTS[number]; children: React.ReactNode; className?: string }) => {
-    const active = sort === col;
-    const nextDir = active && dir === "asc" ? "desc" : active && dir === "desc" ? "asc" : col === "name" ? "asc" : "desc";
-    return (
-      <th className={`px-4 py-2 ${className}`}>
-        <Link href={link({ sort: col, dir: nextDir })} className={`inline-flex items-center gap-1 hover:text-ink ${active ? "text-ink" : ""}`}>
-          {children}{active && <span className="text-[10px]">{dir === "asc" ? "▲" : "▼"}</span>}
-        </Link>
-      </th>
-    );
-  };
-
+  const SORT_LABELS: Record<typeof SORTS[number], string> = { name: "Nom", start_date: "Date de debut", end_date: "Date de fin", progress: "Avancement", budget: "Budget", spent: "Depense", status: "Statut" };
+  const buckets = PROJECT_CATEGORIES.map((c) => ({ ...c, rows: rows.filter((r) => r.p.category === c.value) })).filter((b) => b.rows.length > 0);
   return (
     <>
       <PageHeader title="Projets" subtitle={`${rows.length} projet${rows.length > 1 ? "s" : ""} · budget ${formatMoney(totalBudget)} · depense ${formatMoney(totalSpent)} (${pct(totalSpent, totalBudget)} %)`}
@@ -74,8 +64,6 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
 
       <form className="mb-3 flex flex-wrap items-center gap-2" action="/projects">
         {sp.category && <input type="hidden" name="category" value={sp.category} />}
-        {sp.sort && <input type="hidden" name="sort" value={sp.sort} />}
-        {sp.dir && <input type="hidden" name="dir" value={sp.dir} />}
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Icon name="search" className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-ink-faint" />
           <input name="q" defaultValue={q} placeholder="Rechercher un projet ou un code" className="input !pl-9" />
@@ -88,6 +76,8 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
           <option value="">Tous les chefs de projet</option>
           {managers.map((m) => <option key={m.id} value={m.id}>{m.full_name || m.email}</option>)}
         </select>
+        <select name="sort" defaultValue={sort} className="input !w-auto">{SORTS.map((k) => <option key={k} value={k}>Trier par {SORT_LABELS[k].toLowerCase()}</option>)}</select>
+        <select name="dir" defaultValue={dir} className="input !w-auto"><option value="asc">Croissant</option><option value="desc">Decroissant</option></select>
         <button className="btn-secondary">Filtrer</button>
         {(q || sp.status || sp.manager || sp.category) && <Link href="/projects" className="text-[10px] text-ink-muted hover:text-ink">Effacer</Link>}
       </form>
@@ -103,48 +93,51 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
       {rows.length === 0 ? (
         <Empty title={q || sp.category || sp.status || sp.manager ? "Aucun projet ne correspond" : "Aucun projet"} hint={canEdit(profile) && !q ? "Creez votre premier projet." : undefined} action={canEdit(profile) && !q ? { href: "/projects/new", label: "Creer un projet" } : undefined} />
       ) : (
-        <div className="card overflow-x-auto">
-          <table className="tbl">
-            <thead>
-              <tr>
-                <Th col="name">Projet</Th>
-                <th className="hidden px-4 py-2 md:table-cell">Chef de projet</th>
-                <Th col="end_date" className="hidden md:table-cell">Periode</Th>
-                <Th col="progress">Avancement</Th>
-                <Th col="budget" className="hidden text-right lg:table-cell">Budget</Th>
-                <Th col="spent" className="text-right">Depense</Th>
-                <Th col="status" className="hidden md:table-cell">Statut</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(({ p, s, health }) => {
-                const spent = Number(s?.spent ?? 0); const over = spent > Number(p.budget) && Number(p.budget) > 0;
-                const manager = p.manager_id ? peopleMap.get(p.manager_id) : undefined;
-                return (
-                  <tr key={p.id} className="hover:bg-surface-alt">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <CategoryIcon category={p.category} className="h-7 w-7 shrink-0 opacity-80" />
-                        <div className="min-w-0">
-                          <Link href={`/projects/${p.id}`} className="font-semibold text-ink-900 hover:text-ink hover:underline">{p.name}</Link>
-                          <div className="flex items-center gap-1.5 text-[10px] text-ink-muted">
-                            <span className={`dot ${HEALTH_DOT[health]}`} title={HEALTH_LABELS[health]} />
-                            {p.code} · {CATEGORY_LABELS[p.category]}{s?.late_count ? ` · ${s.late_count} en retard` : ""}
-                          </div>
+        <div className="space-y-6">
+          {buckets.map((b) => {
+            const bBudget = b.rows.reduce((t, r) => t + Number(r.p.budget), 0), bSpent = b.rows.reduce((t, r) => t + Number(r.s?.spent ?? 0), 0), bLate = b.rows.reduce((t, r) => t + Number(r.s?.late_count ?? 0), 0);
+            return (
+              <section key={b.value}>
+                <div className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-line-hair pb-1.5">
+                  <div className="flex items-center gap-2"><CategoryIcon category={b.value} className="h-5 w-5 opacity-80" /><h2 className="text-[13.5px] font-bold text-ink">{b.label}</h2><span className="text-[10.5px] text-ink-faint">{b.rows.length} projet{b.rows.length > 1 ? "s" : ""}</span></div>
+                  <div className="ml-auto flex items-center gap-3 text-[10.5px] text-ink-muted tabular-nums"><span>Budget <span className="font-semibold text-ink">{formatMoney(bBudget)}</span></span><span>Engage <span className="font-semibold text-ink">{formatMoney(bSpent)}</span> ({pct(bSpent, bBudget)} %)</span>{bLate > 0 && <span className="font-semibold text-alert">{bLate} retard{bLate > 1 ? "s" : ""}</span>}</div>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                  {b.rows.map(({ p, s, health }) => {
+                    const budget = Number(p.budget), spent = Number(s?.spent ?? 0), progress = Number(s?.progress ?? 0), over = spent > budget && budget > 0;
+                    const manager = p.manager_id ? peopleMap.get(p.manager_id) : undefined;
+                    return (
+                      <Link key={p.id} href={`/projects/${p.id}`} className="card flex flex-col gap-2.5 px-[15px] pb-[13px] pt-[12px] transition-colors hover:border-line hover:bg-surface-alt">
+                        <div className="flex items-center gap-2">
+                          <span className={`dot ${HEALTH_DOT[health]}`} title={HEALTH_LABELS[health]} />
+                          <span className="font-mono text-[10px] font-semibold text-ink-muted">{p.code}</span>
+                          <span className="ml-auto"><Badge tone={PROJECT_STATUS_TONE[p.status]}>{PROJECT_STATUS_LABELS[p.status]}</Badge></span>
                         </div>
-                      </div>
-                    </td>
-                    <td className="hidden px-4 py-3 md:table-cell">{manager?.full_name || manager?.email || p.manager_name || "—"}</td>
-                    <td className="hidden whitespace-nowrap px-4 py-3 text-ink-body md:table-cell">{formatDate(p.start_date)} → {formatDate(p.end_date)}</td>
-                    <td className="px-4 py-3"><div className="flex items-center gap-2"><div className="w-24"><ProgressBar value={Number(s?.progress ?? 0)} tone={health === "bad" ? "bad" : health === "warn" ? "warn" : "good"} /></div><span className="text-[10px] tabular-nums">{Number(s?.progress ?? 0)} %</span></div></td>
-                    <td className="hidden px-4 py-3 text-right tabular-nums lg:table-cell">{formatMoney(Number(p.budget), p.currency)}</td>
-                    <td className={`px-4 py-3 text-right tabular-nums ${over ? "font-semibold text-ink" : ""}`}>{formatMoney(spent, p.currency)}<div className="text-[11px] text-ink-faint">{pct(spent, Number(p.budget))} %</div></td>
-                    <td className="hidden px-4 py-3 md:table-cell"><Badge tone={PROJECT_STATUS_TONE[p.status]}>{PROJECT_STATUS_LABELS[p.status]}</Badge></td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                        <div className="min-h-[34px] text-[12.5px] font-bold leading-snug text-ink">{p.name}</div>
+                        <div className="flex items-center justify-between gap-2 text-[10px] text-ink-muted">
+                          <span className="truncate">{manager?.full_name || manager?.email || p.manager_name || "Chef de projet a designer"}</span>
+                          <span className="shrink-0 tabular-nums">{formatDate(p.start_date)} → {formatDate(p.end_date)}</span>
+                        </div>
+                        <div>
+                          <div className="mb-1 flex items-center justify-between text-[10px]"><span className="text-ink-faint">Avancement</span><span className="font-semibold tabular-nums">{progress} %</span></div>
+                          <ProgressBar value={progress} tone={health === "bad" ? "bad" : health === "warn" ? "warn" : "good"} />
+                        </div>
+                        <div>
+                          <div className="mb-1 flex items-center justify-between text-[10px]"><span className="text-ink-faint">Engage / budget</span><span className={`tabular-nums ${over ? "font-semibold text-alert" : ""}`}>{formatMoney(spent, p.currency)} <span className="text-ink-faint">/ {formatMoney(budget, p.currency)}</span></span></div>
+                          <div className="relative h-[5px] w-full overflow-hidden rounded-full bg-line-light"><div className={`absolute inset-y-0 left-0 rounded-full ${over ? "bg-alert" : "bg-ink-muted"}`} style={{ width: `${Math.min(100, pct(spent, budget))}%` }} /></div>
+                        </div>
+                        <div className="flex items-center gap-3 text-[10px] text-ink-faint">
+                          <span>{Number(s?.task_count ?? 0)} tache{Number(s?.task_count ?? 0) > 1 ? "s" : ""}</span>
+                          {Number(s?.late_count) > 0 && <span className="font-semibold text-alert">{s!.late_count} en retard</span>}
+                          {s?.next_milestone && <span className="ml-auto">Jalon {formatDate(s.next_milestone)}</span>}
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </section>
+            );
+          })}
         </div>
       )}
     </>
