@@ -73,6 +73,8 @@ export async function saveTask(formData: FormData) {
   const projectId = str(formData, "project_id");
   const id = str(formData, "id");
   const supabase = await createClient();
+  const parentId = str(formData, "parent_id") || null;
+  const dependsOn = str(formData, "depends_on") || null;
   const payload = {
     project_id: projectId,
     name: str(formData, "name"),
@@ -80,8 +82,12 @@ export async function saveTask(formData: FormData) {
     start_date: str(formData, "start_date"),
     end_date: str(formData, "end_date"),
     progress: Math.max(0, Math.min(100, Math.round(num(formData, "progress")))),
-    budget: num(formData, "budget"),
+    ...(formData.has("budget") ? { budget: num(formData, "budget") } : {}),
     responsible_id: str(formData, "responsible_id") || null,
+    responsible_role: str(formData, "responsible_role"),
+    wbs_code: str(formData, "wbs_code") || null,
+    ...(formData.has("parent_id") ? { parent_id: parentId === id ? null : parentId } : {}),
+    ...(formData.has("depends_on") ? { depends_on: dependsOn === id ? null : dependsOn, link_type: dependsOn ? (str(formData, "link_type") || "FD") : "" } : {}),
     notes: str(formData, "notes"),
   };
   if (id) {
@@ -91,6 +97,7 @@ export async function saveTask(formData: FormData) {
     await supabase.from("tasks").insert({ ...payload, sort_order: (last?.sort_order ?? 0) + 10 });
   }
   revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/planning`);
   revalidatePath("/dashboard");
 }
 

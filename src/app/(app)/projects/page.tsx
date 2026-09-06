@@ -5,6 +5,7 @@ import { formatDate, formatMoney, pct } from "@/lib/format";
 import { HEALTH_DOT, HEALTH_LABELS, projectHealth } from "@/lib/health";
 import { canEdit, requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
+import { ViewToggle } from "./ViewToggle";
 import { CATEGORY_LABELS, PROJECT_CATEGORIES, PROJECT_STATUS_LABELS, PROJECT_STATUS_TONE, type Profile, type Project, type ProjectStats } from "@/lib/types";
 
 export const metadata = { title: "Projets" };
@@ -69,7 +70,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
   return (
     <>
       <PageHeader title="Projets" subtitle={`${rows.length} projet${rows.length > 1 ? "s" : ""} · budget ${formatMoney(totalBudget)} · depense ${formatMoney(totalSpent)} (${pct(totalSpent, totalBudget)} %)`}
-        actions={canEdit(profile) && <Link href="/projects/new" className="btn-primary"><Icon name="plus" className="h-4 w-4" />Nouveau projet</Link>} />
+        actions={<><ViewToggle view="list" />{canEdit(profile) && <Link href="/projects/new" className="btn-primary">+ Nouveau projet</Link>}</>} />
 
       <form className="mb-3 flex flex-wrap items-center gap-2" action="/projects">
         {sp.category && <input type="hidden" name="category" value={sp.category} />}
