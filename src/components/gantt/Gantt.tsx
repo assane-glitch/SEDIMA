@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { addDays, daysBetween, formatDate, today } from "@/lib/format";
+import { freezeBaseline } from "@/app/(app)/projects/actions";
 import { HEALTH_DOT, HEALTH_LABELS, type Health } from "@/lib/health";
 import type { AuditEntry, Expense, JournalEntry, Milestone, Profile, RegisterEntry, Task } from "@/lib/types";
 import type { Lists } from "@/lib/reference-types";
@@ -33,9 +34,9 @@ function isoWeek(d: Date) {
   return Math.ceil(((t.getTime() - y0.getTime()) / MS_DAY + 1) / 7);
 }
 
-export function Gantt({ rows, milestones, expenses = [], journal = [], registers = [], audit = [], lists, people, currency, canEdit, projectId, projectCode, projectStart, projectEnd, mode }: {
+export function Gantt({ rows, milestones, expenses = [], journal = [], registers = [], audit = [], lists, people, currency, canEdit, projectId, projectCode, projectStart, projectEnd, mode, pendingChanges = 0 }: {
   rows: GanttRow[]; milestones: GanttMilestone[]; expenses?: Expense[]; journal?: JournalEntry[]; registers?: RegisterEntry[]; audit?: AuditEntry[]; lists?: Lists; people: Profile[]; currency: string; canEdit: boolean;
-  projectId?: string; projectCode?: string; projectStart: string; projectEnd: string; mode: "project" | "portfolio";
+  projectId?: string; projectCode?: string; projectStart: string; projectEnd: string; mode: "project" | "portfolio"; pendingChanges?: number;
 }) {
   const t0 = today();
   const [selected, setSelected] = useState<GanttRow | "new" | null>(null);
@@ -44,6 +45,18 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
   const [scaleChoice, setScaleChoice] = useState<Scale | "auto">("auto");
   const [showLinks, setShowLinks] = useState(true);
   const [showBaseline, setShowBaseline] = useState(false);
+  const BL_KEY = `sedima.gantt.baseline.${projectId ?? "portfolio"}`;
+  useEffect(() => { try { setShowBaseline(localStorage.getItem(BL_KEY) === "1"); } catch {} }, [BL_KEY]);
+  const toggleBaseline = () => setShowBaseline((v) => { try { localStorage.setItem(BL_KEY, v ? "0" : "1"); } catch {} return !v; });
+  // Ecart au planning de reference (jours entre la fin de reference et la fin actuelle ; positif = retard)
+  const driftOf = (r: GanttRow) => (r.baselineEnd ? daysBetween(r.baselineEnd, r.end) : null);
+  const hasBaseline = rows.some((r) => !!r.baselineStart);
+  const blSummary = useMemo(() => {
+    const tasks = rows.filter((r) => r.kind === "task" && r.baselineEnd);
+    const late = tasks.filter((r) => driftOf(r)! > 0).length, early = tasks.filter((r) => driftOf(r)! < 0).length;
+    const endNow = rows.reduce((m, r) => (r.end > m ? r.end : m), ""), endRef = rows.reduce((m, r) => (r.baselineEnd && r.baselineEnd > m ? r.baselineEnd : m), "");
+    return { late, early, endDelta: endNow && endRef ? daysBetween(endRef, endNow) : 0 };
+  }, [rows]);
   // Semaine surlignee (lundi en ISO), memorisee par projet
   const HL_KEY = `sedima.gantt.hl.${projectId ?? "portfolio"}`;
   const [hlWeek, setHlWeek] = useState<string | null>(null);
@@ -55,8 +68,8 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
   };
   const bodyRef = useRef<HTMLDivElement>(null);
   // Largeurs des colonnes de gauche, redimensionnables et memorisees
-  const COLS_KEY = `sedima.gantt.cols.${mode}`;
-  const defaultWidths = mode === "project" ? [44, 250, 116, 52, 92, 92] : [18, 280, 120, 52, 100, 100];
+  const COLS_KEY = `sedima.gantt.cols2.${mode}`;
+  const defaultWidths = mode === "project" ? [44, 250, 116, 52, 92, 92, 66] : [18, 280, 120, 52, 100, 100];
   const [widths, setWidths] = useState<number[]>(defaultWidths);
   useEffect(() => { try { const v = JSON.parse(localStorage.getItem(COLS_KEY) ?? "null"); if (Array.isArray(v) && v.length === defaultWidths.length) setWidths(v); } catch {} }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const startResize = (i: number, e: React.MouseEvent) => {
@@ -141,8 +154,11 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
   todayXRef.current = todayX;
   const hl = hlWeek ? { left: x(hlWeek), width: 7 * px, label: `S${isoWeek(new Date(hlWeek + "T00:00:00Z"))} ${hlWeek.slice(0, 4)}` } : null;
   const gridH = (tops.length ? tops[tops.length - 1] + rowH(visible[visible.length - 1]) : HEAD_H + msRow * ROW_MS);
-  const gridStyle = { gridTemplateColumns: widths.map((w) => `${w}px`).join(" ") };
-  const leftPx = widths.reduce((a, b) => a + b, 0) + 16;
+  const showDrift = mode === "project" && showBaseline;
+  const colsShown = showDrift ? widths : widths.slice(0, 6);
+  const gridStyle = { gridTemplateColumns: colsShown.map((w) => `${w}px`).join(" ") };
+  const leftPx = colsShown.reduce((a, b) => a + b, 0) + 16;
+  const driftCell = (r: GanttRow) => { const d = driftOf(r); if (d === null) return <span className="text-ink-faint">—</span>; if (d === 0) return <span className="text-ink-faint">=</span>; return <span className={`font-semibold ${d > 0 ? "text-alert" : "text-ok"}`}>{d > 0 ? "+" : "−"}{Math.abs(d)} j</span>; };
   const headRef = useRef<HTMLDivElement>(null);
   const kMoney = (v: number) => `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(Math.round(v / 1000))} k`;
   const weekLabel = (a: string, b: string) => `S${isoWeek(new Date(a + "T00:00:00Z"))} → S${isoWeek(new Date(b + "T00:00:00Z"))}`;
@@ -155,6 +171,7 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
           {(["good", "warn", "bad", "done", "idle"] as Health[]).map((h) => <span key={h} className="inline-flex items-center gap-1.5"><span className={`dot ${HEALTH_DOT[h]}`} />{HEALTH_LABELS[h]}</span>)}
           <span className="inline-flex items-center gap-1.5"><span className="inline-block h-2 w-2 rotate-45 border border-ink bg-surface" />Jalon</span>
           {showBaseline && <span className="inline-flex items-center gap-1.5"><span className="inline-block h-[4px] w-4 rounded-full border border-ink-faint bg-surface" />Reference</span>}
+          {showBaseline && hasBaseline && <span className="inline-flex items-center gap-2 rounded-sm border border-line-hair bg-surface-sub px-1.5 py-[1px] font-semibold text-ink-body"><span>vs reference :</span><span className={blSummary.late ? "text-alert" : ""}>{blSummary.late} en retard</span><span className={blSummary.early ? "text-ok" : ""}>{blSummary.early} en avance</span><span className={blSummary.endDelta > 0 ? "text-alert" : blSummary.endDelta < 0 ? "text-ok" : ""}>fin {blSummary.endDelta > 0 ? "+" : blSummary.endDelta < 0 ? "−" : "="}{blSummary.endDelta ? `${Math.abs(blSummary.endDelta)} j` : ""}</span></span>}
           {hl && <button onClick={() => setHlWeek(null)} className="inline-flex cursor-pointer items-center gap-1.5 rounded-sm border border-accent bg-accent-bg px-1.5 py-[1px] font-semibold text-ink hover:bg-accent/30" title="Retirer le surlignage"><span className="inline-block h-2 w-2 border-x border-accent bg-accent-bg" />{hl.label} ×</button>}
         </div>
         <div className="flex shrink-0 items-center gap-1">
@@ -165,7 +182,8 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
             <button onClick={() => setCollapsed(allCollapsed ? new Set() : new Set(lots.map((l) => l.id)))} className="btn-secondary !py-[2px]">{allCollapsed ? "+ Tout deplier" : "− Tout replier"}</button>
           </>}
           {mode === "project" && <button onClick={() => setShowLinks((v) => !v)} className={`btn-secondary !py-[2px] ${showLinks ? "!bg-surface-sub" : ""}`}>⇢ Liens</button>}
-          {mode === "project" && <button onClick={() => setShowBaseline((v) => !v)} className={`btn-secondary !py-[2px] ${showBaseline ? "!bg-surface-sub" : ""}`} title="Afficher le planning de reference sous chaque barre">▭ Reference</button>}
+          {mode === "project" && <button onClick={toggleBaseline} className={`btn-secondary !py-[2px] ${showBaseline ? "!bg-surface-sub" : ""}`} title="Comparer au planning de reference : barre fantome sous chaque barre et colonne d'ecart">▭ Reference</button>}
+          {mode === "project" && projectId && <Link href={`/projects/${projectId}/changes`} className={`btn-secondary !py-[2px] ${pendingChanges ? "!border-accent !bg-accent-bg" : ""}`} title="Registre des demandes de changement de la reference">Changements{pendingChanges ? ` · ${pendingChanges} en attente` : ""}</Link>}
           {canEdit && mode === "project" && <>
             <span className="mx-1 h-4 w-px bg-line-hair" />
             <button onClick={() => setSelMilestone("new")} className="btn-secondary !py-[2px]">+ Jalon</button>
@@ -174,12 +192,18 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
         </div>
       </div>
 
+      {mode === "project" && projectId && rows.length > 0 && !hasBaseline && (
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-accent bg-accent-bg px-3 py-1.5 text-[10.5px]">
+          <span><span className="font-semibold">Aucun planning de reference.</span> Figez le planning actuel pour pouvoir ensuite mesurer les ecarts ; toute modification ulterieure passera par le registre des changements.</span>
+          {canEdit && <form action={freezeBaseline}><input type="hidden" name="id" value={projectId} /><button className="btn-primary !py-[2px]">▭ Figer le planning actuel comme reference</button></form>}
+        </div>
+      )}
       {/* Corps : defilement vertical global ; seules les barres defilent horizontalement */}
       <div className="relative overflow-y-auto" style={{ maxHeight: "calc(100vh - 210px)" }}>
         {/* En-tete fige : colonnes a gauche, graduations a droite (synchronisees avec le defilement des barres) */}
         <div className="sticky top-0 z-30 flex border-b border-line-hair bg-thead">
           <div className="relative grid shrink-0 overflow-hidden border-r-2 border-line px-2 eyebrow" style={{ ...gridStyle, width: leftPx, height: HEAD_H }}>
-            {[mode === "project" ? "WBS" : "", mode === "project" ? "Lot / tache" : "Projet", mode === "project" ? "Responsable" : "Chef de projet", "Avanc.", "Budget (k FCFA)", "Depense (k FCFA)"].map((label, i) => (
+            {[mode === "project" ? "WBS" : "", mode === "project" ? "Lot / tache" : "Projet", mode === "project" ? "Responsable" : "Chef de projet", "Avanc.", "Budget (k FCFA)", "Depense (k FCFA)", ...(showDrift ? ["Ecart ref."] : [])].map((label, i) => (
               <div key={i} className={`relative h-full truncate pr-3.5 leading-[44px] ${i >= 3 ? "text-right" : ""}`}>
                 {label}
                 <div onMouseDown={(e) => startResize(i, e)} className="group absolute -right-[3px] bottom-0 top-0 flex w-[7px] cursor-col-resize items-center justify-center" title="Glisser pour redimensionner">
@@ -231,6 +255,7 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
                   <div className="pr-3.5 text-right tabular-nums">{r.progress} %</div>
                   <div className={`truncate pr-3.5 text-right tabular-nums ${isLot ? "" : "text-ink-muted"}`}>{r.budget ? kMoney(r.budget) : "—"}</div>
                   <div className={`truncate pr-3.5 text-right tabular-nums ${over ? "font-bold text-alert" : isLot ? "" : "text-ink-muted"}`}>{r.spent ? kMoney(r.spent) : "—"}</div>
+                  {showDrift && <div className="pr-3.5 text-right tabular-nums" title={r.baselineEnd ? `Reference : ${formatDate(r.baselineStart!)} → ${formatDate(r.baselineEnd)}` : "Pas de reference"}>{driftCell(r)}</div>}
                 </div>
               );
             })}
@@ -260,7 +285,7 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
                 const left = x(r.start), w = Math.max(px, (daysBetween(r.start, r.end) + 1) * px), top = rowTop(i) - HEAD_H;
                 const title = `${r.name}\n${formatDate(r.start)} → ${formatDate(r.end)}\n${r.progress} %${r.responsible ? `\n${r.responsible}` : ""}`;
                 const h = rowH(r), barH = 8, barTop = top + (h - barH) / 2 - (showBaseline && r.baselineStart ? 2 : 0);
-                const baseline = showBaseline && r.baselineStart && r.baselineEnd ? <div className="pointer-events-none absolute rounded-full border border-ink-faint bg-surface" title={`Reference : ${formatDate(r.baselineStart)} → ${formatDate(r.baselineEnd)}`} style={{ top: barTop + barH + 1, left: x(r.baselineStart), width: Math.max(px, (daysBetween(r.baselineStart, r.baselineEnd) + 1) * px), height: 4 }} /> : null;
+                const baseline = showBaseline && r.baselineStart && r.baselineEnd ? <div className={`pointer-events-none absolute rounded-full bg-surface ${r.baselineStart !== r.start || r.baselineEnd !== r.end ? "border border-dashed border-ink-muted" : "border border-ink-faint"}`} title={`Reference : ${formatDate(r.baselineStart)} → ${formatDate(r.baselineEnd)}`} style={{ top: barTop + barH + 1, left: x(r.baselineStart), width: Math.max(px, (daysBetween(r.baselineStart, r.baselineEnd) + 1) * px), height: 4 }} /> : null;
                 const atEdge = left + w + 60 > width;
                 const weeks = <span className="pointer-events-none absolute whitespace-nowrap text-[9px] tabular-nums text-ink-muted" style={atEdge ? { right: width - left + 5, top: barTop - 2 } : { left: left + w + 6, top: barTop - 2 }}>{weekLabel(r.start, r.end)}</span>;
                 if (r.kind === "lot" || r.kind === "project") {

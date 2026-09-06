@@ -74,11 +74,11 @@ export function ComingSoon({ title, step, hint }: { title: string; step: number;
   );
 }
 
-export function CategoryIcon({ category, className = "h-6 w-6", tone }: { category: string; className?: string; tone?: "brand" | "ink" }) {
+export function CategoryIcon({ category, className = "h-6 w-6", tone = "brand" }: { category: string; className?: string; tone?: "brand" | "ink" | "surface" | "raw" }) {
   const src: Record<string, string> = { oac_poussins: "/brand/poussin.png", poulet_chair: "/brand/coq.png", oeufs_table: "/brand/oeuf.png", industriels: "/brand/industry.png", autres: "/brand/autres.png" };
   const url = src[category] ?? src.autres;
   // Pictogramme colore : le PNG sert de masque sur un fond de la couleur voulue
-  if (tone) return <span aria-hidden className={`inline-block shrink-0 ${className} ${tone === "brand" ? "bg-brand" : "bg-ink"}`} style={{ WebkitMaskImage: `url(${url})`, maskImage: `url(${url})`, WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat", WebkitMaskPosition: "center", maskPosition: "center" }} />;
+  if (tone !== "raw") return <span aria-hidden className={`inline-block shrink-0 ${className} ${tone === "brand" ? "bg-brand" : tone === "surface" ? "bg-surface" : "bg-ink"}`} style={{ WebkitMaskImage: `url(${url})`, maskImage: `url(${url})`, WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat", WebkitMaskPosition: "center", maskPosition: "center" }} />;
   // eslint-disable-next-line @next/next/no-img-element
   return <img src={url} alt="" className={`${className} object-contain`} />;
 }

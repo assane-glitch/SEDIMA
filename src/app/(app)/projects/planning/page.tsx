@@ -42,7 +42,7 @@ export default async function PortfolioPlanningPage({ searchParams }: { searchPa
         <Link href={link({ category: undefined })} className={`filter-chip ${!sp.category ? "filter-chip-active" : ""}`}>Toutes les categories</Link>
         {PROJECT_CATEGORIES.map((c) => (
           <Link key={c.value} href={link({ category: c.value })} className={`filter-chip ${sp.category === c.value ? "filter-chip-active" : ""}`}>
-            <CategoryIcon category={c.value} className={`h-3.5 w-3.5 ${sp.category === c.value ? "invert" : ""}`} />{c.label}
+            <CategoryIcon category={c.value} className="h-3.5 w-3.5" tone={sp.category === c.value ? "surface" : "brand"} />{c.label}
           </Link>
         ))}
         <span className="mx-1 h-4 w-px bg-line-hair" />

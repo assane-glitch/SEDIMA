@@ -6,7 +6,7 @@ import { CATEGORY_LABELS, PROJECT_STATUS_LABELS, PROJECT_STATUS_TONE, type Profi
 export function ProjectHeader({ project, manager, favorite }: { project: Project; manager?: Profile; favorite?: boolean }) {
   return (
     <div className="mb-5 flex items-start gap-4">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-surface-sub"><CategoryIcon category={project.category} className="h-7 w-7 opacity-80" /></div>
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-surface-sub"><CategoryIcon category={project.category} className="h-7 w-7" /></div>
       <div className="min-w-0">
         <h1 className="flex items-center gap-2 truncate text-[16px] font-semibold tracking-tight">{project.name}{favorite !== undefined && <FavoriteStar projectId={project.id} favorite={favorite} />}</h1>
         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10.5px] text-ink-muted">

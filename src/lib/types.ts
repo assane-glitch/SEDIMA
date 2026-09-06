@@ -221,3 +221,11 @@ export const REGISTER_TYPES: { value: string; label: string; fields: { key: stri
   { value: "livraison", label: "Livraison", fields: [{ key: "fournisseur", label: "Fournisseur", type: "text" }, { key: "designation", label: "Designation", type: "text" }, { key: "quantite", label: "Quantite", type: "number" }] },
   { value: "incident", label: "Incident", fields: [{ key: "gravite", label: "Gravite (1-5)", type: "number" }, { key: "description", label: "Description", type: "text" }] },
 ];
+
+export interface ChangeRequest {
+  id: string; project_id: string; ref: string; title: string; reason: string;
+  status: "soumise" | "approuvee" | "refusee";
+  requested_by: string | null; requested_at: string; decided_by: string | null; decided_at: string | null; decision_note: string; created_at: string;
+}
+export interface ChangeRequestItem { request_id: string; task_id: string; old_start: string | null; old_end: string | null; new_start: string; new_end: string }
+export const CHANGE_STATUS_LABELS: Record<ChangeRequest["status"], string> = { soumise: "Soumise", approuvee: "Approuvee", refusee: "Refusee" };

@@ -13,6 +13,7 @@ export function ProjectTabs({ id, canEdit }: { id: string; canEdit: boolean }) {
     { href: `/projects/${id}/journal`, label: "Journal" },
     { href: `/projects/${id}/register`, label: "Registres" },
     { href: `/projects/${id}/documents`, label: "Documents" },
+    { href: `/projects/${id}/changes`, label: "Changements" },
     { href: `/projects/${id}/history`, label: "Historique" },
     ...(canEdit ? [{ href: `/projects/${id}/settings`, label: "Paramètres" }] : []),
   ];

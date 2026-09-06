@@ -52,7 +52,7 @@ export default async function PortfolioBudgetPage({ searchParams }: { searchPara
       </div>
       <div className="mb-3 flex flex-wrap items-center gap-1.5">
         <Link href={link({ category: undefined })} className={`filter-chip ${!sp.category ? "filter-chip-active" : ""}`}>Toutes les categories</Link>
-        {PROJECT_CATEGORIES.map((c) => <Link key={c.value} href={link({ category: c.value })} className={`filter-chip ${sp.category === c.value ? "filter-chip-active" : ""}`}><CategoryIcon category={c.value} className={`h-3.5 w-3.5 ${sp.category === c.value ? "invert" : ""}`} />{c.label}</Link>)}
+        {PROJECT_CATEGORIES.map((c) => <Link key={c.value} href={link({ category: c.value })} className={`filter-chip ${sp.category === c.value ? "filter-chip-active" : ""}`}><CategoryIcon category={c.value} className="h-3.5 w-3.5" tone={sp.category === c.value ? "surface" : "brand"} />{c.label}</Link>)}
         <span className="mx-1 h-4 w-px bg-line-hair" />
         <Link href={link({ status: undefined })} className={`filter-chip ${!sp.status ? "filter-chip-active" : ""}`}>Tous les statuts</Link>
         {(Object.keys(PROJECT_STATUS_LABELS) as ProjectStatus[]).filter((s) => s !== "hors_perimetre").map((s) => <Link key={s} href={link({ status: s })} className={`filter-chip ${sp.status === s ? "filter-chip-active" : ""}`}>{PROJECT_STATUS_LABELS[s]}</Link>)}
@@ -71,7 +71,7 @@ export default async function PortfolioBudgetPage({ searchParams }: { searchPara
           <tbody>
             {rows.map((r) => (
               <tr key={r.p.id}>
-                <td className="whitespace-nowrap"><Link href={`/projects/${r.p.id}/budget`} className="flex items-center gap-2 hover:underline"><CategoryIcon category={r.p.category} className="h-4 w-4 opacity-80" /><span className="font-semibold">{r.p.code}</span><span className="hidden max-w-[260px] truncate text-ink-muted lg:inline">{r.p.name}</span></Link></td>
+                <td className="whitespace-nowrap"><Link href={`/projects/${r.p.id}/budget`} className="flex items-center gap-2 hover:underline"><CategoryIcon category={r.p.category} className="h-4 w-4" /><span className="font-semibold">{r.p.code}</span><span className="hidden max-w-[260px] truncate text-ink-muted lg:inline">{r.p.name}</span></Link></td>
                 <td className="hidden md:table-cell"><Badge tone={PROJECT_STATUS_TONE[r.p.status]}>{PROJECT_STATUS_LABELS[r.p.status]}</Badge></td>
                 <td className="num font-semibold" title={formatMoney(r.budget, cur)}>{k(r.budget)}</td>
                 <td className={`num hidden lg:table-cell ${r.rebuilt > r.budget && r.budget > 0 ? "text-warn" : "text-ink-muted"}`} title={formatMoney(r.rebuilt, cur)}>{k(r.rebuilt)}</td>

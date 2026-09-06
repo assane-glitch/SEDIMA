@@ -160,8 +160,8 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, regist
               ) : <p className="hint">Les dates, l&apos;avancement, le budget et les depenses d&apos;un lot sont calcules a partir de ses taches.</p>}
               {!isLot && (
                 <div className="grid grid-cols-2 gap-4">
-                  <Field label="Reference : debut"><DateInput name="baseline_start" defaultValue={task?.baseline_start ?? ""} className="input" /></Field>
-                  <Field label="Reference : fin"><DateInput name="baseline_end" defaultValue={task?.baseline_end ?? ""} className="input" /></Field>
+                  <Field label="Reference : debut"><div className="input !bg-surface-mut !border-line-lock text-ink-muted" title="Modifiable par une demande de changement approuvee">{task?.baseline_start ? `${formatDate(task.baseline_start)} · ${weekOf(task.baseline_start)}` : "—"}</div></Field>
+                  <Field label="Reference : fin"><div className="input !bg-surface-mut !border-line-lock text-ink-muted" title="Modifiable par une demande de changement approuvee">{task?.baseline_end ? `${formatDate(task.baseline_end)} · ${weekOf(task.baseline_end)}` : "—"}</div></Field>
                 </div>
               )}
               <div className="grid grid-cols-2 gap-4">

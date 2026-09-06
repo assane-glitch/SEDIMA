@@ -101,8 +101,6 @@ export async function saveTask(formData: FormData) {
     ...(formData.has("confidence") ? { confidence: str(formData, "confidence") } : {}),
     ...(formData.has("actual_start") ? { actual_start: str(formData, "actual_start") || null } : {}),
     ...(formData.has("actual_end") ? { actual_end: str(formData, "actual_end") || null } : {}),
-    ...(formData.has("baseline_start") ? { baseline_start: str(formData, "baseline_start") || null } : {}),
-    ...(formData.has("baseline_end") ? { baseline_end: str(formData, "baseline_end") || null } : {}),
     responsible_id: str(formData, "responsible_id") || null,
     responsible_role: str(formData, "responsible_role"),
     wbs_code: str(formData, "wbs_code") || null,
