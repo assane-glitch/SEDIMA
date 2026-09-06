@@ -2,22 +2,22 @@ import Link from "next/link";
 import { CategoryIcon, Empty, PageHeader } from "@/components/ui";
 import { Icon } from "@/components/icons";
 import { pct } from "@/lib/format";
-import { HEALTH_DOT, HEALTH_LABELS, projectHealth } from "@/lib/health";
+import { HEALTH_LABELS, projectHealth } from "@/lib/health";
 import { canEdit, requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { ViewToggle } from "./ViewToggle";
-import { PROJECT_CATEGORIES, PROJECT_STATUS_LABELS, type Profile, type Project, type ProjectStats } from "@/lib/types";
+import { PROJECT_CATEGORIES, PROJECT_STATUS_LABELS, type Project, type ProjectStats } from "@/lib/types";
 
 export const metadata = { title: "Projets" };
 
 type Params = { q?: string; category?: string; status?: string; manager?: string; sort?: string; dir?: string };
-const SORTS = ["name", "start_date", "end_date", "progress", "budget", "spent", "status"] as const;
+const SORTS = ["code", "name", "start_date", "end_date", "progress", "budget", "spent", "status"] as const;
 
 export default async function ProjectsPage({ searchParams }: { searchParams: Promise<Params> }) {
   const sp = await searchParams;
   const q = (sp.q ?? "").trim();
-  const sort = (SORTS as readonly string[]).includes(sp.sort ?? "") ? sp.sort! : "start_date";
-  const dir = sp.dir === "asc" ? "asc" : sp.dir === "desc" ? "desc" : sort === "name" ? "asc" : "desc";
+  const sort = (SORTS as readonly string[]).includes(sp.sort ?? "") ? sp.sort! : "code";
+  const dir = sp.dir === "asc" ? "asc" : sp.dir === "desc" ? "desc" : sort === "name" || sort === "code" ? "asc" : "desc";
   const profile = await requireProfile();
   const supabase = await createClient();
   let query = supabase.from("projects").select("*");
@@ -25,19 +25,18 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
   if (sp.status) query = query.eq("status", sp.status);
   if (sp.manager) query = query.eq("manager_id", sp.manager);
   if (q) query = query.or(`name.ilike.%${q.replace(/[%,()]/g, "")}%,code.ilike.%${q.replace(/[%,()]/g, "")}%`);
-  const [{ data: projects }, { data: stats }, { data: people }, { data: taskRows }] = await Promise.all([
-    query, supabase.from("project_stats").select("*"), supabase.from("profiles").select("id,email,full_name,role").order("full_name"),
-    supabase.from("tasks").select("id,project_id,parent_id,budget,customs,vat"),
+  const [{ data: projects }, { data: stats }, { data: taskRows }] = await Promise.all([
+    query, supabase.from("project_stats").select("*"), supabase.from("tasks").select("id,project_id,parent_id,budget,customs,vat"),
   ]);
   // Cout reconstitue TTC par projet = somme des taches feuilles (HTVA + douanes + TVA)
   const parents = new Set((taskRows ?? []).filter((t) => t.parent_id).map((t) => t.parent_id!));
   const ttc = new Map<string, number>();
   for (const t of taskRows ?? []) if (!parents.has(t.id)) ttc.set(t.project_id, (ttc.get(t.project_id) ?? 0) + Number(t.budget) + Number(t.customs ?? 0) + Number(t.vat ?? 0));
   const statMap = new Map(((stats ?? []) as ProjectStats[]).map((s) => [s.project_id, s]));
-  const peopleList = (people ?? []) as Profile[];
   const rows = ((projects ?? []) as Project[]).map((p) => ({ p, s: statMap.get(p.id), health: projectHealth(p, statMap.get(p.id)) }));
   const key = (r: typeof rows[number]) => {
     switch (sort) {
+      case "code": return r.p.code;
       case "name": return r.p.name.toLowerCase();
       case "progress": return Number(r.s?.progress ?? 0);
       case "budget": return Number(r.p.budget);
@@ -51,15 +50,6 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
 
   const totalBudget = rows.reduce((t, r) => t + Number(r.p.budget), 0);
   const totalSpent = rows.reduce((t, r) => t + Number(r.s?.spent ?? 0), 0);
-  const managers = peopleList.filter((x) => x.role === "admin" || x.role === "manager");
-  const link = (patch: Partial<Params>) => {
-    const u = new URLSearchParams();
-    const merged = { ...sp, ...patch } as Record<string, string | undefined>;
-    for (const [k, v] of Object.entries(merged)) if (v) u.set(k, v);
-    const s = u.toString();
-    return `/projects${s ? `?${s}` : ""}`;
-  };
-  const SORT_LABELS: Record<typeof SORTS[number], string> = { name: "Nom", start_date: "Date de debut", end_date: "Date de fin", progress: "Avancement", budget: "Budget", spent: "Depense", status: "Statut" };
   const buckets = PROJECT_CATEGORIES.map((c) => ({ ...c, rows: rows.filter((r) => r.p.category === c.value) })).filter((b) => !sp.category || b.value === sp.category);
   const year = new Date().getFullYear();
   const short = (v: number) => (Math.abs(v) >= 1e9 ? `${(v / 1e9).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} Md FCFA` : Math.abs(v) >= 1e6 ? `${Math.round(v / 1e6).toLocaleString("fr-FR")} M FCFA` : `${Math.round(v / 1e3).toLocaleString("fr-FR")} k FCFA`);
@@ -75,40 +65,14 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
   const contracted = allRows.filter((r) => Number(r.s?.spent ?? 0) > 0);
   return (
     <>
-      <PageHeader title="Projets" subtitle="Pilotage du portefeuille de projets" actions={<><ViewToggle view="list" />{canEdit(profile) && <Link href="/projects/new" className="btn-primary">+ Nouveau projet</Link>}</>} />
+      <PageHeader title="Projets" subtitle="Pilotage du portefeuille de projets" actions={<>
+          <form action="/projects" className="relative"><Icon name="search" className="pointer-events-none absolute left-2.5 top-2 h-3.5 w-3.5 text-ink-faint" /><input name="q" defaultValue={q} placeholder="Rechercher…" className="input !w-48 !pl-8" />{q && <Link href="/projects" className="absolute right-2 top-1.5 text-ink-faint hover:text-ink" aria-label="Effacer">×</Link>}</form>
+          <ViewToggle view="list" />{canEdit(profile) && <Link href="/projects/new" className="btn-primary">+ Nouveau projet</Link>}</>} />
       <div className="card mb-4 grid grid-cols-2 divide-line-hair md:grid-cols-4 md:divide-x">
-        <div className="px-[15px] py-3"><div className="eyebrow">Cout total TTC</div><div className="mt-1 text-[21px] font-bold tabular-nums text-brand">{short(totalTtc)}</div><div className="hint">{nProj} projet{nProj > 1 ? "s" : ""} consolide{nProj > 1 ? "s" : ""}</div></div>
-        <div className="px-[15px] py-3"><div className="eyebrow">Enveloppes approuvees</div><div className="mt-1 text-[21px] font-bold tabular-nums">{short(totalBudget)}</div><div className="hint">Cout reconstitue HTVA {short(totalRebuilt)} (projets avec taches)</div></div>
+        <div className="px-[15px] py-3"><div className="eyebrow">Cout total TTC</div><div className="mt-1 text-[21px] font-bold tabular-nums text-brand">{short(totalTtc)}</div><div className="hint">{nProj} projets</div></div>
+        <div className="px-[15px] py-3"><div className="eyebrow">Enveloppes approuvees</div><div className="mt-1 text-[21px] font-bold tabular-nums">{short(totalBudget)}</div><div className="hint">Cout reconstitue HTVA {short(totalRebuilt)}</div></div>
         <div className="px-[15px] py-3"><div className="eyebrow">Ecart au budget approuve</div><div className={`mt-1 text-[21px] font-bold tabular-nums ${totalGap > 0 ? "text-brand" : ""}`}>{totalGap > 0 ? "+" : "−"}{short(Math.abs(totalGap))}</div><div className="hint">+{short(gapPlus.reduce((a, b) => a + b, 0))} sur {gapPlus.length} · −{short(Math.abs(gapMinus.reduce((a, b) => a + b, 0)))} sur {gapMinus.length}</div></div>
         <div className="px-[15px] py-3"><div className="eyebrow">Part engagee</div><div className="mt-1 text-[21px] font-bold tabular-nums">{pct(totalSpent, totalBudget)} %</div><div className="hint">{short(totalSpent)} sur {contracted.length} projet{contracted.length > 1 ? "s" : ""}</div></div>
-      </div>
-
-      <form className="mb-3 flex flex-wrap items-center gap-2" action="/projects">
-        {sp.category && <input type="hidden" name="category" value={sp.category} />}
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Icon name="search" className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-ink-faint" />
-          <input name="q" defaultValue={q} placeholder="Rechercher un projet ou un code" className="input !pl-9" />
-        </div>
-        <select name="status" defaultValue={sp.status ?? ""} className="input !w-auto">
-          <option value="">Tous les statuts</option>
-          {Object.entries(PROJECT_STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-        </select>
-        <select name="manager" defaultValue={sp.manager ?? ""} className="input !w-auto">
-          <option value="">Tous les chefs de projet</option>
-          {managers.map((m) => <option key={m.id} value={m.id}>{m.full_name || m.email}</option>)}
-        </select>
-        <select name="sort" defaultValue={sort} className="input !w-auto">{SORTS.map((k) => <option key={k} value={k}>Trier par {SORT_LABELS[k].toLowerCase()}</option>)}</select>
-        <select name="dir" defaultValue={dir} className="input !w-auto"><option value="asc">Croissant</option><option value="desc">Decroissant</option></select>
-        <button className="btn-secondary">Filtrer</button>
-        {(q || sp.status || sp.manager || sp.category) && <Link href="/projects" className="text-[10px] text-ink-muted hover:text-ink">Effacer</Link>}
-      </form>
-      <div className="mb-4 flex flex-wrap gap-2">
-        <Link href={link({ category: undefined })} className={`filter-chip ${!sp.category ? "filter-chip-active" : ""}`}>Toutes les categories</Link>
-        {PROJECT_CATEGORIES.map((c) => (
-          <Link key={c.value} href={link({ category: c.value })} className={`filter-chip ${sp.category === c.value ? "filter-chip-active" : ""}`}>
-            <CategoryIcon category={c.value} className={`h-3.5 w-3.5 ${sp.category === c.value ? "invert" : ""}`} />{c.label}
-          </Link>
-        ))}
       </div>
 
       {rows.length === 0 ? (
@@ -121,7 +85,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
               return (
                 <section key={b.value} className="min-w-0">
                   <div className="border-b border-line-hair pb-2">
-                    <div className="flex items-center gap-2"><CategoryIcon category={b.value} className="h-5 w-5" /><h2 className="text-[12.5px] font-bold text-ink">{b.label}</h2></div>
+                    <div className="flex items-center gap-2"><CategoryIcon category={b.value} className="h-5 w-5" tone="brand" /><h2 className="text-[12.5px] font-bold text-ink">{b.label}</h2></div>
                     <div className="mt-1.5 text-[17px] font-bold tabular-nums text-ink">{short(bBudget)}</div>
                     <div className="text-[10.5px] text-ink-muted">{b.rows.length} projet{b.rows.length > 1 ? "s" : ""} · <span className={bAlerts ? "font-semibold text-brand" : ""}>{bAlerts} en alerte</span></div>
                   </div>
@@ -138,7 +102,6 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
                             <span className="font-mono text-[10.5px] font-bold text-ink">{p.code}</span>
                             {alert ? <span className="flex h-4 w-4 items-center justify-center rounded-[3px] bg-brand text-[10px] font-bold leading-none text-surface" title={HEALTH_LABELS[health]}>!</span>
                               : late > 0 ? <span className="flex h-4 min-w-4 items-center justify-center rounded-[3px] bg-accent px-1 text-[10px] font-bold leading-none text-ink" title={`${late} tache${late > 1 ? "s" : ""} en retard`}>{late}</span> : null}
-                            <span className={`ml-auto dot ${HEALTH_DOT[health]}`} title={HEALTH_LABELS[health]} />
                           </div>
                           <div className="mt-2 min-h-[36px] text-[12.5px] font-semibold leading-snug text-ink">{p.name}</div>
                           <div className="mt-3 flex items-baseline gap-2 text-[10px]">
