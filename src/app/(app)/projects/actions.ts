@@ -306,3 +306,22 @@ export async function deleteMilestone(formData: FormData) {
   revalidatePath(`/projects/${projectId}`);
   revalidatePath(`/projects/${projectId}/planning`);
 }
+
+/** Tranches budgetaires annuelles d'un projet : une ligne par annee, montant 0 = ligne supprimee. */
+export async function saveBudgetYears(formData: FormData) {
+  const profile = await requireProfile();
+  if (!canEdit(profile)) return;
+  const projectId = str(formData, "project_id");
+  const supabase = await createClient();
+  const rows: { project_id: string; year: number; amount: number }[] = [];
+  for (const [k, v] of formData.entries()) {
+    const m = /^year_(\d{4})$/.exec(k); if (!m) continue;
+    rows.push({ project_id: projectId, year: Number(m[1]), amount: Math.max(0, Number(String(v).replace(/\s/g, "")) || 0) });
+  }
+  const { error } = await supabase.from("project_budget_years").upsert(rows, { onConflict: "project_id,year" });
+  if (error) redirect(`/projects/${projectId}/budget?error=${encodeURIComponent(error.message)}`);
+  await supabase.from("project_budget_years").delete().eq("project_id", projectId).eq("amount", 0);
+  revalidatePath(`/projects/${projectId}/budget`);
+  revalidatePath("/projects/budget");
+  redirect(`/projects/${projectId}/budget?ok=tranches`);
+}
