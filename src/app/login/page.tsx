@@ -18,7 +18,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       <svg className="pointer-events-none absolute inset-y-0 right-0 hidden h-full w-[52%] lg:block" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden><line x1="22" y1="0" x2="0" y2="100" stroke="#fcd814" strokeWidth="0.45" vectorEffect="non-scaling-stroke" style={{ strokeWidth: 3 }} /></svg>
 
       <div className="relative flex min-h-screen flex-col justify-between px-8 py-8 sm:px-14 lg:w-[55%] lg:px-20">
-        <Image src="/brand/logo-horizontal-white.png" alt="SEDIMA" width={190} height={41} priority className="h-9 w-auto" />
+        <Image src="/brand/logo-horizontal-white.png" alt="SEDIMA" width={190} height={41} priority className="h-12 w-auto self-start" />
 
         <div className="my-12 max-w-md">
           <h1 className="text-[34px] font-bold leading-tight tracking-[-0.01em] sm:text-[42px]">Gestion de projets</h1>
