@@ -10,6 +10,8 @@ export default async function AdminPage() {
   const items = [
     { href: "/admin/users", label: "Utilisateurs et roles", hint: "Inviter, changer les roles", ready: true },
     { href: "/admin/lists", label: "Listes de reference", hint: "Categories et statuts de depense, types de registre, methodes, roles, types de document", ready: true },
+    { href: "/admin/activity", label: "Journal d'activite", hint: "Toutes les modifications, tous projets, avec les valeurs avant et apres", ready: true },
+    { href: "/admin/tools", label: "Outils et etat de la base", hint: "Realignement des taches liees, volumes, sauvegardes", ready: true },
   ];
   return (
     <>

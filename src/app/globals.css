@@ -96,3 +96,14 @@ select.input { @apply pr-7; }
 /* Puce de filtre : neutre, anthracite quand active */
 .filter-chip { @apply inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-line bg-surface px-[9px] py-[3px] text-[10px] font-semibold text-ink-body hover:bg-surface-sub; }
 .filter-chip-active { @apply border-ink bg-ink text-surface hover:bg-ink; }
+
+/* Impression : rapports sans navigation ni en-tete */
+@media print {
+  aside, header, nav, .print\:hidden { display: none !important; }
+  main { padding: 0 !important; }
+  body { background: #fff !important; font-size: 10px; }
+  .card { border: 0 !important; }
+  .tbl thead th { background: #eff0f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  h2 { break-after: avoid; }
+  tr { break-inside: avoid; }
+}
