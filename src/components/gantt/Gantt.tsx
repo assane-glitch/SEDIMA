@@ -199,7 +199,7 @@ export function Gantt({ rows, milestones, expenses = [], people, currency, canEd
               const left = x(r.start), w = Math.max(px, (daysBetween(r.start, r.end) + 1) * px), top = rowTop(i);
               const title = `${r.name}\n${formatDate(r.start)} → ${formatDate(r.end)}\n${r.progress} %${r.responsible ? `\n${r.responsible}` : ""}`;
               if (r.kind === "lot" || r.kind === "project") {
-                const fill = r.kind === "lot" ? "bg-brand" : "bg-ink-muted", track = r.kind === "lot" ? "bg-alert-bg border border-alert-bd" : "bg-line-light";
+                const fill = r.kind === "lot" ? "bg-brand" : "bg-ink-muted", track = r.kind === "lot" ? "bg-alert-bg border border-alert-bd" : "bg-line-soft border border-line";
                 return (
                   <div key={r.id} className="absolute" style={{ top: top + 9, left, width: w, height: 12 }}>
                     {r.href ? <Link href={r.href} title={title} className="relative block h-full w-full"><LotBar fill={fill} track={track} progress={r.progress} /></Link>
@@ -209,7 +209,7 @@ export function Gantt({ rows, milestones, expenses = [], people, currency, canEd
                 );
               }
               return (
-                <button key={r.id} onClick={() => setSelected(r)} title={title} className="absolute cursor-pointer overflow-hidden rounded-xs bg-line-light text-left" style={{ top: top + 7, left, width: w, height: 16 }}>
+                <button key={r.id} onClick={() => setSelected(r)} title={title} className="absolute cursor-pointer overflow-hidden rounded-xs border border-line bg-line-soft text-left" style={{ top: top + 7, left, width: w, height: 16 }}>
                   <div className="h-full bg-ink-muted" style={{ width: `${r.progress}%` }} />
                   {w > 70 && <span className="absolute inset-y-0 left-1.5 flex items-center truncate text-[9.5px] font-semibold text-ink mix-blend-multiply" style={{ maxWidth: w - 8 }}>{r.name}</span>}
                 </button>
