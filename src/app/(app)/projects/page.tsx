@@ -64,7 +64,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
   const contracted = allRows.filter((r) => Number(r.s?.spent ?? 0) > 0);
   return (
     <>
-      <div className="sticky top-0 z-20 -mx-4 -mt-1 border-b border-line-hair bg-[#e9eaed] px-4 pt-3 md:-mx-2 md:px-2">
+      <div className="sticky top-[52px] z-20 -mx-4 -mt-1 border-b border-line-hair bg-[#e9eaed] px-4 pt-3 md:top-[60px] md:-mx-2 md:px-2">
       <PageHeader title="Projets" subtitle="Pilotage du portefeuille de projets" actions={<>
           <form action="/projects" className="relative"><Icon name="search" className="pointer-events-none absolute left-2.5 top-2 h-3.5 w-3.5 text-ink-faint" /><input name="q" defaultValue={q} placeholder="Rechercher…" className="input !w-48 !pl-8" />{q && <Link href="/projects" className="absolute right-2 top-1.5 text-ink-faint hover:text-ink" aria-label="Effacer">×</Link>}</form>
           <ViewToggle view="list" />{canEdit(profile) && <Link href="/projects/new" className="btn-primary">+ Nouveau projet</Link>}</>} />

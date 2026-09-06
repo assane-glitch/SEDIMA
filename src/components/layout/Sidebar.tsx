@@ -34,7 +34,7 @@ export function Sidebar({ groups, profile, signOut }: { groups: NavGroup[]; prof
 
   return (
     <aside className="sticky top-3 z-[35] hidden h-[calc(100vh-1.5rem)] w-14 shrink-0 flex-col rounded-xl border border-line-hair bg-surface p-2 md:flex">
-      <nav className="flex flex-1 flex-col pt-1">
+      <nav className="flex flex-1 flex-col justify-center">
         {groups.map((group, gi) => (
           <div key={gi} className="flex flex-col gap-1.5">
             {gi > 0 && <Divider />}

@@ -36,7 +36,7 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
       <Sidebar groups={groups} profile={profile} signOut={signOut} />
       <div className="flex min-w-0 flex-1 flex-col">
         {/* En-tete : logo a cote du menu, sur chaque page */}
-        <header className="flex items-center justify-between px-4 py-3 md:h-[60px] md:px-2 md:pt-3">
+        <header className="sticky top-0 z-30 flex items-center justify-between bg-canvas px-4 py-3 md:h-[60px] md:px-2 md:pt-3">
           <Link href="/dashboard" className="flex items-center" aria-label="SEDIMA">
             <Image src="/brand/logo-horizontal.png" alt="SEDIMA" width={150} height={32} priority className="h-6 w-auto md:h-7" />
           </Link>
