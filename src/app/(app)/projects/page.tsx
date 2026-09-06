@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { Badge, CategoryIcon, Empty, PageHeader, ProgressBar } from "@/components/ui";
+import { CategoryIcon, Empty, PageHeader } from "@/components/ui";
 import { Icon } from "@/components/icons";
-import { formatDate, formatMoney, pct } from "@/lib/format";
+import { pct } from "@/lib/format";
 import { HEALTH_DOT, HEALTH_LABELS, projectHealth } from "@/lib/health";
 import { canEdit, requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { ViewToggle } from "./ViewToggle";
-import { PROJECT_CATEGORIES, PROJECT_STATUS_LABELS, PROJECT_STATUS_TONE, type Profile, type Project, type ProjectStats } from "@/lib/types";
+import { PROJECT_CATEGORIES, PROJECT_STATUS_LABELS, type Profile, type Project, type ProjectStats } from "@/lib/types";
 
 export const metadata = { title: "Projets" };
 
@@ -25,12 +25,16 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
   if (sp.status) query = query.eq("status", sp.status);
   if (sp.manager) query = query.eq("manager_id", sp.manager);
   if (q) query = query.or(`name.ilike.%${q.replace(/[%,()]/g, "")}%,code.ilike.%${q.replace(/[%,()]/g, "")}%`);
-  const [{ data: projects }, { data: stats }, { data: people }] = await Promise.all([
+  const [{ data: projects }, { data: stats }, { data: people }, { data: taskRows }] = await Promise.all([
     query, supabase.from("project_stats").select("*"), supabase.from("profiles").select("id,email,full_name,role").order("full_name"),
+    supabase.from("tasks").select("id,project_id,parent_id,budget,customs,vat"),
   ]);
+  // Cout reconstitue TTC par projet = somme des taches feuilles (HTVA + douanes + TVA)
+  const parents = new Set((taskRows ?? []).filter((t) => t.parent_id).map((t) => t.parent_id!));
+  const ttc = new Map<string, number>();
+  for (const t of taskRows ?? []) if (!parents.has(t.id)) ttc.set(t.project_id, (ttc.get(t.project_id) ?? 0) + Number(t.budget) + Number(t.customs ?? 0) + Number(t.vat ?? 0));
   const statMap = new Map(((stats ?? []) as ProjectStats[]).map((s) => [s.project_id, s]));
   const peopleList = (people ?? []) as Profile[];
-  const peopleMap = new Map(peopleList.map((p) => [p.id, p]));
   const rows = ((projects ?? []) as Project[]).map((p) => ({ p, s: statMap.get(p.id), health: projectHealth(p, statMap.get(p.id)) }));
   const key = (r: typeof rows[number]) => {
     switch (sort) {
@@ -56,11 +60,28 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
     return `/projects${s ? `?${s}` : ""}`;
   };
   const SORT_LABELS: Record<typeof SORTS[number], string> = { name: "Nom", start_date: "Date de debut", end_date: "Date de fin", progress: "Avancement", budget: "Budget", spent: "Depense", status: "Statut" };
-  const buckets = PROJECT_CATEGORIES.map((c) => ({ ...c, rows: rows.filter((r) => r.p.category === c.value) })).filter((b) => b.rows.length > 0);
+  const buckets = PROJECT_CATEGORIES.map((c) => ({ ...c, rows: rows.filter((r) => r.p.category === c.value) })).filter((b) => !sp.category || b.value === sp.category);
+  const year = new Date().getFullYear();
+  const short = (v: number) => (Math.abs(v) >= 1e9 ? `${(v / 1e9).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} Md FCFA` : Math.abs(v) >= 1e6 ? `${Math.round(v / 1e6).toLocaleString("fr-FR")} M FCFA` : `${Math.round(v / 1e3).toLocaleString("fr-FR")} k FCFA`);
+  const wk = (iso: string) => { const d = new Date(iso + "T00:00:00Z"); const day = d.getUTCDay() || 7; d.setUTCDate(d.getUTCDate() + 4 - day); const y0 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1)); const n = Math.ceil(((d.getTime() - y0.getTime()) / 86400000 + 1) / 7); const y = d.getUTCFullYear(); return `S${n}${y !== year ? `/${y}` : ""}`; };
+  const STATUS_SHORT: Record<string, string> = { plan: "Planification", cadrage: "Cadrage", approuve: "Approuve", engage: "Engage", execution: "Execution", cloture: "Cloture", hors_perimetre: "Hors perimetre" };
+  const rebuiltOf = (r: typeof rows[number]) => (Number(r.s?.task_count ?? 0) > 0 ? Number(r.s?.rebuilt_cost ?? 0) : null);
+  const alertOf = (r: typeof rows[number]) => { const rb = rebuiltOf(r), b = Number(r.p.budget); return r.health === "bad" || (b > 0 && rb !== null && rb > b * 1.05) || (b > 0 && Number(r.s?.spent ?? 0) > b); };
+  const allRows = rows; const nProj = allRows.length;
+  const totalTtc = allRows.reduce((t, r) => t + (ttc.get(r.p.id) ?? 0), 0), totalRebuilt = allRows.reduce((t, r) => t + Number(r.s?.rebuilt_cost ?? 0), 0);
+  const gaps = allRows.filter((r) => rebuiltOf(r) !== null && Number(r.p.budget) > 0).map((r) => (rebuiltOf(r) ?? 0) - Number(r.p.budget));
+  const totalGap = gaps.reduce((a, b) => a + b, 0);
+  const gapPlus = gaps.filter((g) => g > 0), gapMinus = gaps.filter((g) => g < 0);
+  const contracted = allRows.filter((r) => Number(r.s?.spent ?? 0) > 0);
   return (
     <>
-      <PageHeader title="Projets" subtitle={`${rows.length} projet${rows.length > 1 ? "s" : ""} · budget ${formatMoney(totalBudget)} · depense ${formatMoney(totalSpent)} (${pct(totalSpent, totalBudget)} %)`}
-        actions={<><ViewToggle view="list" />{canEdit(profile) && <Link href="/projects/new" className="btn-primary">+ Nouveau projet</Link>}</>} />
+      <PageHeader title="Projets" subtitle="Pilotage du portefeuille de projets" actions={<><ViewToggle view="list" />{canEdit(profile) && <Link href="/projects/new" className="btn-primary">+ Nouveau projet</Link>}</>} />
+      <div className="card mb-4 grid grid-cols-2 divide-line-hair md:grid-cols-4 md:divide-x">
+        <div className="px-[15px] py-3"><div className="eyebrow">Cout total TTC</div><div className="mt-1 text-[21px] font-bold tabular-nums text-brand">{short(totalTtc)}</div><div className="hint">{nProj} projet{nProj > 1 ? "s" : ""} consolide{nProj > 1 ? "s" : ""}</div></div>
+        <div className="px-[15px] py-3"><div className="eyebrow">Enveloppes approuvees</div><div className="mt-1 text-[21px] font-bold tabular-nums">{short(totalBudget)}</div><div className="hint">Cout reconstitue HTVA {short(totalRebuilt)} (projets avec taches)</div></div>
+        <div className="px-[15px] py-3"><div className="eyebrow">Ecart au budget approuve</div><div className={`mt-1 text-[21px] font-bold tabular-nums ${totalGap > 0 ? "text-brand" : ""}`}>{totalGap > 0 ? "+" : "−"}{short(Math.abs(totalGap))}</div><div className="hint">+{short(gapPlus.reduce((a, b) => a + b, 0))} sur {gapPlus.length} · −{short(Math.abs(gapMinus.reduce((a, b) => a + b, 0)))} sur {gapMinus.length}</div></div>
+        <div className="px-[15px] py-3"><div className="eyebrow">Part engagee</div><div className="mt-1 text-[21px] font-bold tabular-nums">{pct(totalSpent, totalBudget)} %</div><div className="hint">{short(totalSpent)} sur {contracted.length} projet{contracted.length > 1 ? "s" : ""}</div></div>
+      </div>
 
       <form className="mb-3 flex flex-wrap items-center gap-2" action="/projects">
         {sp.category && <input type="hidden" name="category" value={sp.category} />}
@@ -93,51 +114,52 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
       {rows.length === 0 ? (
         <Empty title={q || sp.category || sp.status || sp.manager ? "Aucun projet ne correspond" : "Aucun projet"} hint={canEdit(profile) && !q ? "Creez votre premier projet." : undefined} action={canEdit(profile) && !q ? { href: "/projects/new", label: "Creer un projet" } : undefined} />
       ) : (
-        <div className="space-y-6">
-          {buckets.map((b) => {
-            const bBudget = b.rows.reduce((t, r) => t + Number(r.p.budget), 0), bSpent = b.rows.reduce((t, r) => t + Number(r.s?.spent ?? 0), 0), bLate = b.rows.reduce((t, r) => t + Number(r.s?.late_count ?? 0), 0);
-            return (
-              <section key={b.value}>
-                <div className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-line-hair pb-1.5">
-                  <div className="flex items-center gap-2"><CategoryIcon category={b.value} className="h-5 w-5 opacity-80" /><h2 className="text-[13.5px] font-bold text-ink">{b.label}</h2><span className="text-[10.5px] text-ink-faint">{b.rows.length} projet{b.rows.length > 1 ? "s" : ""}</span></div>
-                  <div className="ml-auto flex items-center gap-3 text-[10.5px] text-ink-muted tabular-nums"><span>Budget <span className="font-semibold text-ink">{formatMoney(bBudget)}</span></span><span>Engage <span className="font-semibold text-ink">{formatMoney(bSpent)}</span> ({pct(bSpent, bBudget)} %)</span>{bLate > 0 && <span className="font-semibold text-alert">{bLate} retard{bLate > 1 ? "s" : ""}</span>}</div>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                  {b.rows.map(({ p, s, health }) => {
-                    const budget = Number(p.budget), spent = Number(s?.spent ?? 0), progress = Number(s?.progress ?? 0), over = spent > budget && budget > 0;
-                    const manager = p.manager_id ? peopleMap.get(p.manager_id) : undefined;
-                    return (
-                      <Link key={p.id} href={`/projects/${p.id}`} className="card flex flex-col gap-2.5 px-[15px] pb-[13px] pt-[12px] transition-colors hover:border-line hover:bg-surface-alt">
-                        <div className="flex items-center gap-2">
-                          <span className={`dot ${HEALTH_DOT[health]}`} title={HEALTH_LABELS[health]} />
-                          <span className="font-mono text-[10px] font-semibold text-ink-muted">{p.code}</span>
-                          <span className="ml-auto"><Badge tone={PROJECT_STATUS_TONE[p.status]}>{PROJECT_STATUS_LABELS[p.status]}</Badge></span>
-                        </div>
-                        <div className="min-h-[34px] text-[12.5px] font-bold leading-snug text-ink">{p.name}</div>
-                        <div className="flex items-center justify-between gap-2 text-[10px] text-ink-muted">
-                          <span className="truncate">{manager?.full_name || manager?.email || p.manager_name || "Chef de projet a designer"}</span>
-                          <span className="shrink-0 tabular-nums">{formatDate(p.start_date)} → {formatDate(p.end_date)}</span>
-                        </div>
-                        <div>
-                          <div className="mb-1 flex items-center justify-between text-[10px]"><span className="text-ink-faint">Avancement</span><span className="font-semibold tabular-nums">{progress} %</span></div>
-                          <ProgressBar value={progress} tone={health === "bad" ? "bad" : health === "warn" ? "warn" : "good"} />
-                        </div>
-                        <div>
-                          <div className="mb-1 flex items-center justify-between text-[10px]"><span className="text-ink-faint">Engage / budget</span><span className={`tabular-nums ${over ? "font-semibold text-alert" : ""}`}>{formatMoney(spent, p.currency)} <span className="text-ink-faint">/ {formatMoney(budget, p.currency)}</span></span></div>
-                          <div className="relative h-[5px] w-full overflow-hidden rounded-full bg-line-light"><div className={`absolute inset-y-0 left-0 rounded-full ${over ? "bg-alert" : "bg-ink-muted"}`} style={{ width: `${Math.min(100, pct(spent, budget))}%` }} /></div>
-                        </div>
-                        <div className="flex items-center gap-3 text-[10px] text-ink-faint">
-                          <span>{Number(s?.task_count ?? 0)} tache{Number(s?.task_count ?? 0) > 1 ? "s" : ""}</span>
-                          {Number(s?.late_count) > 0 && <span className="font-semibold text-alert">{s!.late_count} en retard</span>}
-                          {s?.next_milestone && <span className="ml-auto">Jalon {formatDate(s.next_milestone)}</span>}
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </section>
-            );
-          })}
+        <div className="overflow-x-auto pb-2">
+          <div className={`grid gap-4 ${buckets.length === 1 ? "max-w-md" : "min-w-[1180px] grid-cols-5"}`}>
+            {buckets.map((b) => {
+              const bBudget = b.rows.reduce((t, r) => t + Number(r.p.budget), 0), bAlerts = b.rows.filter(alertOf).length;
+              return (
+                <section key={b.value} className="min-w-0">
+                  <div className="border-b border-line-hair pb-2">
+                    <div className="flex items-center gap-2"><CategoryIcon category={b.value} className="h-5 w-5" /><h2 className="text-[12.5px] font-bold text-ink">{b.label}</h2></div>
+                    <div className="mt-1.5 text-[17px] font-bold tabular-nums text-ink">{short(bBudget)}</div>
+                    <div className="text-[10.5px] text-ink-muted">{b.rows.length} projet{b.rows.length > 1 ? "s" : ""} · <span className={bAlerts ? "font-semibold text-brand" : ""}>{bAlerts} en alerte</span></div>
+                  </div>
+                  <div className="mt-3 space-y-3">
+                    {b.rows.map(({ p, s, health }) => {
+                      const budget = Number(p.budget), cost = rebuiltOf({ p, s, health }), progress = Number(s?.progress ?? 0), late = Number(s?.late_count ?? 0);
+                      const diff = cost !== null && budget > 0 ? Math.round(((cost - budget) / budget) * 100) : null;
+                      const alert = alertOf({ p, s, health });
+                      const overShare = cost !== null && cost > budget && cost > 0 ? ((cost - budget) / cost) * 100 : 0;
+                      const started = progress > 0 || p.status === "execution" || p.status === "engage";
+                      return (
+                        <Link key={p.id} href={`/projects/${p.id}`} className="card block px-[13px] pb-3 pt-[11px] transition-colors hover:border-line hover:bg-surface-alt">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-[10.5px] font-bold text-ink">{p.code}</span>
+                            {alert ? <span className="flex h-4 w-4 items-center justify-center rounded-[3px] bg-brand text-[10px] font-bold leading-none text-surface" title={HEALTH_LABELS[health]}>!</span>
+                              : late > 0 ? <span className="flex h-4 min-w-4 items-center justify-center rounded-[3px] bg-accent px-1 text-[10px] font-bold leading-none text-ink" title={`${late} tache${late > 1 ? "s" : ""} en retard`}>{late}</span> : null}
+                            <span className={`ml-auto dot ${HEALTH_DOT[health]}`} title={HEALTH_LABELS[health]} />
+                          </div>
+                          <div className="mt-2 min-h-[36px] text-[12.5px] font-semibold leading-snug text-ink">{p.name}</div>
+                          <div className="mt-3 flex items-baseline gap-2 text-[10px]">
+                            <span className="text-[12.5px] font-bold tabular-nums text-ink" title={cost !== null ? `Cout reconstitue HTVA ${short(cost)}` : undefined}>{short(budget)}</span>
+                            {diff === null ? <span className="text-ink-faint">sans taches</span> : Math.abs(diff) < 1 ? <span className="font-semibold text-ink-muted">au budget</span> : <span className={`font-semibold tabular-nums ${diff > 0 ? "text-brand" : "text-ink-muted"}`}>{diff > 0 ? "+" : "−"}{Math.abs(diff)} %</span>}
+                            <span className="ml-auto whitespace-nowrap tabular-nums text-ink-faint">{wk(p.start_date)} → {wk(p.end_date)}</span>
+                          </div>
+                          <div className="relative mt-1.5 h-[4px] w-full overflow-hidden rounded-sm" style={{ backgroundImage: started ? undefined : "repeating-linear-gradient(135deg, #374151 0 3px, transparent 3px 6px)", backgroundColor: started ? "#e7e7e7" : undefined }}>
+                            {started && <div className="absolute inset-y-0 left-0 bg-ink" style={{ width: `${Math.max(2, progress)}%` }} />}
+                            {overShare > 0 && <div className="absolute inset-y-0 right-0 bg-brand" style={{ width: `${Math.max(3, Math.min(60, overShare))}%` }} />}
+                          </div>
+                          <div className="mt-2 text-[10.5px] font-semibold text-ink-body">{STATUS_SHORT[p.status] ?? PROJECT_STATUS_LABELS[p.status]}</div>
+                        </Link>
+                      );
+                    })}
+                    {canEdit(profile) && <Link href="/projects/new" className="block rounded-lg border border-dashed border-line px-3 py-3 text-[10.5px] font-semibold text-ink-muted hover:border-ink-muted hover:text-ink">+ Nouveau projet</Link>}
+                  </div>
+                </section>
+              );
+            })}
+          </div>
         </div>
       )}
     </>
