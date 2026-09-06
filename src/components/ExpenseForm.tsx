@@ -24,9 +24,16 @@ export function ExpenseForm({ projects, tasks, categories, statuses, projectId, 
   }, [tasks, pid]);
   const opt = (t: TaskOption, indent = false) => <option key={t.id} value={t.id}>{indent ? "   " : ""}{t.wbs_code ? `${t.wbs_code} · ` : ""}{t.name}</option>;
   const big = mobile ? " !text-[16px] !py-2.5" : "";
+  const [err, setErr] = useState<string | null>(null);
+  const submit = async (fd: FormData) => {
+    const r = await addExpense(fd);
+    if (!onSubmitted) return;
+    if (r?.error) setErr(r.error); else onSubmitted();
+  };
 
   return (
-    <form action={onSubmitted ? (fd) => { void addExpense(fd).then(onSubmitted); } : addExpense} className={compact ? "space-y-2" : "space-y-3"}>
+    <form action={submit} className={compact ? "space-y-2" : "space-y-3"}>
+      {err && <p className="rounded-md border border-brand/30 bg-brand/5 px-2.5 py-1.5 text-[11px] text-brand">{err}</p>}
       <input type="hidden" name="project_id" value={pid} />
       <input type="hidden" name="source" value={source} />
       <input type="hidden" name="redirect" value={redirect ?? (onSubmitted ? "none" : `/projects/${pid}/events`)} />

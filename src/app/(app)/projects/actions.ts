@@ -192,9 +192,10 @@ export async function addExpense(formData: FormData) {
     created_by: profile.id,
   });
   const back = str(formData, "redirect") || `/projects/${projectId}/budget`;
-  if (error) redirect(`${back}?error=${encodeURIComponent(error.message)}`);
-  revalidatePath(`/projects/${projectId}`);
-  revalidatePath("/dashboard");
+  if (error && back !== "none") redirect(`${back}?error=${encodeURIComponent(error.message)}`);
+  for (const p of [`/projects/${projectId}`, `/projects/${projectId}/planning`, `/projects/${projectId}/budget`, `/projects/${projectId}/events`, "/dashboard"]) revalidatePath(p);
+  // Mode "none" : appel depuis le tiroir de tache, on reste sur place (pas de navigation).
+  if (back === "none") return error ? { error: error.message } : { ok: true };
   redirect(`${back}?ok=1`);
 }
 
