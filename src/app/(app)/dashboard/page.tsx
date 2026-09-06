@@ -1,12 +1,13 @@
 import Link from "next/link";
-import { Badge, CategoryIcon, Empty, PageHeader, ProgressBar, Stat } from "@/components/ui";
+import { Badge, CategoryIcon, Empty, PageHeader, Stat } from "@/components/ui";
+import { ProjectCard } from "@/components/projects/ProjectCard";
 import { formatDate, formatMoney, pct, today } from "@/lib/format";
-import { HEALTH_DOT, HEALTH_LABELS, projectHealth, type Health } from "@/lib/health";
+import { projectHealth, type Health } from "@/lib/health";
 import { getLists } from "@/lib/reference";
 import { labelOf } from "@/lib/reference-types";
 import { canEdit, requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { ACTIVE_STATUSES, CATEGORY_LABELS, PROJECT_CATEGORIES, PROJECT_STATUS_LABELS, PROJECT_STATUS_TONE, type Expense, type JournalEntry, type Milestone, type Profile, type Project, type ProjectStats, type RegisterEntry, type Task } from "@/lib/types";
+import { ACTIVE_STATUSES, CATEGORY_LABELS, PROJECT_CATEGORIES, type Expense, type JournalEntry, type Milestone, type Profile, type Project, type ProjectStats, type RegisterEntry, type Task } from "@/lib/types";
 
 export const metadata = { title: "Tableau de bord" };
 
@@ -88,29 +89,11 @@ export default async function DashboardPage() {
 
           <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
             <div className="space-y-4">
-              <div className="card overflow-x-auto">
-                <div className="flex items-center justify-between px-[15px] pb-2 pt-[13px]"><div className="card-title">Sante des projets <span className="text-[10px] font-normal text-ink-faint">{rows.length} en cours ou a suivre</span></div><Link href="/projects" className="btn-ghost">Tous les projets ({list.length}) ›</Link></div>
-                <table className="tbl">
-                  <thead><tr><th className="w-6" /><th>Projet</th><th className="hidden md:table-cell">Chef de projet</th><th className="hidden lg:table-cell">Statut</th><th className="w-32">Avancement</th><th className="num">Consomme</th><th className="num hidden md:table-cell">Ecart</th><th className="num">Retard</th><th className="hidden lg:table-cell">Prochain jalon</th></tr></thead>
-                  <tbody>
-                    {rows.map(({ p, s, health, next }) => {
-                      const budget = Number(p.budget), spent = Number(s?.spent ?? 0), progress = Number(s?.progress ?? 0), cons = budget ? Math.round((spent / budget) * 100) : 0, gap = cons - progress;
-                      return (
-                        <tr key={p.id}>
-                          <td><span className={`dot ${HEALTH_DOT[health]}`} title={HEALTH_LABELS[health]} /></td>
-                          <td><Link href={`/projects/${p.id}`} className="flex items-center gap-2 hover:underline"><CategoryIcon category={p.category} className="h-4 w-4 shrink-0 opacity-80" /><span className="font-semibold">{p.code}</span><span className="hidden max-w-[240px] truncate text-ink-muted sm:inline">{p.name}</span></Link></td>
-                          <td className="hidden max-w-[140px] truncate text-ink-muted md:table-cell">{(p.manager_id && who.get(p.manager_id)) || p.manager_name || "—"}</td>
-                          <td className="hidden lg:table-cell"><Badge tone={PROJECT_STATUS_TONE[p.status]}>{PROJECT_STATUS_LABELS[p.status]}</Badge></td>
-                          <td><div className="flex items-center gap-2"><div className="w-16"><ProgressBar value={progress} tone={progress >= 100 ? "ok" : undefined} /></div><span className="w-8 text-right tabular-nums">{progress} %</span></div></td>
-                          <td className={`num ${cons > 100 ? "font-bold text-alert" : ""}`}>{budget ? `${cons} %` : "—"}</td>
-                          <td className={`num hidden md:table-cell ${!budget ? "text-ink-faint" : gap > 15 ? "font-semibold text-alert" : gap > 5 ? "text-warn" : "text-ok"}`}>{budget ? `${gap > 0 ? "+" : ""}${gap} pt` : ""}</td>
-                          <td className={`num ${Number(s?.late_count) ? "font-semibold text-alert" : "text-ink-faint"}`}>{Number(s?.late_count ?? 0) || "—"}</td>
-                          <td className="hidden whitespace-nowrap text-ink-muted lg:table-cell">{next ? `${formatDate(next.due_date)} · ${next.name}` : "—"}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+              <div>
+                <div className="mb-2 flex items-center justify-between"><div className="card-title">Sante des projets <span className="text-[10px] font-normal text-ink-faint">{rows.length} en cours ou a suivre</span></div><Link href="/projects" className="btn-ghost">Tous les projets ({list.length}) ›</Link></div>
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {rows.map((r) => <ProjectCard key={r.p.id} row={r} />)}
+                </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -128,7 +111,7 @@ export default async function DashboardPage() {
                   <div className="space-y-2.5 px-[15px] pb-4 pt-1">
                     {byCat.map((c) => (
                       <div key={c.value} className="text-[10.5px]">
-                        <div className="mb-1 flex items-center gap-2"><CategoryIcon category={c.value} className="h-3.5 w-3.5 opacity-80" /><span className="font-semibold">{CATEGORY_LABELS[c.value]}</span><span className="text-ink-faint">{c.n} projet{c.n > 1 ? "s" : ""}</span><span className="ml-auto tabular-nums">{k(c.spent)} <span className="text-ink-faint">/ {k(c.budget)}</span></span></div>
+                        <div className="mb-1 flex items-center gap-2"><CategoryIcon category={c.value} className="h-3.5 w-3.5" tone="brand" /><span className="font-semibold">{CATEGORY_LABELS[c.value]}</span><span className="text-ink-faint">{c.n} projet{c.n > 1 ? "s" : ""}</span><span className="ml-auto tabular-nums">{k(c.spent)} <span className="text-ink-faint">/ {k(c.budget)}</span></span></div>
                         <div className="relative h-[6px] w-full overflow-hidden rounded-full bg-line-light"><div className="absolute inset-y-0 left-0 rounded-full bg-line" style={{ width: `${(c.budget / maxCat) * 100}%` }} /><div className={`absolute inset-y-0 left-0 rounded-full ${c.spent > c.budget ? "bg-alert" : "bg-ink"}`} style={{ width: `${(Math.min(c.spent, c.budget) / maxCat) * 100}%` }} /></div>
                       </div>
                     ))}
