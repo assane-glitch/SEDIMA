@@ -80,8 +80,8 @@ def chunks(seq, size=120):
 out.append("\n-- Lots (niveau 1 du WBS) : dates = debut du projet + semaines")
 lot_rows = [f"({q(code)},{q(lot)},{q(l['name'])},{int(l['start'])},{int(l['end'])},{q(l['resp'])},{l['order'] * 100})" for (code, lot), l in lots.items()]
 for batch in chunks(lot_rows):
-    out.append("""insert into public.tasks (project_id, wbs_code, name, status, start_date, end_date, progress, budget, responsible_role, sort_order)
-select p.id, v.wbs, v.name, 'todo', p.start_date + (v.s - 1) * 7, p.start_date + (v.e - 1) * 7 + 6, 0, 0, v.resp, v.ord
+    out.append("""insert into public.tasks (project_id, wbs_code, name, status, start_date, end_date, baseline_start, baseline_end, progress, budget, responsible_role, sort_order)
+select p.id, v.wbs, v.name, 'todo', p.start_date + (v.s - 1) * 7, p.start_date + (v.e - 1) * 7 + 6, p.start_date + (v.s - 1) * 7, p.start_date + (v.e - 1) * 7 + 6, 0, 0, v.resp, v.ord
 from (values\n""" + ",\n".join(batch) + """) as v(code, wbs, name, s, e, resp, ord)
 join public.projects p on p.code = v.code
 on conflict (project_id, wbs_code) where wbs_code is not null do update set name = excluded.name, start_date = excluded.start_date, end_date = excluded.end_date, responsible_role = excluded.responsible_role, sort_order = excluded.sort_order;""")
@@ -93,12 +93,12 @@ for i, t in enumerate(tasks):
     notes = " · ".join(x for x in [f"Source : {t['Source']}" if t.get("Source") else "", f"Durée : {t['Durée (sem.)']} sem." if t.get("Durée (sem.)") is not None else ""] if x)
     task_rows.append(f"({q(code)},{q(lot)},{q(t['Code tâche'])},{q(t['Nom de la tâche'])},{int(t['Début (sem.)'])},{int(t['Fin (sem.)'])},{n(t.get('HTVA'))},{n(t.get('Douanes'))},{n(t.get('TVA'))},{q(t.get('Responsable') or '')},{q(t.get('Type de lien') or '')},{q(t.get('Méthode') or '')},{q(t.get('Confiance') or '')},{lots[(code, lot)]['order'] * 100 + (i % 100) + 1},{q(notes)})")
 for batch in chunks(task_rows):
-    out.append("""insert into public.tasks (project_id, parent_id, wbs_code, name, status, start_date, end_date, progress, budget, customs, vat, responsible_role, link_type, estimate_method, confidence, sort_order, notes)
-select p.id, l.id, v.wbs, v.name, 'todo', p.start_date + (v.s - 1) * 7, p.start_date + (v.e - 1) * 7 + 6, 0, v.htva, v.customs, v.vat, v.resp, v.link, v.method, v.conf, v.ord, v.notes
+    out.append("""insert into public.tasks (project_id, parent_id, wbs_code, name, status, start_date, end_date, baseline_start, baseline_end, progress, budget, customs, vat, responsible_role, link_type, estimate_method, confidence, sort_order, notes)
+select p.id, l.id, v.wbs, v.name, 'todo', p.start_date + (v.s - 1) * 7, p.start_date + (v.e - 1) * 7 + 6, p.start_date + (v.s - 1) * 7, p.start_date + (v.e - 1) * 7 + 6, 0, v.htva, v.customs, v.vat, v.resp, v.link, v.method, v.conf, v.ord, v.notes
 from (values\n""" + ",\n".join(batch) + """) as v(code, lot, wbs, name, s, e, htva, customs, vat, resp, link, method, conf, ord, notes)
 join public.projects p on p.code = v.code
 join public.tasks l on l.project_id = p.id and l.wbs_code = v.lot
-on conflict (project_id, wbs_code) where wbs_code is not null do update set parent_id = excluded.parent_id, name = excluded.name, start_date = excluded.start_date, end_date = excluded.end_date,
+on conflict (project_id, wbs_code) where wbs_code is not null do update set parent_id = excluded.parent_id, name = excluded.name, baseline_start = excluded.baseline_start, baseline_end = excluded.baseline_end,
   budget = excluded.budget, customs = excluded.customs, vat = excluded.vat, responsible_role = excluded.responsible_role, link_type = excluded.link_type,
   estimate_method = excluded.estimate_method, confidence = excluded.confidence, sort_order = excluded.sort_order, notes = excluded.notes;""")
 

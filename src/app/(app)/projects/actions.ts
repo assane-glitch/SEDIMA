@@ -87,6 +87,10 @@ export async function saveTask(formData: FormData) {
     ...(formData.has("vat") ? { vat: num(formData, "vat") } : {}),
     ...(formData.has("estimate_method") ? { estimate_method: str(formData, "estimate_method") } : {}),
     ...(formData.has("confidence") ? { confidence: str(formData, "confidence") } : {}),
+    ...(formData.has("actual_start") ? { actual_start: str(formData, "actual_start") || null } : {}),
+    ...(formData.has("actual_end") ? { actual_end: str(formData, "actual_end") || null } : {}),
+    ...(formData.has("baseline_start") ? { baseline_start: str(formData, "baseline_start") || null } : {}),
+    ...(formData.has("baseline_end") ? { baseline_end: str(formData, "baseline_end") || null } : {}),
     responsible_id: str(formData, "responsible_id") || null,
     responsible_role: str(formData, "responsible_role"),
     wbs_code: str(formData, "wbs_code") || null,
@@ -103,6 +107,17 @@ export async function saveTask(formData: FormData) {
   revalidatePath(`/projects/${projectId}`);
   revalidatePath(`/projects/${projectId}/planning`);
   revalidatePath("/dashboard");
+}
+
+export async function setTaskActuals(formData: FormData) {
+  const profile = await requireProfile();
+  if (!canEdit(profile)) return;
+  const projectId = str(formData, "project_id");
+  const id = str(formData, "id");
+  const supabase = await createClient();
+  await supabase.from("tasks").update({ actual_start: str(formData, "actual_start") || null, actual_end: str(formData, "actual_end") || null }).eq("id", id);
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/planning`);
 }
 
 export async function setTaskProgress(formData: FormData) {

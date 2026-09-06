@@ -125,6 +125,10 @@ export interface Task {
   vat: number;
   estimate_method: string;
   confidence: string;
+  baseline_start: string | null;
+  baseline_end: string | null;
+  actual_start: string | null;
+  actual_end: string | null;
 }
 
 export type ExpenseStatus = string; // pilote par la liste de reference expense_status

@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
-import { addDays, daysBetween, formatDate, formatMoney, today } from "@/lib/format";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { addDays, daysBetween, formatDate, today } from "@/lib/format";
 import { HEALTH_DOT, HEALTH_LABELS, type Health } from "@/lib/health";
 import type { AuditEntry, Expense, JournalEntry, Milestone, Profile, RegisterEntry, Task } from "@/lib/types";
 import type { Lists } from "@/lib/reference-types";
@@ -12,6 +12,7 @@ export type RowKind = "project" | "lot" | "task";
 export interface GanttRow {
   id: string; kind: RowKind; parentId?: string | null; code?: string | null; name: string; href?: string;
   start: string; end: string; progress: number; budget: number; spent: number; responsible?: string;
+  baselineStart?: string | null; baselineEnd?: string | null; actualStart?: string | null; actualEnd?: string | null;
   health?: Health; dependsOn?: string | null; linkType?: string; task?: Task;
 }
 export interface GanttMilestone { id: string; name: string; due: string; reached: string | null; rowId?: string | null; notes?: string; milestone?: Milestone }
@@ -42,6 +43,22 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [scaleChoice, setScaleChoice] = useState<Scale | "auto">("auto");
   const [showLinks, setShowLinks] = useState(true);
+  const [showBaseline, setShowBaseline] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  // Largeurs des colonnes de gauche, redimensionnables et memorisees
+  const COLS_KEY = `sedima.gantt.cols.${mode}`;
+  const defaultWidths = mode === "project" ? [44, 250, 116, 52, 92, 92] : [18, 280, 120, 52, 100, 100];
+  const [widths, setWidths] = useState<number[]>(defaultWidths);
+  useEffect(() => { try { const v = JSON.parse(localStorage.getItem(COLS_KEY) ?? "null"); if (Array.isArray(v) && v.length === defaultWidths.length) setWidths(v); } catch {} }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const startResize = (i: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    const x0 = e.clientX, w0 = widths[i];
+    const move = (ev: MouseEvent) => setWidths((w) => { const n = [...w]; n[i] = Math.max(28, w0 + ev.clientX - x0); return n; });
+    const up = () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); setWidths((w) => { try { localStorage.setItem(COLS_KEY, JSON.stringify(w)); } catch {} return w; }); };
+    window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
+  };
+  const scrollToToday = () => { const el = bodyRef.current; if (el) el.scrollLeft = Math.max(0, todayXRef.current - el.clientWidth / 3); };
+  const todayXRef = useRef(0);
   const lots = useMemo(() => rows.filter((r) => r.kind === "lot"), [rows]);
   const allCollapsed = lots.length > 0 && lots.every((l) => collapsed.has(l.id));
 
@@ -110,10 +127,12 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
   }, [visible, rowIndex, showLinks, mode, px, rangeStart, tops]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const todayX = x(t0) + px / 2;
+  todayXRef.current = todayX;
   const gridH = (tops.length ? tops[tops.length - 1] + rowH(visible[visible.length - 1]) : HEAD_H + msRow * ROW_MS);
-  const cols = mode === "project" ? "grid-cols-[44px_1fr_116px_52px_104px_104px]" : "grid-cols-[18px_1fr_120px_52px_110px_110px]";
-  const leftW = mode === "project" ? "w-[640px]" : "w-[640px]";
+  const gridStyle = { gridTemplateColumns: widths.map((w) => `${w}px`).join(" ") };
+  const leftPx = widths.reduce((a, b) => a + b, 0) + 16;
   const headRef = useRef<HTMLDivElement>(null);
+  const kMoney = (v: number) => `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(Math.round(v / 1000))} k`;
   const weekLabel = (a: string, b: string) => `S${isoWeek(new Date(a + "T00:00:00Z"))} → S${isoWeek(new Date(b + "T00:00:00Z"))}`;
 
   return (
@@ -123,14 +142,18 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
         <div className="flex flex-wrap items-center gap-3">
           {(["good", "warn", "bad", "done", "idle"] as Health[]).map((h) => <span key={h} className="inline-flex items-center gap-1.5"><span className={`dot ${HEALTH_DOT[h]}`} />{HEALTH_LABELS[h]}</span>)}
           <span className="inline-flex items-center gap-1.5"><span className="inline-block h-2 w-2 rotate-45 border border-ink bg-surface" />Jalon</span>
+          {showBaseline && <span className="inline-flex items-center gap-1.5"><span className="inline-block h-[3px] w-4 rounded-full bg-line-soft" />Reference</span>}
+          <span className="inline-flex items-center gap-1.5"><span className="inline-block h-[2px] w-4 rounded-full bg-ink" />Reel</span>
         </div>
         <div className="flex flex-wrap items-center gap-1">
           {(["day", "week", "month", "year"] as Scale[]).map((s) => <button key={s} onClick={() => setScaleChoice(s)} className={`filter-chip !py-[2px] ${scale === s ? "filter-chip-active" : ""}`}>{SCALE_LABEL[s]}</button>)}
+          <button onClick={scrollToToday} className="btn-primary !py-[2px]">Aujourd&apos;hui</button>
           {lots.length > 0 && <>
             <span className="mx-1 h-4 w-px bg-line-hair" />
-            <button onClick={() => setCollapsed(allCollapsed ? new Set() : new Set(lots.map((l) => l.id)))} className="btn-secondary !py-[2px]">{allCollapsed ? "▾ Tout deplier" : "▸ Tout replier"}</button>
+            <button onClick={() => setCollapsed(allCollapsed ? new Set() : new Set(lots.map((l) => l.id)))} className="btn-secondary !py-[2px]">{allCollapsed ? "+ Tout deplier" : "− Tout replier"}</button>
           </>}
           {mode === "project" && <button onClick={() => setShowLinks((v) => !v)} className={`btn-secondary !py-[2px] ${showLinks ? "!bg-surface-sub" : ""}`}>⇢ Liens</button>}
+          {mode === "project" && <button onClick={() => setShowBaseline((v) => !v)} className={`btn-secondary !py-[2px] ${showBaseline ? "!bg-surface-sub" : ""}`} title="Afficher le planning de reference sous chaque barre">▭ Reference</button>}
           {canEdit && mode === "project" && <>
             <span className="mx-1 h-4 w-px bg-line-hair" />
             <button onClick={() => setSelMilestone("new")} className="btn-secondary !py-[2px]">+ Jalon</button>
@@ -143,9 +166,13 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
       <div className="relative overflow-y-auto" style={{ maxHeight: "calc(100vh - 210px)" }}>
         {/* En-tete fige : colonnes a gauche, graduations a droite (synchronisees avec le defilement des barres) */}
         <div className="sticky top-0 z-30 flex border-b border-line-hair bg-thead">
-          <div className={`grid ${cols} ${leftW} shrink-0 items-end overflow-hidden border-r-2 border-line px-2 pb-1.5 eyebrow`} style={{ height: HEAD_H }}>
-            <div>{mode === "project" ? "WBS" : ""}</div>
-            <div className="truncate">{mode === "project" ? "Lot / tache" : "Projet"}</div><div className="truncate">{mode === "project" ? "Responsable" : "Chef de projet"}</div><div className="truncate text-right">Avanc.</div><div className="truncate text-right">Budget</div><div className="truncate text-right">Depense</div>
+          <div className="relative grid shrink-0 items-end overflow-hidden border-r-2 border-line px-2 pb-1.5 eyebrow" style={{ ...gridStyle, width: leftPx, height: HEAD_H }}>
+            {[mode === "project" ? "WBS" : "", mode === "project" ? "Lot / tache" : "Projet", mode === "project" ? "Responsable" : "Chef de projet", "Avanc.", "Budget (k FCFA)", "Depense (k FCFA)"].map((label, i) => (
+              <div key={i} className={`relative truncate ${i >= 3 ? "text-right" : ""}`}>
+                {label}
+                <div onMouseDown={(e) => startResize(i, e)} className="absolute -right-1 top-[-14px] bottom-[-6px] w-2 cursor-col-resize hover:bg-line" title="Redimensionner la colonne" />
+              </div>
+            ))}
           </div>
           <div ref={headRef} className="relative min-w-0 flex-1 overflow-hidden" style={{ height: HEAD_H }}>
             <div className="relative" style={{ width, height: HEAD_H }}>
@@ -158,9 +185,9 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
 
         <div className="flex">
           {/* Panneau gauche : toujours visible */}
-          <div className={`shrink-0 border-r-2 border-line bg-surface ${leftW}`}>
+          <div className="shrink-0 border-r-2 border-line bg-surface" style={{ width: leftPx }}>
             {msRow === 1 && (
-              <div className={`grid ${cols} items-center border-b border-line-light bg-surface-alt px-2 text-[10.5px]`} style={{ height: ROW_MS }}>
+              <div className="grid items-center border-b border-line-light bg-surface-alt px-2 text-[11px]" style={{ ...gridStyle, height: ROW_MS }}>
                 <div /><div className="font-bold">Jalons <span className="font-normal text-ink-faint">{milestones.filter((m) => m.reached).length}/{milestones.length}</span></div><div /><div /><div /><div />
               </div>
             )}
@@ -169,21 +196,21 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
               const over = r.budget > 0 && r.spent > r.budget;
               const h = r.health ?? "idle";
               return (
-                <div key={r.id} className={`grid ${cols} items-center border-b border-line-light px-2 ${isLot ? "bg-surface-alt text-[11px] font-bold" : "text-[10px] hover:bg-surface-alt"}`} style={{ height: rowH(r) }}>
+                <div key={r.id} className={`grid items-center border-b border-line-light px-2 ${isLot ? "bg-surface-alt text-[12px] font-bold" : "text-[11px] hover:bg-surface-alt"}`} style={{ ...gridStyle, height: rowH(r) }}>
                   <div className="flex items-center gap-1 truncate pr-1">
                     <span className={`dot ${HEALTH_DOT[h]}`} title={HEALTH_LABELS[h]} />
                     {mode === "project" && <span className={`font-mono text-[9px] ${isLot ? "text-ink" : "text-ink-faint"}`}>{r.code}</span>}
                   </div>
                   <div className={`flex min-w-0 items-center gap-1 ${r.parentId ? "pl-4" : ""}`}>
-                    {isLot && <button onClick={() => toggle(r.id)} className="w-3 shrink-0 cursor-pointer text-[9px] text-ink-muted" aria-label="Replier">{collapsed.has(r.id) ? "▸" : "▾"}</button>}
+                    {isLot && <button onClick={() => toggle(r.id)} className="flex h-[13px] w-[13px] shrink-0 cursor-pointer items-center justify-center rounded-xs border border-line text-[10px] font-bold leading-none text-ink-muted hover:bg-surface-sub" aria-label={collapsed.has(r.id) ? "Deplier" : "Replier"}>{collapsed.has(r.id) ? "+" : "−"}</button>}
                     {r.href
                       ? <Link href={r.href} className="truncate font-semibold hover:underline">{r.name}</Link>
                       : <button onClick={() => setSelected(r)} className={`min-w-0 cursor-pointer truncate text-left ${isLot ? "font-bold" : "font-semibold"}`}>{r.name}</button>}
                   </div>
                   <div className={`truncate pr-1 text-[10px] ${isLot ? "text-ink-body" : "text-ink-muted"}`}>{r.responsible || "—"}</div>
                   <div className="text-right tabular-nums">{r.progress} %</div>
-                  <div className={`text-right tabular-nums ${isLot ? "" : "text-ink-muted"}`}>{r.budget ? formatMoney(r.budget, currency) : "—"}</div>
-                  <div className={`text-right tabular-nums ${over ? "font-bold text-alert" : isLot ? "" : "text-ink-muted"}`}>{r.spent ? formatMoney(r.spent, currency) : "—"}</div>
+                  <div className={`truncate text-right tabular-nums ${isLot ? "" : "text-ink-muted"}`}>{r.budget ? kMoney(r.budget) : "—"}</div>
+                  <div className={`truncate text-right tabular-nums ${over ? "font-bold text-alert" : isLot ? "" : "text-ink-muted"}`}>{r.spent ? kMoney(r.spent) : "—"}</div>
                 </div>
               );
             })}
@@ -191,13 +218,13 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
           </div>
 
           {/* Barres : seul element a defilement horizontal */}
-          <div className="min-w-0 flex-1 overflow-x-auto" onScroll={(e) => { if (headRef.current) headRef.current.scrollLeft = e.currentTarget.scrollLeft; }}>
+          <div ref={bodyRef} className="min-w-0 flex-1 overflow-x-auto" onScroll={(e) => { if (headRef.current) headRef.current.scrollLeft = e.currentTarget.scrollLeft; }}>
             <div className="relative" style={{ width, height: Math.max(gridH - HEAD_H, ROW_LOT) }}>
               {msRow === 1 && <div className="absolute inset-x-0 top-0 border-b border-line-light bg-surface-alt" style={{ height: ROW_MS }}>
                 {milestones.map((m) => <Diamond key={m.id} m={m} left={x(m.due) + px / 2} top={ROW_MS / 2} t0={t0} onClick={() => canEdit && setSelMilestone(m)} />)}
               </div>}
               {/* Bande de la semaine en cours */}
-              {(() => { const wk = ticks.find((t) => todayX >= t.left && todayX < t.left + t.width); return wk && scale !== "day" ? <div className="absolute bottom-0 top-0 bg-alert-bg/70" style={{ left: wk.left, width: wk.width }} /> : null; })()}
+              {(() => { const wk = ticks.find((t) => todayX >= t.left && todayX < t.left + t.width); return wk && scale !== "day" ? <div className="absolute bottom-0 top-0 bg-alert-bg" style={{ left: wk.left, width: wk.width }} /> : null; })()}
               {ticks.map((t, i) => <div key={i} className={`absolute bottom-0 top-0 border-r ${t.major ? "border-line-hair" : "border-line-light"}`} style={{ left: t.left + t.width - 1 }} />)}
               {visible.map((r, i) => <div key={i} className={`absolute left-0 right-0 border-b border-line-light ${r.kind === "lot" ? "bg-surface-alt/50" : ""}`} style={{ top: rowTop(i) - HEAD_H, height: rowH(r) }} />)}
               {todayX >= 0 && todayX <= width && <div className="absolute bottom-0 top-0 z-[6] w-px bg-brand" style={{ left: todayX }} />}
@@ -210,11 +237,13 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
               {visible.map((r, i) => {
                 const left = x(r.start), w = Math.max(px, (daysBetween(r.start, r.end) + 1) * px), top = rowTop(i) - HEAD_H;
                 const title = `${r.name}\n${formatDate(r.start)} → ${formatDate(r.end)}\n${r.progress} %${r.responsible ? `\n${r.responsible}` : ""}`;
-                const h = rowH(r), barH = 8, barTop = top + (h - barH) / 2;
+                const h = rowH(r), barH = 8, barTop = top + (h - barH) / 2 - (showBaseline && r.baselineStart ? 2 : 0);
+                const baseline = showBaseline && r.baselineStart && r.baselineEnd ? <div className="pointer-events-none absolute rounded-full bg-line-soft" title={`Reference : ${formatDate(r.baselineStart)} → ${formatDate(r.baselineEnd)}`} style={{ top: barTop + barH + 1, left: x(r.baselineStart), width: Math.max(px, (daysBetween(r.baselineStart, r.baselineEnd) + 1) * px), height: 3 }} /> : null;
+                const actual = r.actualStart ? <div className="pointer-events-none absolute rounded-full bg-ink" title={`Reel : ${formatDate(r.actualStart)} → ${r.actualEnd ? formatDate(r.actualEnd) : "en cours"}`} style={{ top: barTop - 3, left: x(r.actualStart), width: Math.max(2, (daysBetween(r.actualStart, r.actualEnd ?? t0) + 1) * px), height: 2 }} /> : null;
                 const atEdge = left + w + 60 > width;
                 const weeks = <span className="pointer-events-none absolute whitespace-nowrap text-[9px] tabular-nums text-ink-muted" style={atEdge ? { right: width - left + 5, top: barTop - 2 } : { left: left + w + 6, top: barTop - 2 }}>{weekLabel(r.start, r.end)}</span>;
                 if (r.kind === "lot" || r.kind === "project") {
-                  const fill = r.kind === "lot" ? "bg-brand" : "bg-ink-body", track = r.kind === "lot" ? "bg-alert-bd" : "bg-line-soft";
+                  const fill = r.kind === "lot" ? "bg-brand" : "bg-ink-body", track = r.kind === "lot" ? "bg-alert-bd" : "bg-line";
                   return (
                     <div key={r.id}>
                       <div className="absolute" style={{ top: barTop, left, width: w, height: barH }}>
@@ -222,7 +251,7 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
                           : <button onClick={() => setSelected(r)} title={title} className="relative block h-full w-full cursor-pointer"><Bar fill={fill} track={track} progress={r.progress} /></button>}
                         {mode === "portfolio" && milestones.filter((m) => m.rowId === r.id).map((m) => <Diamond key={m.id} m={m} left={x(m.due) - left + px / 2} top={barH / 2} t0={t0} small />)}
                       </div>
-                      {weeks}
+                      {weeks}{baseline}{actual}
                     </div>
                   );
                 }
@@ -231,7 +260,7 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
                     <button onClick={() => setSelected(r)} title={title} className="absolute cursor-pointer" style={{ top: barTop, left, width: w, height: barH }}>
                       <Bar fill="bg-ink-body" track="bg-line" progress={r.progress} />
                     </button>
-                    {weeks}
+                    {weeks}{baseline}{actual}
                   </div>
                 );
               })}
@@ -254,10 +283,10 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
 }
 
 function Bar({ fill, track, progress }: { fill: string; track: string; progress: number }) {
-  // Barre pleine de la couleur du type ; l'avancement assombrit la partie realisee
+  // Piste claire de la couleur du type, remplie en fonce au fur et a mesure de l'avancement
   return (
-    <div className={`relative h-full w-full overflow-hidden rounded-full ${progress >= 100 ? "bg-ok" : fill}`}>
-      {progress > 0 && progress < 100 && <div className={`absolute inset-y-0 right-0 ${track}`} style={{ width: `${100 - progress}%` }} />}
+    <div className={`relative h-full w-full overflow-hidden rounded-full ${track}`}>
+      <div className={`absolute inset-y-0 left-0 rounded-full ${progress >= 100 ? "bg-ok" : fill}`} style={{ width: `${Math.max(0, Math.min(100, progress))}%` }} />
     </div>
   );
 }

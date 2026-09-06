@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useTransition } from "react";
-import { deleteTask, saveTask, setTaskProgress } from "@/app/(app)/projects/actions";
+import { deleteTask, saveTask, setTaskActuals, setTaskProgress } from "@/app/(app)/projects/actions";
 import { ExpenseForm } from "@/components/ExpenseForm";
 import { ProgressBar, Badge } from "@/components/ui";
 import { describeAudit, relativeTime } from "@/lib/audit";
@@ -29,6 +29,10 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, regist
   const excluded = excludedStatuses(statuses);
   const regTypes = lists?.register_type ?? [];
   const progressNum = Math.max(0, Math.min(100, Math.round(Number(progress) || 0)));
+  const [actualStart, setActualStart] = useState(task?.actual_start ?? "");
+  const [actualEnd, setActualEnd] = useState(task?.actual_end ?? "");
+  const week = (iso: string) => { if (!iso) return ""; const d = new Date(iso + "T00:00:00Z"); const day = d.getUTCDay() || 7; d.setUTCDate(d.getUTCDate() + 4 - day); const y0 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1)); return `S${Math.ceil(((d.getTime() - y0.getTime()) / 86400000 + 1) / 7)}`; };
+  const actualsChanged = task ? actualStart !== (task.actual_start ?? "") || actualEnd !== (task.actual_end ?? "") : false;
   const changed = task ? progressNum !== task.progress : false;
 
   // Fil d'evenements de la tache : depenses, journal, registres, modifications
@@ -75,6 +79,19 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, regist
                 )}
                 <div className="mt-3"><ProgressBar value={isLot ? task.progress : progressNum} /></div>
               </div>
+
+              {!isLot && (
+                <form action={(fd) => start(async () => { await setTaskActuals(fd); onClose(); })} className="rounded-lg border border-line-hair bg-surface-alt p-4">
+                  <input type="hidden" name="project_id" value={projectId} /><input type="hidden" name="id" value={task.id} />
+                  <div className="eyebrow mb-3">Dates reelles</div>
+                  <div className="grid grid-cols-[1fr_1fr_auto] items-end gap-4">
+                    <Field label="Demarrage reel"><div className="flex items-center gap-2"><input name="actual_start" type="date" value={actualStart} onChange={(e) => setActualStart(e.target.value)} disabled={!canEdit} className="input" /><span className="w-9 shrink-0 text-[11px] font-bold tabular-nums">{week(actualStart)}</span></div></Field>
+                    <Field label="Fin reelle"><div className="flex items-center gap-2"><input name="actual_end" type="date" value={actualEnd} onChange={(e) => setActualEnd(e.target.value)} disabled={!canEdit} className="input" /><span className="w-9 shrink-0 text-[11px] font-bold tabular-nums">{week(actualEnd)}</span></div></Field>
+                    {canEdit && <button type="submit" disabled={pending || !actualsChanged} className="btn-primary">{pending ? "…" : "Enregistrer"}</button>}
+                  </div>
+                  <div className="hint mt-2">Planifie : {week(task.start_date)} → {week(task.end_date)}{task.baseline_start ? ` · Reference : ${week(task.baseline_start)} → ${week(task.baseline_end ?? task.baseline_start)}` : ""}. Le reel apparait en trait noir au-dessus de la barre du Gantt.</div>
+                </form>
+              )}
 
               <div className="rounded-lg border border-line-hair bg-surface-alt p-4">
                 <div className="mb-2 flex items-center justify-between"><span className="eyebrow">Budget consomme</span><span className={`text-[13px] font-bold tabular-nums ${over ? "text-alert" : ""}`}>{formatMoney(spent, currency)} <span className="font-normal text-ink-faint">/ {formatMoney(budget, currency)}</span></span></div>
@@ -130,6 +147,12 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, regist
                   <Field label="Statut"><select name="status" defaultValue={task?.status ?? "todo"} className="input">{Object.entries(TASK_STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></Field>
                 </div>
               ) : <p className="hint">Les dates, l&apos;avancement, le budget et les depenses d&apos;un lot sont calcules a partir de ses taches.</p>}
+              {!isLot && (
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Reference : debut"><input name="baseline_start" type="date" defaultValue={task?.baseline_start ?? ""} className="input" /></Field>
+                  <Field label="Reference : fin"><input name="baseline_end" type="date" defaultValue={task?.baseline_end ?? ""} className="input" /></Field>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Responsable (compte)"><select name="responsible_id" defaultValue={task?.responsible_id ?? ""} className="input"><option value="">—</option>{people.map((p) => <option key={p.id} value={p.id}>{p.full_name || p.email}</option>)}</select></Field>
                 <Field label="Role responsable"><input name="responsible_role" list="roles" defaultValue={task?.responsible_role ?? ""} placeholder="Conducteur de travaux" className="input" /><datalist id="roles">{(lists?.responsible_role ?? []).map((r) => <option key={r.value} value={r.value} />)}</datalist></Field>
