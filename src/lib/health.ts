@@ -37,3 +37,25 @@ export function projectHealth(p: Project, s?: ProjectStats | null): Health {
 export function daysLeft(p: Project) {
   return daysBetween(today(), p.end_date);
 }
+
+// Sante d'une tache ou d'un lot, sur ses dates, son statut et son avancement.
+export function taskHealth(t: { status?: string; progress: number; start: string; end: string }, t0 = today()): Health {
+  if (t.status === "done" || t.progress >= 100) return "done";
+  if (t.status === "blocked") return "bad";
+  if (t.end < t0) return "bad";
+  if (t.start > t0) return "idle";
+  const total = Math.max(1, daysBetween(t.start, t.end) + 1);
+  const elapsed = daysBetween(t.start, t0) + 1;
+  const expected = Math.round((elapsed / total) * 100);
+  return t.progress + 15 < expected ? "warn" : "good";
+}
+
+// Sante d'un lot = la pire de ses taches ; termine si toutes le sont ; a venir si toutes le sont.
+export function lotHealth(children: Health[]): Health {
+  if (children.length === 0) return "idle";
+  if (children.includes("bad")) return "bad";
+  if (children.includes("warn")) return "warn";
+  if (children.every((h) => h === "done")) return "done";
+  if (children.every((h) => h === "idle")) return "idle";
+  return "good";
+}

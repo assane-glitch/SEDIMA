@@ -83,6 +83,10 @@ export async function saveTask(formData: FormData) {
     end_date: str(formData, "end_date"),
     progress: Math.max(0, Math.min(100, Math.round(num(formData, "progress")))),
     ...(formData.has("budget") ? { budget: num(formData, "budget") } : {}),
+    ...(formData.has("customs") ? { customs: num(formData, "customs") } : {}),
+    ...(formData.has("vat") ? { vat: num(formData, "vat") } : {}),
+    ...(formData.has("estimate_method") ? { estimate_method: str(formData, "estimate_method") } : {}),
+    ...(formData.has("confidence") ? { confidence: str(formData, "confidence") } : {}),
     responsible_id: str(formData, "responsible_id") || null,
     responsible_role: str(formData, "responsible_role"),
     wbs_code: str(formData, "wbs_code") || null,
@@ -96,6 +100,19 @@ export async function saveTask(formData: FormData) {
     const { data: last } = await supabase.from("tasks").select("sort_order").eq("project_id", projectId).order("sort_order", { ascending: false }).limit(1).maybeSingle();
     await supabase.from("tasks").insert({ ...payload, sort_order: (last?.sort_order ?? 0) + 10 });
   }
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/planning`);
+  revalidatePath("/dashboard");
+}
+
+export async function setTaskProgress(formData: FormData) {
+  const profile = await requireProfile();
+  if (!canEdit(profile)) return;
+  const projectId = str(formData, "project_id");
+  const id = str(formData, "id");
+  const progress = Math.max(0, Math.min(100, Math.round(num(formData, "progress"))));
+  const supabase = await createClient();
+  await supabase.from("tasks").update({ progress, ...(progress >= 100 ? { status: "done" } : progress > 0 ? { status: "in_progress" } : {}) }).eq("id", id);
   revalidatePath(`/projects/${projectId}`);
   revalidatePath(`/projects/${projectId}/planning`);
   revalidatePath("/dashboard");
