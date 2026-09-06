@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FavoriteStar } from "./FavoriteStar";
 import { HEALTH_LABELS, type Health } from "@/lib/health";
 import { PROJECT_STATUS_LABELS, type Project, type ProjectStats } from "@/lib/types";
 
@@ -15,16 +16,16 @@ export const rebuiltOf = (r: CardRow) => (Number(r.s?.task_count ?? 0) > 0 ? Num
 export const isAlert = (r: CardRow) => { const rb = rebuiltOf(r), b = Number(r.p.budget); return r.health === "bad" || (b > 0 && rb !== null && rb > b * 1.05) || (b > 0 && Number(r.s?.spent ?? 0) > b); };
 
 /** Carte projet du portefeuille : code, badge, nom, budget approuve et ecart HTVA, semaines, barre, statut. */
-export function ProjectCard({ row, href }: { row: CardRow; href?: string }) {
+export function ProjectCard({ row, href, favorite }: { row: CardRow; href?: string; favorite?: boolean }) {
   const { p, s, health } = row;
-  const budget = Number(p.budget), cost = rebuiltOf(row), progress = Number(s?.progress ?? 0), late = Number(s?.late_count ?? 0);
+  const budget = Number(p.budget), cost = rebuiltOf(row), late = Number(s?.late_count ?? 0);
   const diff = cost !== null && budget > 0 ? Math.round(((cost - budget) / budget) * 100) : null;
   const alert = isAlert(row);
-  const overShare = cost !== null && cost > budget && cost > 0 ? ((cost - budget) / cost) * 100 : 0;
-  const started = progress > 0 || p.status === "execution" || p.status === "engage";
   return (
-    <Link href={href ?? `/projects/${p.id}`} className="card block px-[13px] pb-3 pt-[11px] transition-colors hover:border-line hover:bg-surface-alt">
-      <div className="flex items-center gap-2">
+    <div className="card relative transition-colors hover:border-line hover:bg-surface-alt">
+      {favorite !== undefined && <FavoriteStar projectId={p.id} favorite={favorite} className="absolute right-2 top-2 z-10" />}
+      <Link href={href ?? `/projects/${p.id}`} className="block px-[13px] pb-3 pt-[11px]">
+      <div className="flex items-center gap-2 pr-6">
         <span className="font-mono text-[10.5px] font-bold text-ink">{p.code}</span>
         {alert ? <span className="flex h-4 w-4 items-center justify-center rounded-[3px] bg-brand text-[10px] font-bold leading-none text-surface" title={HEALTH_LABELS[health]}>!</span>
           : late > 0 ? <span className="flex h-4 min-w-4 items-center justify-center rounded-[3px] bg-accent px-1 text-[10px] font-bold leading-none text-ink" title={`${late} tache${late > 1 ? "s" : ""} en retard`}>{late}</span> : null}
@@ -35,11 +36,8 @@ export function ProjectCard({ row, href }: { row: CardRow; href?: string }) {
         {diff === null ? <span className="text-ink-faint">sans taches</span> : Math.abs(diff) < 1 ? <span className="font-semibold text-ink-muted">au budget</span> : <span className={`font-semibold tabular-nums ${diff > 0 ? "text-brand" : "text-ink-muted"}`}>{diff > 0 ? "+" : "−"}{Math.abs(diff)} %</span>}
         <span className="ml-auto whitespace-nowrap tabular-nums text-ink-faint">{weekLabel(p.start_date)} → {weekLabel(p.end_date)}</span>
       </div>
-      <div className="relative mt-1.5 h-[4px] w-full overflow-hidden rounded-sm" style={{ backgroundImage: started ? undefined : "repeating-linear-gradient(135deg, #374151 0 3px, transparent 3px 6px)", backgroundColor: started ? "#e7e7e7" : undefined }}>
-        {started && <div className="absolute inset-y-0 left-0 bg-ink" style={{ width: `${Math.max(2, progress)}%` }} />}
-        {overShare > 0 && <div className="absolute inset-y-0 right-0 bg-brand" style={{ width: `${Math.max(3, Math.min(60, overShare))}%` }} />}
-      </div>
       <div className="mt-2 text-[10.5px] font-semibold text-ink-body">{STATUS_SHORT[p.status] ?? PROJECT_STATUS_LABELS[p.status]}</div>
-    </Link>
+      </Link>
+    </div>
   );
 }

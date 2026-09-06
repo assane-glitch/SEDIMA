@@ -325,3 +325,14 @@ export async function saveBudgetYears(formData: FormData) {
   revalidatePath("/projects/budget");
   redirect(`/projects/${projectId}/budget?ok=tranches`);
 }
+
+/** Ajoute ou retire un projet des favoris de l'utilisateur connecte. */
+export async function toggleFavorite(projectId: string) {
+  const profile = await requireProfile();
+  const supabase = await createClient();
+  const { data } = await supabase.from("user_favorites").select("project_id").eq("user_id", profile.id).eq("project_id", projectId).maybeSingle();
+  if (data) await supabase.from("user_favorites").delete().eq("user_id", profile.id).eq("project_id", projectId);
+  else await supabase.from("user_favorites").insert({ user_id: profile.id, project_id: projectId });
+  for (const p of ["/dashboard", "/projects", `/projects/${projectId}`]) revalidatePath(p);
+  return { favorite: !data };
+}

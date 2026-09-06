@@ -26,9 +26,11 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
   if (sp.status) query = query.eq("status", sp.status);
   if (sp.manager) query = query.eq("manager_id", sp.manager);
   if (q) query = query.or(`name.ilike.%${q.replace(/[%,()]/g, "")}%,code.ilike.%${q.replace(/[%,()]/g, "")}%`);
-  const [{ data: projects }, { data: stats }, { data: taskRows }] = await Promise.all([
+  const [{ data: projects }, { data: stats }, { data: taskRows }, { data: favRows }] = await Promise.all([
     query, supabase.from("project_stats").select("*"), supabase.from("tasks").select("id,project_id,parent_id,budget,customs,vat"),
+    supabase.from("user_favorites").select("project_id").eq("user_id", profile.id),
   ]);
+  const favorites = new Set((favRows ?? []).map((f) => f.project_id));
   // Cout reconstitue TTC par projet = somme des taches feuilles (HTVA + douanes + TVA)
   const parents = new Set((taskRows ?? []).filter((t) => t.parent_id).map((t) => t.parent_id!));
   const ttc = new Map<string, number>();
@@ -47,7 +49,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
       default: return r.p.start_date;
     }
   };
-  rows.sort((a, b) => { const ka = key(a), kb = key(b); return (ka < kb ? -1 : ka > kb ? 1 : 0) * (dir === "asc" ? 1 : -1); });
+  rows.sort((a, b) => { const fa = favorites.has(a.p.id) ? 0 : 1, fb = favorites.has(b.p.id) ? 0 : 1; if (fa !== fb) return fa - fb; const ka = key(a), kb = key(b); return (ka < kb ? -1 : ka > kb ? 1 : 0) * (dir === "asc" ? 1 : -1); });
 
   const totalBudget = rows.reduce((t, r) => t + Number(r.p.budget), 0);
   const totalSpent = rows.reduce((t, r) => t + Number(r.s?.spent ?? 0), 0);
@@ -95,7 +97,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
         <div className={`grid gap-4 ${buckets.length === 1 ? "max-w-md" : "min-w-[1180px] grid-cols-5"}`}>
           {buckets.map((b) => (
             <section key={b.value} className="min-w-0 space-y-3">
-              {b.rows.map((r) => <ProjectCard key={r.p.id} row={r} />)}
+              {b.rows.map((r) => <ProjectCard key={r.p.id} row={r} favorite={favorites.has(r.p.id)} />)}
               {canEdit(profile) && <Link href="/projects/new" className="block rounded-lg border border-dashed border-line px-3 py-3 text-[10.5px] font-semibold text-ink-muted hover:border-ink-muted hover:text-ink">+ Nouveau projet</Link>}
             </section>
           ))}

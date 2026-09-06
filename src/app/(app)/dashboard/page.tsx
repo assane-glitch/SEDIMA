@@ -21,7 +21,7 @@ export default async function DashboardPage() {
   const supabase = await createClient();
   const t0 = today();
   const monday = addDays(t0, -((new Date(t0 + "T00:00:00Z").getUTCDay() + 6) % 7)), sunday = addDays(monday, 6), in30 = addDays(t0, 30), ago7 = addDays(t0, -7);
-  const [{ data: projects }, { data: stats }, { data: people }, { data: tasks }, { data: ms }, { data: jr }, { data: rg }, { data: ex }, lists] = await Promise.all([
+  const [{ data: projects }, { data: stats }, { data: people }, { data: tasks }, { data: ms }, { data: jr }, { data: rg }, { data: ex }, lists, { data: favRows }] = await Promise.all([
     supabase.from("projects").select("*").neq("status", "hors_perimetre").order("code"),
     supabase.from("project_stats").select("*"),
     supabase.from("profiles").select("id,email,full_name,role"),
@@ -31,7 +31,9 @@ export default async function DashboardPage() {
     supabase.from("register_entries").select("*").order("created_at", { ascending: false }).limit(6),
     supabase.from("expenses").select("*").order("created_at", { ascending: false }).limit(6),
     getLists(),
+    supabase.from("user_favorites").select("project_id").eq("user_id", profile.id),
   ]);
+  const favorites = new Set((favRows ?? []).map((f) => f.project_id));
   const list = (projects ?? []) as Project[];
   const pmap = new Map(list.map((p) => [p.id, p]));
   const statMap = new Map(((stats ?? []) as ProjectStats[]).map((s) => [s.project_id, s]));
@@ -72,13 +74,11 @@ export default async function DashboardPage() {
 
   return (
     <>
+      <div className="sticky top-0 z-20 -mx-4 -mt-1 border-b border-line-hair bg-[#e9eaed] px-4 pt-3 md:-mx-2 md:px-2">
       <PageHeader title="Tableau de bord" subtitle={`Semaine ${isoWeek(t0)} · ${formatDate(monday)} → ${formatDate(sunday)} · ${list.length} projets, ${activeIds.size} en cours`}
         actions={<><Link href="/projects/planning" className="btn-secondary">Planning</Link><Link href="/projects/budget" className="btn-secondary">Budget</Link>{canEdit(profile) && <Link href="/projects/new" className="btn-primary">+ Nouveau projet</Link>}</>} />
-      {list.length === 0 ? (
-        <Empty title="Aucun projet pour le moment" hint={canEdit(profile) ? "Creez votre premier projet pour afficher le planning, le budget et l'avancement." : "Un chef de projet doit d'abord creer un projet."} action={canEdit(profile) ? { href: "/projects/new", label: "Creer un projet" } : undefined} />
-      ) : (
-        <>
-          <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+      {list.length > 0 && (
+          <div className="mb-3 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
             <Stat label="Budget portefeuille" value={formatMoney(totalBudget)} hint={`${list.length} projets`} />
             <Stat label="Engage" value={formatMoney(totalSpent)} hint={`${pct(totalSpent, totalBudget)} % du budget${overBudget.length ? ` · ${overBudget.length} en depassement` : ""}`} tone={overBudget.length ? "warn" : "default"} />
             <Stat label="Taches en retard" value={late.length} hint={blocked.length ? `${blocked.length} bloquee${blocked.length > 1 ? "s" : ""}` : "aucune bloquee"} tone={late.length ? "bad" : "good"} />
@@ -86,14 +86,29 @@ export default async function DashboardPage() {
             <Stat label="Jalons a 30 jours" value={milestones.length} hint={overdueMs.length ? `${overdueMs.length} depasse${overdueMs.length > 1 ? "s" : ""}` : "aucun depasse"} tone={overdueMs.length ? "warn" : "default"} />
             <Stat label={mine.length ? "Mes taches ouvertes" : "Saisies terrain 7 j"} value={mine.length || feed7} hint={mine.length ? `${mine.filter((t) => t.end_date < t0).length} en retard` : "journal, registres, depenses"} />
           </div>
-
+      )}
+      </div>
+      <div className="pt-4">
+      {list.length === 0 ? (
+        <Empty title="Aucun projet pour le moment" hint={canEdit(profile) ? "Creez votre premier projet pour afficher le planning, le budget et l'avancement." : "Un chef de projet doit d'abord creer un projet."} action={canEdit(profile) ? { href: "/projects/new", label: "Creer un projet" } : undefined} />
+      ) : (
+        <>
           <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
             <div className="space-y-4">
+              {favorites.size > 0 && (
+                <div>
+                  <div className="mb-2 flex items-center justify-between"><div className="card-title">Mes projets favoris <span className="text-[10px] font-normal text-ink-faint">{favorites.size}</span></div><Link href="/projects" className="btn-ghost">Modifier dans Projets ›</Link></div>
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    {list.filter((p) => favorites.has(p.id)).map((p) => <ProjectCard key={p.id} row={{ p, s: statMap.get(p.id), health: projectHealth(p, statMap.get(p.id)) }} favorite />)}
+                  </div>
+                </div>
+              )}
               <div>
                 <div className="mb-2 flex items-center justify-between"><div className="card-title">Sante des projets <span className="text-[10px] font-normal text-ink-faint">{rows.length} en cours ou a suivre</span></div><Link href="/projects" className="btn-ghost">Tous les projets ({list.length}) ›</Link></div>
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {rows.map((r) => <ProjectCard key={r.p.id} row={r} />)}
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  {rows.map((r) => <ProjectCard key={r.p.id} row={r} favorite={favorites.has(r.p.id)} />)}
                 </div>
+                {favorites.size === 0 && <p className="hint mt-2">Astuce : l&apos;etoile sur une carte ou dans l&apos;en-tete d&apos;un projet l&apos;ajoute a vos favoris, affiches en tete de ce tableau de bord.</p>}
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -121,6 +136,12 @@ export default async function DashboardPage() {
             </div>
 
             <div className="space-y-4">
+              {mine.length > 0 && (
+                <div className="card">
+                  <div className="flex items-center justify-between px-[15px] pb-1 pt-[13px]"><div className="card-title">Mes taches <span className="text-[10px] font-normal text-ink-faint">{mine.length} ouverte{mine.length > 1 ? "s" : ""}</span></div><Link href="/tasks" className="btn-ghost">Toutes ›</Link></div>
+                  <div className="divide-y divide-line-light">{[...mine].sort((a, b) => a.end_date.localeCompare(b.end_date)).slice(0, 8).map(taskLine)}</div>
+                </div>
+              )}
               {(late.length > 0 || blocked.length > 0 || overBudget.length > 0 || overdueMs.length > 0) && (
                 <div className="card">
                   <div className="px-[15px] pb-1 pt-[13px]"><div className="card-title">Alertes</div></div>
@@ -150,6 +171,7 @@ export default async function DashboardPage() {
           </div>
         </>
       )}
+      </div>
     </>
   );
 }
