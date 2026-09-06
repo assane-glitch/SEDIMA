@@ -167,10 +167,23 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
     <div className="card overflow-hidden">
       {/* Barre d'outils, hors zone de defilement */}
       <div className="flex h-9 items-center justify-between gap-3 border-b border-line-hair px-3 text-[10px] text-ink-muted">
-        <div className="flex min-w-0 items-center gap-3 overflow-hidden whitespace-nowrap">
-          {(["good", "warn", "bad", "done", "idle"] as Health[]).map((h) => <span key={h} className="inline-flex items-center gap-1.5"><span className={`dot ${HEALTH_DOT[h]}`} />{HEALTH_LABELS[h]}</span>)}
-          <span className="inline-flex items-center gap-1.5"><span className="inline-block h-2 w-2 rotate-45 border border-ink bg-surface" />Jalon</span>
-          {showBaseline && <span className="inline-flex items-center gap-1.5"><span className="inline-block h-[4px] w-4 rounded-full border border-ink-faint bg-surface" />Reference</span>}
+        <div className="flex min-w-0 items-center gap-3 whitespace-nowrap">
+          {/* Legende au survol */}
+          <span className="group relative inline-flex cursor-help items-center gap-1 text-ink-faint hover:text-ink">
+            <span className="flex h-4 w-4 items-center justify-center rounded-full border border-current text-[9px] font-bold">i</span>Legende
+            <div className="absolute left-0 top-full z-40 mt-1 hidden w-56 rounded-lg border border-line-hair bg-surface p-2.5 text-[10px] text-ink-body shadow-none group-hover:block">
+              <div className="eyebrow mb-1.5">Sante</div>
+              {(["good", "warn", "bad", "done", "idle"] as Health[]).map((h) => <div key={h} className="flex items-center gap-2 py-0.5"><span className={`dot ${HEALTH_DOT[h]}`} />{HEALTH_LABELS[h]}</div>)}
+              <div className="eyebrow mb-1.5 mt-2">Barres</div>
+              <div className="flex items-center gap-2 py-0.5"><span className="inline-block h-2 w-4 rounded-full bg-brand" />Lot</div>
+              <div className="flex items-center gap-2 py-0.5"><span className="inline-block h-2 w-4 rounded-full bg-ink-body" />Tache (rempli selon l&apos;avancement)</div>
+              <div className="flex items-center gap-2 py-0.5"><span className="inline-block h-2 w-2 rotate-45 border border-ink bg-surface" />Jalon</div>
+              <div className="flex items-center gap-2 py-0.5"><span className="inline-block h-[4px] w-4 rounded-full border border-ink-faint bg-surface" />Reference identique au planning</div>
+              <div className="flex items-center gap-2 py-0.5"><span className="inline-block h-[4px] w-4 rounded-full border border-dashed border-ink-muted bg-surface" />Reference differente (ecart)</div>
+              <div className="flex items-center gap-2 py-0.5"><span className="inline-block h-3 w-3 border-x border-brand bg-alert-bg" />Semaine en cours</div>
+              <div className="flex items-center gap-2 py-0.5"><span className="inline-block h-3 w-3 border-x border-accent bg-accent-bg" />Semaine surlignee</div>
+            </div>
+          </span>
           {showBaseline && hasBaseline && <span className="inline-flex items-center gap-2 rounded-sm border border-line-hair bg-surface-sub px-1.5 py-[1px] font-semibold text-ink-body"><span>vs reference :</span><span className={blSummary.late ? "text-alert" : ""}>{blSummary.late} en retard</span><span className={blSummary.early ? "text-ok" : ""}>{blSummary.early} en avance</span><span className={blSummary.endDelta > 0 ? "text-alert" : blSummary.endDelta < 0 ? "text-ok" : ""}>fin {blSummary.endDelta > 0 ? "+" : blSummary.endDelta < 0 ? "−" : "="}{blSummary.endDelta ? `${Math.abs(blSummary.endDelta)} j` : ""}</span></span>}
           {hl && <button onClick={() => setHlWeek(null)} className="inline-flex cursor-pointer items-center gap-1.5 rounded-sm border border-accent bg-accent-bg px-1.5 py-[1px] font-semibold text-ink hover:bg-accent/30" title="Retirer le surlignage"><span className="inline-block h-2 w-2 border-x border-accent bg-accent-bg" />{hl.label} ×</button>}
         </div>
