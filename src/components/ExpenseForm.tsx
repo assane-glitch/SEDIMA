@@ -1,4 +1,5 @@
 "use client";
+import { DateInput } from "@/components/ui/DateInput";
 import { useMemo, useState } from "react";
 import { addExpense } from "@/app/(app)/projects/actions";
 import { SubmitButton } from "@/components/ui/SubmitButton";
@@ -35,7 +36,7 @@ export function ExpenseForm({ projects, tasks, categories, statuses, projectId, 
       )}
       <div><label className="label">Designation</label><input name="description" required placeholder="Objet de la depense" className={`input${big}`} /></div>
       <div className="grid grid-cols-2 gap-2">
-        <div><label className="label">Date</label><input name="spent_on" type="date" required defaultValue={today()} className={`input${big}`} /></div>
+        <div><label className="label">Date</label><DateInput name="spent_on" required defaultValue={today()} className={`input${big}`} /></div>
         <div><label className="label">Montant ({project?.currency ?? "XOF"})</label><input name="amount" type="number" inputMode="numeric" min={0} step="1" required className={`input${big}`} /></div>
       </div>
       <div><label className="label">Fournisseur</label><input name="supplier" placeholder="Nom du fournisseur" className={`input${big}`} /></div>

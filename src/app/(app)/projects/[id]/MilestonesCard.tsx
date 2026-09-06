@@ -1,3 +1,4 @@
+import { DateInput } from "@/components/ui/DateInput";
 import Link from "next/link";
 import { Icon } from "@/components/icons";
 import { SubmitButton } from "@/components/ui/SubmitButton";
@@ -45,7 +46,7 @@ export function MilestonesCard({ projectId, milestones, canEdit, defaultDate }: 
         <form action={saveMilestone} className="mt-3 flex items-end gap-2 border-t border-line-light pt-3">
           <input type="hidden" name="project_id" value={projectId} />
           <div className="flex-1"><label className="label">Nouveau jalon</label><input name="name" required placeholder="Ex. Livraison batiment" className="input !py-1.5" /></div>
-          <div><label className="label">Date</label><input name="due_date" type="date" required defaultValue={defaultDate} className="input !py-1.5" /></div>
+          <div><label className="label">Date</label><DateInput name="due_date" required defaultValue={defaultDate} className="input !py-1.5" /></div>
           <SubmitButton className="btn-secondary !py-1.5" pendingText="…">Ajouter</SubmitButton>
         </form>
       )}

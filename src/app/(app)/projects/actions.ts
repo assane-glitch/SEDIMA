@@ -57,6 +57,18 @@ export async function updateProject(formData: FormData) {
   redirect(`/projects/${id}`);
 }
 
+export async function freezeBaseline(formData: FormData) {
+  const profile = await requireProfile();
+  if (!canEdit(profile)) return;
+  const id = str(formData, "id");
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("freeze_baseline", { p_project: id });
+  revalidatePath(`/projects/${id}/planning`);
+  revalidatePath(`/projects/${id}/settings`);
+  if (error) redirect(`/projects/${id}/settings?error=${encodeURIComponent(error.message)}`);
+  redirect(`/projects/${id}/settings?ok=${encodeURIComponent(`Planning fige comme reference sur ${data ?? 0} lignes`)}`);
+}
+
 export async function deleteProject(formData: FormData) {
   const profile = await requireProfile();
   if (!canEdit(profile)) return;

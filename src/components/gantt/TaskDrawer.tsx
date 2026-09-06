@@ -1,4 +1,5 @@
 "use client";
+import { DateInput } from "@/components/ui/DateInput";
 import { useEffect, useState, useTransition } from "react";
 import { deleteTask, saveTask, setTaskActuals, setTaskProgress } from "@/app/(app)/projects/actions";
 import { ExpenseForm } from "@/components/ExpenseForm";
@@ -85,8 +86,8 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, regist
                   <input type="hidden" name="project_id" value={projectId} /><input type="hidden" name="id" value={task.id} />
                   <div className="eyebrow mb-3">Dates reelles</div>
                   <div className="grid grid-cols-[1fr_1fr_auto] items-end gap-4">
-                    <Field label="Demarrage reel"><div className="flex items-center gap-2"><input name="actual_start" type="date" value={actualStart} onChange={(e) => setActualStart(e.target.value)} disabled={!canEdit} className="input" /><span className="w-9 shrink-0 text-[11px] font-bold tabular-nums">{week(actualStart)}</span></div></Field>
-                    <Field label="Fin reelle"><div className="flex items-center gap-2"><input name="actual_end" type="date" value={actualEnd} onChange={(e) => setActualEnd(e.target.value)} disabled={!canEdit} className="input" /><span className="w-9 shrink-0 text-[11px] font-bold tabular-nums">{week(actualEnd)}</span></div></Field>
+                    <Field label="Demarrage reel"><DateInput name="actual_start" value={actualStart} onChange={(e) => setActualStart(e.target.value)} disabled={!canEdit} className="input" /></Field>
+                    <Field label="Fin reelle"><DateInput name="actual_end" value={actualEnd} onChange={(e) => setActualEnd(e.target.value)} disabled={!canEdit} className="input" /></Field>
                     {canEdit && <button type="submit" disabled={pending || !actualsChanged} className="btn-primary">{pending ? "…" : "Enregistrer"}</button>}
                   </div>
                   <div className="hint mt-2">Planifie : {week(task.start_date)} → {week(task.end_date)}{task.baseline_start ? ` · Reference : ${week(task.baseline_start)} → ${week(task.baseline_end ?? task.baseline_start)}` : ""}. Le reel apparait en trait noir au-dessus de la barre du Gantt.</div>
@@ -142,15 +143,15 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, regist
               {!isLot && <Field label="Lot"><select name="parent_id" defaultValue={task?.parent_id ?? ""} className="input"><option value="">Aucun (premier niveau)</option>{lots.filter((l) => l.id !== task?.id).map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}</select></Field>}
               {!isLot ? (
                 <div className="grid grid-cols-3 gap-4">
-                  <Field label="Debut"><input name="start_date" type="date" required defaultValue={task?.start_date ?? defaults.start} className="input" /></Field>
-                  <Field label="Fin"><input name="end_date" type="date" required defaultValue={task?.end_date ?? defaults.end} className="input" /></Field>
+                  <Field label="Debut"><DateInput name="start_date" required defaultValue={task?.start_date ?? defaults.start} className="input" /></Field>
+                  <Field label="Fin"><DateInput name="end_date" required defaultValue={task?.end_date ?? defaults.end} className="input" /></Field>
                   <Field label="Statut"><select name="status" defaultValue={task?.status ?? "todo"} className="input">{Object.entries(TASK_STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></Field>
                 </div>
               ) : <p className="hint">Les dates, l&apos;avancement, le budget et les depenses d&apos;un lot sont calcules a partir de ses taches.</p>}
               {!isLot && (
                 <div className="grid grid-cols-2 gap-4">
-                  <Field label="Reference : debut"><input name="baseline_start" type="date" defaultValue={task?.baseline_start ?? ""} className="input" /></Field>
-                  <Field label="Reference : fin"><input name="baseline_end" type="date" defaultValue={task?.baseline_end ?? ""} className="input" /></Field>
+                  <Field label="Reference : debut"><DateInput name="baseline_start" defaultValue={task?.baseline_start ?? ""} className="input" /></Field>
+                  <Field label="Reference : fin"><DateInput name="baseline_end" defaultValue={task?.baseline_end ?? ""} className="input" /></Field>
                 </div>
               )}
               <div className="grid grid-cols-2 gap-4">

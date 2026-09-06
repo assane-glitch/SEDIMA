@@ -112,15 +112,17 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
       if (!r.dependsOn) continue;
       const p = byId.get(r.dependsOn); if (!p) continue;
       const i1 = rowIndex.get(p.id)!, i2 = rowIndex.get(r.id)!;
-      const y1 = rowTop(i1) + rowH(visible[i1]) / 2 - HEAD_H, y2 = rowTop(i2) + rowH(visible[i2]) / 2 - HEAD_H;
-      const x2 = x(r.start);
+      const y1 = rowTop(i1) + rowH(visible[i1]) / 2 - HEAD_H;
+      const barTop2 = rowTop(i2) + (rowH(visible[i2]) - 8) / 2 - HEAD_H;   // bord superieur de la barre du successeur
+      const yEnd = i2 > i1 ? barTop2 - 1 : barTop2 + 9;                      // arrivee par le dessus (ou le dessous si le successeur est au-dessus)
+      const xIn = x(r.start) + Math.min(6, Math.max(2, px));                 // point d'entree, juste apres le debut de la barre
       if (r.linkType === "DD") {
-        const x1 = x(p.start); const gx = Math.min(x1, x2) - 8;
-        out.push({ key: r.id, d: `M${x1},${y1} H${gx} V${y2} H${x2}` });
+        const x1 = x(p.start);
+        out.push({ key: r.id, d: xIn >= x1 - 2 ? `M${x1},${y1} V${(y1 + yEnd) / 2} H${xIn} V${yEnd}` : `M${x1},${y1} H${xIn - 8} V${(y1 + yEnd) / 2} H${xIn} V${yEnd}` });
       } else {
         const x1 = x(addDays(p.end, 1));
-        if (x2 >= x1 + 12) out.push({ key: r.id, d: `M${x1},${y1} H${x1 + 6} V${y2} H${x2}` });
-        else { const ym = y1 + (y2 > y1 ? ROW_TASK / 2 : -ROW_TASK / 2); out.push({ key: r.id, d: `M${x1},${y1} H${x1 + 8} V${ym} H${x2 - 8} V${y2} H${x2}` }); }
+        if (xIn >= x1 + 4) out.push({ key: r.id, d: `M${x1},${y1} H${xIn} V${yEnd}` });
+        else { const ym = y1 + (i2 > i1 ? ROW_TASK / 2 + 2 : -(ROW_TASK / 2 + 2)); out.push({ key: r.id, d: `M${x1},${y1} H${x1 + 8} V${ym} H${xIn} V${yEnd}` }); }
       }
     }
     return out;
@@ -166,18 +168,20 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
       <div className="relative overflow-y-auto" style={{ maxHeight: "calc(100vh - 210px)" }}>
         {/* En-tete fige : colonnes a gauche, graduations a droite (synchronisees avec le defilement des barres) */}
         <div className="sticky top-0 z-30 flex border-b border-line-hair bg-thead">
-          <div className="relative grid shrink-0 items-end overflow-hidden border-r-2 border-line px-2 pb-1.5 eyebrow" style={{ ...gridStyle, width: leftPx, height: HEAD_H }}>
+          <div className="relative grid shrink-0 overflow-hidden border-r-2 border-line px-2 eyebrow" style={{ ...gridStyle, width: leftPx, height: HEAD_H }}>
             {[mode === "project" ? "WBS" : "", mode === "project" ? "Lot / tache" : "Projet", mode === "project" ? "Responsable" : "Chef de projet", "Avanc.", "Budget (k FCFA)", "Depense (k FCFA)"].map((label, i) => (
-              <div key={i} className={`relative truncate ${i >= 3 ? "text-right" : ""}`}>
+              <div key={i} className={`relative h-full truncate pr-2 leading-[44px] ${i >= 3 ? "text-right" : ""}`}>
                 {label}
-                <div onMouseDown={(e) => startResize(i, e)} className="absolute -right-1 top-[-14px] bottom-[-6px] w-2 cursor-col-resize hover:bg-line" title="Redimensionner la colonne" />
+                <div onMouseDown={(e) => startResize(i, e)} className="group absolute -right-[3px] bottom-0 top-0 flex w-[7px] cursor-col-resize items-center justify-center" title="Glisser pour redimensionner">
+                  <div className="h-5 w-px bg-line group-hover:w-[2px] group-hover:bg-ink-muted" />
+                </div>
               </div>
             ))}
           </div>
           <div ref={headRef} className="relative min-w-0 flex-1 overflow-hidden" style={{ height: HEAD_H }}>
             <div className="relative" style={{ width, height: HEAD_H }}>
               {bands.map((b, i) => <div key={i} className="absolute top-0 h-5 overflow-hidden whitespace-nowrap border-r border-line-hair px-1.5 text-[9.5px] font-semibold capitalize leading-5 text-ink-body" style={{ left: b.left, width: b.width }}>{b.width > 40 ? b.label : ""}</div>)}
-              {ticks.map((t, i) => { const cur = todayX >= t.left && todayX < t.left + t.width && scale !== "day"; return <div key={i} className={`absolute bottom-0 h-6 overflow-hidden border-r text-center text-[9px] leading-6 ${cur ? "bg-brand font-bold text-surface" : t.major ? "border-line-hair text-ink-faint" : "border-line-light text-ink-faint"}`} style={{ left: t.left, width: t.width }}>{t.width > 16 ? t.label : ""}</div>; })}
+              {ticks.map((t, i) => { const cur = todayX >= t.left && todayX < t.left + t.width && scale !== "day"; return <div key={i} className={`absolute bottom-0 h-6 overflow-hidden border-r text-center text-[9px] leading-6 ${cur ? "rounded-t-xs bg-brand font-bold text-surface" : t.major ? "border-line-hair text-ink-faint" : "border-line-light text-ink-faint"}`} style={{ left: t.left, width: t.width }}>{t.width > 16 ? t.label : ""}</div>; })}
               {scale === "day" && todayX >= 0 && todayX <= width && <div className="absolute bottom-0 -ml-[18px] rounded-xs bg-brand px-1 text-[8px] font-bold leading-[13px] text-surface" style={{ left: todayX }}>Auj.</div>}
             </div>
           </div>
@@ -205,7 +209,7 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
                     {isLot && <button onClick={() => toggle(r.id)} className="flex h-[13px] w-[13px] shrink-0 cursor-pointer items-center justify-center rounded-xs border border-line text-[10px] font-bold leading-none text-ink-muted hover:bg-surface-sub" aria-label={collapsed.has(r.id) ? "Deplier" : "Replier"}>{collapsed.has(r.id) ? "+" : "−"}</button>}
                     {r.href
                       ? <Link href={r.href} className="truncate font-semibold hover:underline">{r.name}</Link>
-                      : <button onClick={() => setSelected(r)} className={`min-w-0 cursor-pointer truncate text-left ${isLot ? "font-bold" : "font-semibold"}`}>{r.name}</button>}
+                      : <button onClick={() => setSelected(r)} className={`min-w-0 cursor-pointer truncate text-left ${isLot ? "font-bold text-ink" : "font-normal text-ink-body"}`}>{r.name}</button>}
                   </div>
                   <div className={`truncate pr-1 text-[10px] ${isLot ? "text-ink-body" : "text-ink-muted"}`}>{r.responsible || "—"}</div>
                   <div className="text-right tabular-nums">{r.progress} %</div>
@@ -224,10 +228,10 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
                 {milestones.map((m) => <Diamond key={m.id} m={m} left={x(m.due) + px / 2} top={ROW_MS / 2} t0={t0} onClick={() => canEdit && setSelMilestone(m)} />)}
               </div>}
               {/* Bande de la semaine en cours */}
-              {(() => { const wk = ticks.find((t) => todayX >= t.left && todayX < t.left + t.width); return wk && scale !== "day" ? <div className="absolute bottom-0 top-0 bg-alert-bg" style={{ left: wk.left, width: wk.width }} /> : null; })()}
+              {(() => { const wk = ticks.find((t) => todayX >= t.left && todayX < t.left + t.width); return wk && scale !== "day" ? <div className="absolute bottom-0 top-0 z-[6] border-l-2 border-r border-l-brand border-r-alert-bd bg-alert-bg/80" style={{ left: wk.left, width: wk.width }} /> : null; })()}
               {ticks.map((t, i) => <div key={i} className={`absolute bottom-0 top-0 border-r ${t.major ? "border-line-hair" : "border-line-light"}`} style={{ left: t.left + t.width - 1 }} />)}
               {visible.map((r, i) => <div key={i} className={`absolute left-0 right-0 border-b border-line-light ${r.kind === "lot" ? "bg-surface-alt/50" : ""}`} style={{ top: rowTop(i) - HEAD_H, height: rowH(r) }} />)}
-              {todayX >= 0 && todayX <= width && <div className="absolute bottom-0 top-0 z-[6] w-px bg-brand" style={{ left: todayX }} />}
+              {scale === "day" && todayX >= 0 && todayX <= width && <div className="absolute bottom-0 top-0 z-[6] w-px bg-brand" style={{ left: todayX }} />}
               {links.length > 0 && (
                 <svg className="pointer-events-none absolute left-0 top-0 z-[4]" width={width} height={gridH - HEAD_H}>
                   <defs><marker id="arr" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#6b7280" /></marker></defs>

@@ -1,3 +1,4 @@
+import { DateInput } from "@/components/ui/DateInput";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import type { Profile, Project } from "@/lib/types";
 import { PROJECT_CATEGORIES, PROJECT_STATUS_LABELS } from "@/lib/types";
@@ -31,11 +32,11 @@ export function ProjectForm({ project, people, action, submitLabel }: { project?
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="label" htmlFor="start_date">Debut</label>
-          <input id="start_date" name="start_date" type="date" required defaultValue={project?.start_date ?? today()} className="input" />
+          <DateInput id="start_date" name="start_date" required defaultValue={project?.start_date ?? today()} className="input" />
         </div>
         <div>
           <label className="label" htmlFor="end_date">Fin</label>
-          <input id="end_date" name="end_date" type="date" required defaultValue={project?.end_date} className="input" />
+          <DateInput id="end_date" name="end_date" required defaultValue={project?.end_date} className="input" />
         </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-3">

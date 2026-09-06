@@ -1,3 +1,4 @@
+import { DateInput } from "@/components/ui/DateInput";
 import { Alert, Badge } from "@/components/ui";
 import { ProjectHeader } from "../ProjectHeader";
 import { SubmitButton } from "@/components/ui/SubmitButton";
@@ -47,7 +48,7 @@ export default async function JournalPage({ params, searchParams }: { params: Pr
           <form action={addJournalEntry} className="card h-fit space-y-3 p-4">
             <div className="text-[10.5px] font-semibold">Nouvelle entree</div>
             <input type="hidden" name="project_id" value={id} />
-            <div><label className="label">Date</label><input name="entry_date" type="date" required defaultValue={today()} className="input" /></div>
+            <div><label className="label">Date</label><DateInput name="entry_date" required defaultValue={today()} className="input" /></div>
             <div><label className="label">Tache</label><select name="task_id" className="input"><option value="">—</option>{tasks.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></div>
             <div><label className="label">Lieu</label><input name="location" className="input" /></div>
             <div><label className="label">Compte rendu</label><textarea name="content" rows={5} required className="input" /></div>

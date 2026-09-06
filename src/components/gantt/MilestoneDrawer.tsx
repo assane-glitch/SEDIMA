@@ -1,4 +1,5 @@
 "use client";
+import { DateInput } from "@/components/ui/DateInput";
 import { useEffect, useTransition } from "react";
 import { deleteMilestone, saveMilestone, toggleMilestone } from "@/app/(app)/projects/actions";
 import { formatDate } from "@/lib/format";
@@ -28,7 +29,7 @@ export function MilestoneDrawer({ milestone, projectId, defaultDate, onClose }: 
           <input type="hidden" name="project_id" value={projectId} />
           {milestone && <input type="hidden" name="id" value={milestone.id} />}
           <div><label className="label">Nom</label><input name="name" required defaultValue={milestone?.name} placeholder="Ex. Reception des travaux" className="input" /></div>
-          <div><label className="label">Date cible</label><input name="due_date" type="date" required defaultValue={milestone?.due_date ?? defaultDate} className="input" /></div>
+          <div><label className="label">Date cible</label><DateInput name="due_date" required defaultValue={milestone?.due_date ?? defaultDate} className="input" /></div>
           <div><label className="label">Notes</label><textarea name="notes" rows={3} defaultValue={milestone?.notes} className="input" /></div>
           <div className="flex items-center justify-between pt-1">
             <div className="flex gap-2">
