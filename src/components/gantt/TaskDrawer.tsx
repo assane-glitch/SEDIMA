@@ -26,6 +26,16 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, regist
   const budget = Number(task?.budget ?? 0);
   const over = budget > 0 && spent > budget;
   const dep = task?.depends_on ? tasks.find((t) => t.id === task.depends_on) : undefined;
+  const [depId, setDepId] = useState(task?.depends_on ?? "");
+  const [linkType, setLinkType] = useState(task?.link_type || "FD");
+  const [lag, setLag] = useState(String(task?.lag_weeks ?? 0));
+  const weekOf = (iso: string) => { const d = new Date(iso + "T00:00:00Z"); const day = d.getUTCDay() || 7; d.setUTCDate(d.getUTCDate() + 4 - day); const y0 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1)); return `S${Math.ceil(((d.getTime() - y0.getTime()) / 86400000 + 1) / 7)}`; };
+  const earliest = (() => {
+    const p = depId ? tasks.find((t) => t.id === depId) : undefined; if (!p) return null;
+    const ref = new Date((linkType === "DD" ? p.start_date : p.end_date) + "T00:00:00Z");
+    ref.setUTCDate(ref.getUTCDate() - ((ref.getUTCDay() + 6) % 7) + 7 * (1 + Math.max(0, Number(lag) || 0)));
+    return ref.toISOString().slice(0, 10);
+  })();
   const cats = lists?.expense_category ?? [], statuses = lists?.expense_status ?? [];
   const excluded = excludedStatuses(statuses);
   const regTypes = lists?.register_type ?? [];
@@ -109,7 +119,7 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, regist
               )}
 
               <div className="grid grid-cols-2 gap-4 text-ink-muted">
-                {dep && <div><div className="eyebrow">Depend de</div><div className="mt-0.5 text-ink">{dep.wbs_code} {dep.name} <span className="text-ink-faint">({task.link_type === "DD" ? "debut-debut" : "fin-debut"})</span></div></div>}
+                {dep && <div><div className="eyebrow">Depend de</div><div className="mt-0.5 text-ink">{dep.wbs_code} {dep.name} <span className="text-ink-faint">({task.link_type === "DD" ? "debut-debut" : "fin-debut"}{task.lag_weeks ? `, +${task.lag_weeks} sem.` : ""})</span></div></div>}
                 {(task.estimate_method || task.confidence) && <div><div className="eyebrow">Estimation</div><div className="mt-0.5 text-ink">{task.estimate_method || "—"} · confiance {task.confidence || "—"}</div></div>}
               </div>
               {task.notes && <p className="whitespace-pre-wrap text-ink-body">{task.notes}</p>}
@@ -158,10 +168,12 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, regist
                 <Field label="Responsable (compte)"><select name="responsible_id" defaultValue={task?.responsible_id ?? ""} className="input"><option value="">—</option>{people.map((p) => <option key={p.id} value={p.id}>{p.full_name || p.email}</option>)}</select></Field>
                 <Field label="Role responsable"><input name="responsible_role" list="roles" defaultValue={task?.responsible_role ?? ""} placeholder="Conducteur de travaux" className="input" /><datalist id="roles">{(lists?.responsible_role ?? []).map((r) => <option key={r.value} value={r.value} />)}</datalist></Field>
               </div>
+              {!isLot && earliest && <p className="hint -mt-2">Demarrage au plus tot : lundi {formatDate(earliest)} ({weekOf(earliest)}), la semaine suivant {linkType === "DD" ? "le debut" : "la fin"} de la tache precedente plus le decalage. Une date plus tot sera recalee automatiquement, ainsi que les taches qui en dependent.</p>}
               {!isLot && (
-                <div className="grid grid-cols-[1fr_130px] gap-4">
-                  <Field label="Depend de"><select name="depends_on" defaultValue={task?.depends_on ?? ""} className="input"><option value="">—</option>{tasks.filter((t) => t.id !== task?.id).map((t) => <option key={t.id} value={t.id}>{t.wbs_code ? `${t.wbs_code} · ` : ""}{t.name}</option>)}</select></Field>
-                  <Field label="Type de lien"><select name="link_type" defaultValue={task?.link_type || "FD"} className="input"><option value="FD">Fin → debut</option><option value="DD">Debut → debut</option></select></Field>
+                <div className="grid grid-cols-[1fr_130px_110px] gap-4">
+                  <Field label="Depend de"><select name="depends_on" value={depId} onChange={(e) => setDepId(e.target.value)} className="input"><option value="">—</option>{tasks.filter((t) => t.id !== task?.id).map((t) => <option key={t.id} value={t.id}>{t.wbs_code ? `${t.wbs_code} · ` : ""}{t.name}</option>)}</select></Field>
+                  <Field label="Type de lien"><select name="link_type" value={linkType} onChange={(e) => setLinkType(e.target.value)} className="input"><option value="FD">Fin → debut</option><option value="DD">Debut → debut</option></select></Field>
+                  <Field label="Decalage (sem.)"><input name="lag_weeks" type="number" min={0} step="1" value={lag} onChange={(e) => setLag(e.target.value)} className="input" /></Field>
                 </div>
               )}
               {!isLot && (

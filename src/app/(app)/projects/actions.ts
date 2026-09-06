@@ -108,6 +108,7 @@ export async function saveTask(formData: FormData) {
     wbs_code: str(formData, "wbs_code") || null,
     ...(formData.has("parent_id") ? { parent_id: parentId === id ? null : parentId } : {}),
     ...(formData.has("depends_on") ? { depends_on: dependsOn === id ? null : dependsOn, link_type: dependsOn ? (str(formData, "link_type") || "FD") : "" } : {}),
+    ...(formData.has("lag_weeks") ? { lag_weeks: Math.max(0, Math.round(num(formData, "lag_weeks"))) } : {}),
     notes: str(formData, "notes"),
   };
   if (id) {

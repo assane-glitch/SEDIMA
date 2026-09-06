@@ -121,6 +121,7 @@ export interface Task {
   responsible_role: string;
   depends_on: string | null;
   link_type: string;
+  lag_weeks: number;
   customs: number;
   vat: number;
   estimate_method: string;

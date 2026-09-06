@@ -150,17 +150,14 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
   return (
     <div className="card overflow-hidden">
       {/* Barre d'outils, hors zone de defilement */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line-hair px-3 py-1.5 text-[10px] text-ink-muted">
-        <div className="flex flex-wrap items-center gap-3">
+      <div className="flex h-9 items-center justify-between gap-3 border-b border-line-hair px-3 text-[10px] text-ink-muted">
+        <div className="flex min-w-0 items-center gap-3 overflow-hidden whitespace-nowrap">
           {(["good", "warn", "bad", "done", "idle"] as Health[]).map((h) => <span key={h} className="inline-flex items-center gap-1.5"><span className={`dot ${HEALTH_DOT[h]}`} />{HEALTH_LABELS[h]}</span>)}
           <span className="inline-flex items-center gap-1.5"><span className="inline-block h-2 w-2 rotate-45 border border-ink bg-surface" />Jalon</span>
           {showBaseline && <span className="inline-flex items-center gap-1.5"><span className="inline-block h-[4px] w-4 rounded-full border border-ink-faint bg-surface" />Reference</span>}
-          <span className="inline-flex items-center gap-1.5"><span className="inline-block h-[2px] w-4 rounded-full bg-ink" />Reel</span>
-          {hl
-            ? <button onClick={() => setHlWeek(null)} className="inline-flex cursor-pointer items-center gap-1.5 rounded-sm border border-accent bg-accent-bg px-1.5 py-[1px] font-semibold text-ink hover:bg-accent/30" title="Retirer le surlignage"><span className="inline-block h-2 w-2 border-x border-accent bg-accent-bg" />{hl.label} ×</button>
-            : <span className="text-ink-faint">Cliquer une semaine dans l&apos;en-tete pour la surligner</span>}
+          {hl && <button onClick={() => setHlWeek(null)} className="inline-flex cursor-pointer items-center gap-1.5 rounded-sm border border-accent bg-accent-bg px-1.5 py-[1px] font-semibold text-ink hover:bg-accent/30" title="Retirer le surlignage"><span className="inline-block h-2 w-2 border-x border-accent bg-accent-bg" />{hl.label} ×</button>}
         </div>
-        <div className="flex flex-wrap items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           {(["day", "week", "month", "year"] as Scale[]).map((s) => <button key={s} onClick={() => setScaleChoice(s)} className={`filter-chip !py-[2px] ${scale === s ? "filter-chip-active" : ""}`}>{SCALE_LABEL[s]}</button>)}
           <button onClick={scrollToToday} className="btn-primary !py-[2px]">Aujourd&apos;hui</button>
           {lots.length > 0 && <>
@@ -264,7 +261,6 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
                 const title = `${r.name}\n${formatDate(r.start)} → ${formatDate(r.end)}\n${r.progress} %${r.responsible ? `\n${r.responsible}` : ""}`;
                 const h = rowH(r), barH = 8, barTop = top + (h - barH) / 2 - (showBaseline && r.baselineStart ? 2 : 0);
                 const baseline = showBaseline && r.baselineStart && r.baselineEnd ? <div className="pointer-events-none absolute rounded-full border border-ink-faint bg-surface" title={`Reference : ${formatDate(r.baselineStart)} → ${formatDate(r.baselineEnd)}`} style={{ top: barTop + barH + 1, left: x(r.baselineStart), width: Math.max(px, (daysBetween(r.baselineStart, r.baselineEnd) + 1) * px), height: 4 }} /> : null;
-                const actual = r.actualStart ? <div className="pointer-events-none absolute rounded-full bg-ink" title={`Reel : ${formatDate(r.actualStart)} → ${r.actualEnd ? formatDate(r.actualEnd) : "en cours"}`} style={{ top: barTop - 3, left: x(r.actualStart), width: Math.max(2, (daysBetween(r.actualStart, r.actualEnd ?? t0) + 1) * px), height: 2 }} /> : null;
                 const atEdge = left + w + 60 > width;
                 const weeks = <span className="pointer-events-none absolute whitespace-nowrap text-[9px] tabular-nums text-ink-muted" style={atEdge ? { right: width - left + 5, top: barTop - 2 } : { left: left + w + 6, top: barTop - 2 }}>{weekLabel(r.start, r.end)}</span>;
                 if (r.kind === "lot" || r.kind === "project") {
@@ -276,7 +272,7 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
                           : <button onClick={() => setSelected(r)} title={title} className="relative block h-full w-full cursor-pointer"><Bar fill={fill} track={track} progress={r.progress} /></button>}
                         {mode === "portfolio" && milestones.filter((m) => m.rowId === r.id).map((m) => <Diamond key={m.id} m={m} left={x(m.due) - left + px / 2} top={barH / 2} t0={t0} small />)}
                       </div>
-                      {weeks}{baseline}{actual}
+                      {weeks}{baseline}
                     </div>
                   );
                 }
@@ -285,7 +281,7 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
                     <button onClick={() => setSelected(r)} title={title} className="absolute cursor-pointer" style={{ top: barTop, left, width: w, height: barH }}>
                       <Bar fill="bg-ink-body" track="bg-line" progress={r.progress} />
                     </button>
-                    {weeks}{baseline}{actual}
+                    {weeks}{baseline}
                   </div>
                 );
               })}
