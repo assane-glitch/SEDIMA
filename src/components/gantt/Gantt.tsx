@@ -9,6 +9,7 @@ import type { Lists } from "@/lib/reference-types";
 import { TaskDrawer } from "./TaskDrawer";
 import { MilestoneDrawer } from "./MilestoneDrawer";
 import { Bar, Diamond } from "./GanttMarks";
+import { useExpandedLots } from "@/components/ui/useExpandedLots";
 
 export type RowKind = "project" | "lot" | "task";
 export interface GanttRow {
@@ -40,7 +41,6 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
   const nextWbs = (lot: GanttRow) => { const nums = rows.filter((r) => r.parentId === lot.id && r.code).map((r) => Number((r.code ?? "").split(".").pop())).filter((n) => Number.isFinite(n)); return lot.code ? `${lot.code}.${(nums.length ? Math.max(...nums) : 0) + 1}` : ""; };
   const addUnder = (lot: GanttRow) => { setNewDefaults({ parentId: lot.id, wbs: nextWbs(lot), start: lot.end, end: addDays(lot.end, 13) }); setSelected("new"); };
   const [selMilestone, setSelMilestone] = useState<GanttMilestone | "new" | null>(null);
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [scaleChoice, setScaleChoice] = useState<Scale | "auto">("auto");
   const [showLinks, setShowLinks] = useState(true);
   const [showBaseline, setShowBaseline] = useState(false);
@@ -81,6 +81,8 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
   const scrollToToday = () => { const el = bodyRef.current; if (el) el.scrollLeft = Math.max(0, todayXRef.current - el.clientWidth / 3); };
   const todayXRef = useRef(0);
   const lots = useMemo(() => rows.filter((r) => r.kind === "lot"), [rows]);
+  const lotIds = useMemo(() => lots.map((l) => l.id), [lots]);
+  const { collapsed, toggle, setAll } = useExpandedLots(`sedima.gantt.open.${projectId ?? "portfolio"}`, lotIds);
   const allCollapsed = lots.length > 0 && lots.every((l) => collapsed.has(l.id));
 
   // ---- Bornes et echelle ----
@@ -103,7 +105,6 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
   const rowH = (r: GanttRow) => (r.kind === "task" && r.parentId ? ROW_TASK : ROW_LOT);
   const tops = useMemo(() => { let y = HEAD_H + msRow * ROW_MS; return visible.map((r) => { const t = y; y += rowH(r); return t; }); }, [visible, msRow]);
   const rowTop = (i: number) => tops[i] ?? HEAD_H;
-  const toggle = (id: string) => setCollapsed((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
   // ---- Graduations : bandes (haut) et ticks (bas) ----
   const { bands, ticks } = useMemo(() => {
@@ -190,7 +191,7 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
           <button onClick={scrollToToday} className="btn-primary !py-[2px]">Aujourd&apos;hui</button>
           {lots.length > 0 && <>
             <span className="mx-1 h-4 w-px bg-line-hair" />
-            <button onClick={() => setCollapsed(allCollapsed ? new Set() : new Set(lots.map((l) => l.id)))} className="btn-secondary !py-[2px]">{allCollapsed ? "+ Tout deplier" : "− Tout replier"}</button>
+            <button onClick={() => setAll(allCollapsed)} className="btn-secondary !py-[2px]">{allCollapsed ? "+ Tout deplier" : "− Tout replier"}</button>
           </>}
           {mode === "project" && <button onClick={() => setShowLinks((v) => !v)} className={`btn-secondary !py-[2px] ${showLinks ? "!bg-surface-sub" : ""}`}>⇢ Liens</button>}
           {mode === "project" && <button onClick={toggleBaseline} className={`btn-secondary !py-[2px] ${showBaseline ? "!bg-surface-sub" : ""}`} title="Comparer au planning de reference : barre fantome sous chaque barre et colonne d'ecart">▭ Reference</button>}

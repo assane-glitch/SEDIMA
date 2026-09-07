@@ -53,7 +53,7 @@ export default async function BudgetPage({ params, searchParams }: { params: Pro
       {ok && <div className="mb-4"><Alert tone="green">{ok === "tranches" ? "Tranches enregistrees." : "Depense enregistree."}</Alert></div>}
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
         <div className="space-y-4">
-          <BudgetTable tasks={tasks} spentByTask={spentByTask} currency={cur} />
+          <BudgetTable tasks={tasks} spentByTask={spentByTask} currency={cur} projectId={id} />
           <ExpenseTable expenses={expenses} currency={cur} taskName={taskName} canEdit={editor} categories={lists.expense_category} statuses={lists.expense_status} />
         </div>
         <div className="space-y-4">

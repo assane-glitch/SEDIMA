@@ -1,5 +1,6 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useExpandedLots } from "@/components/ui/useExpandedLots";
 import type { Task } from "@/lib/types";
 
 const k = (v: number) => (v ? `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(Math.round(v / 1000))}` : "—");
@@ -8,7 +9,7 @@ const full = (v: number, cur: string) => `${new Intl.NumberFormat("fr-FR", { max
 type Row = { id: string; kind: "lot" | "task"; parentId: string | null; code: string | null; name: string; budget: number; customs: number; vat: number; spent: number; progress: number };
 
 /** Budget par lot et par tache : HTVA, douanes, TVA, TTC, engage, reste, avancement et consommation. */
-export function BudgetTable({ tasks, spentByTask, currency }: { tasks: Task[]; spentByTask: Record<string, number>; currency: string }) {
+export function BudgetTable({ tasks, spentByTask, currency, projectId }: { tasks: Task[]; spentByTask: Record<string, number>; currency: string; projectId: string }) {
   const rows = useMemo<Row[]>(() => {
     const byParent = new Map<string | null, Task[]>();
     for (const t of tasks) { const key = t.parent_id ?? null; byParent.set(key, [...(byParent.get(key) ?? []), t]); }
@@ -25,9 +26,10 @@ export function BudgetTable({ tasks, spentByTask, currency }: { tasks: Task[]; s
     }
     return out;
   }, [tasks, spentByTask]);
-  const lots = rows.filter((r) => r.kind === "lot");
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
-  const toggle = (id: string) => setCollapsed((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const lots = useMemo(() => rows.filter((r) => r.kind === "lot"), [rows]);
+  const lotIds = useMemo(() => lots.map((l) => l.id), [lots]);
+  const { collapsed, toggle, setAll } = useExpandedLots(`sedima.budget.open.${projectId}`, lotIds);
+  const allCollapsed = lots.length > 0 && lots.every((l) => collapsed.has(l.id));
   const visible = rows.filter((r) => !r.parentId || !collapsed.has(r.parentId));
   const tot = rows.filter((r) => r.kind === "lot" || !r.parentId).reduce((s, r) => ({ budget: s.budget + r.budget, customs: s.customs + r.customs, vat: s.vat + r.vat, spent: s.spent + r.spent }), { budget: 0, customs: 0, vat: 0, spent: 0 });
   const pctOf = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 100) : 0);
@@ -36,7 +38,7 @@ export function BudgetTable({ tasks, spentByTask, currency }: { tasks: Task[]; s
     <div className="card overflow-x-auto">
       <div className="flex items-center justify-between px-[15px] pt-[13px] pb-2">
         <div className="card-title">Budget par lot et par tache <span className="text-[10px] font-normal text-ink-faint">montants en k {currency}</span></div>
-        {lots.length > 0 && <button onClick={() => setCollapsed(collapsed.size === lots.length ? new Set() : new Set(lots.map((l) => l.id)))} className="btn-secondary !py-[2px]">{collapsed.size === lots.length ? "+ Tout deplier" : "− Tout replier"}</button>}
+        {lots.length > 0 && <button onClick={() => setAll(allCollapsed)} className="btn-secondary !py-[2px]">{allCollapsed ? "+ Tout deplier" : "− Tout replier"}</button>}
       </div>
       <table className="tbl">
         <thead>
