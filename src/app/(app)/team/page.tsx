@@ -1,17 +1,16 @@
 import Link from "next/link";
 import { Badge, PageHeader } from "@/components/ui";
-import { formatDate, today } from "@/lib/format";
+import { addDays, formatDate, mondayOf, today } from "@/lib/format";
 import { requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { ROLE_LABELS, type Profile, type Project, type Task } from "@/lib/types";
 
-export const metadata = { title: "Équipe" };
-const addDays = (iso: string, n: number) => { const d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+export const metadata = { title: "Equipe" };
 
 export default async function TeamPage() {
   const me = await requireProfile();
   const supabase = await createClient();
-  const t0 = today(), monday = addDays(t0, -((new Date(t0 + "T00:00:00Z").getUTCDay() + 6) % 7)), sunday = addDays(monday, 6), ago30 = new Date(Date.now() - 30 * 86400000).toISOString();
+  const t0 = today(), monday = mondayOf(t0), sunday = addDays(monday, 6), ago30 = new Date(Date.now() - 30 * 86400000).toISOString();
   const [{ data: people }, { data: projects }, { data: tasks }, { data: jr }, { data: rg }, { data: ex }] = await Promise.all([
     supabase.from("profiles").select("id,email,full_name,role").order("full_name"),
     supabase.from("projects").select("id,code,name,status,manager_id,manager_name").neq("status", "hors_perimetre").order("code"),
@@ -37,7 +36,7 @@ export default async function TeamPage() {
 
   return (
     <>
-      <PageHeader title="Équipe" subtitle={`${list.length} membre${list.length > 1 ? "s" : ""} · charge et responsabilites`} actions={me.role === "admin" ? <Link href="/admin/users" className="btn-secondary">Inviter, gerer les roles</Link> : undefined} />
+      <PageHeader title="Equipe" subtitle={`${list.length} membre${list.length > 1 ? "s" : ""} · charge et responsabilites`} actions={me.role === "admin" ? <Link href="/admin/users" className="btn-secondary">Inviter, gerer les roles</Link> : undefined} />
       <div className="card overflow-x-auto">
         <table className="tbl">
           <thead><tr><th>Membre</th><th className="hidden md:table-cell">Role</th><th>Projets geres</th><th className="num">Taches ouvertes</th><th className="num">En retard</th><th className="num hidden md:table-cell">Cette semaine</th><th className="num hidden lg:table-cell">Terminees</th><th className="num hidden lg:table-cell">Saisies 30 j</th></tr></thead>

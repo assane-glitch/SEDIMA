@@ -1,7 +1,8 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { canEdit, requireProfile } from "@/lib/session";
+import { canEdit, canSubmit, requireProfile } from "@/lib/session";
+import { safeNext } from "@/lib/safe-next";
 import { createClient } from "@/lib/supabase/server";
 
 function str(fd: FormData, k: string) { return String(fd.get(k) ?? "").trim(); }
@@ -117,13 +118,14 @@ export async function saveTask(formData: FormData) {
     notes: str(formData, "notes"),
   };
   if (id) {
-    await supabase.from("tasks").update(payload).eq("id", id);
+    const { error } = await supabase.from("tasks").update(payload).eq("id", id);
+    if (error) return { error: error.message };
   } else {
     let q = supabase.from("tasks").select("sort_order").eq("project_id", projectId).order("sort_order", { ascending: false }).limit(1);
-    if (parentId) q = q.or(`parent_id.eq.${parentId},id.eq.${parentId}`);
+    if (parentId && /^[0-9a-f-]{36}$/i.test(parentId)) q = q.or(`parent_id.eq.${parentId},id.eq.${parentId}`);
     const { data: last } = await q.maybeSingle();
     const { error: insErr } = await supabase.from("tasks").insert({ ...payload, sort_order: (last?.sort_order ?? 0) + 1 });
-    if (insErr) redirect(`/projects/${projectId}/planning?error=${encodeURIComponent(insErr.message)}`);
+    if (insErr) return { error: insErr.message };
   }
   revalidatePath(`/projects/${projectId}`);
   revalidatePath(`/projects/${projectId}/planning`);
@@ -136,7 +138,8 @@ export async function setTaskActuals(formData: FormData) {
   const projectId = str(formData, "project_id");
   const id = str(formData, "id");
   const supabase = await createClient();
-  await supabase.from("tasks").update({ actual_start: str(formData, "actual_start") || null, actual_end: str(formData, "actual_end") || null }).eq("id", id);
+  const { error } = await supabase.from("tasks").update({ actual_start: str(formData, "actual_start") || null, actual_end: str(formData, "actual_end") || null }).eq("id", id);
+  if (error) return { error: error.message };
   revalidatePath(`/projects/${projectId}`);
   revalidatePath(`/projects/${projectId}/planning`);
 }
@@ -148,7 +151,8 @@ export async function setTaskProgress(formData: FormData) {
   const id = str(formData, "id");
   const progress = Math.max(0, Math.min(100, Math.round(num(formData, "progress"))));
   const supabase = await createClient();
-  await supabase.from("tasks").update({ progress, ...(progress >= 100 ? { status: "done" } : progress > 0 ? { status: "in_progress" } : {}) }).eq("id", id);
+  const { error } = await supabase.from("tasks").update({ progress, ...(progress >= 100 ? { status: "done" } : progress > 0 ? { status: "in_progress" } : {}) }).eq("id", id);
+  if (error) return { error: error.message };
   revalidatePath(`/projects/${projectId}`);
   revalidatePath(`/projects/${projectId}/planning`);
   revalidatePath("/dashboard");
@@ -159,32 +163,16 @@ export async function deleteTask(formData: FormData) {
   if (!canEdit(profile)) return;
   const projectId = str(formData, "project_id");
   const supabase = await createClient();
-  await supabase.from("tasks").delete().eq("id", str(formData, "id"));
+  const { error } = await supabase.from("tasks").delete().eq("id", str(formData, "id"));
+  if (error) return { error: error.message };
   revalidatePath(`/projects/${projectId}`);
   revalidatePath("/dashboard");
 }
 
-export async function moveTask(formData: FormData) {
-  const profile = await requireProfile();
-  if (!canEdit(profile)) return;
-  const projectId = str(formData, "project_id");
-  const id = str(formData, "id");
-  const dir = str(formData, "dir") === "up" ? -1 : 1;
-  const supabase = await createClient();
-  const { data: tasks } = await supabase.from("tasks").select("id,sort_order").eq("project_id", projectId).order("sort_order");
-  if (!tasks) return;
-  const i = tasks.findIndex((t) => t.id === id);
-  const j = i + dir;
-  if (i < 0 || j < 0 || j >= tasks.length) return;
-  await Promise.all([
-    supabase.from("tasks").update({ sort_order: tasks[j].sort_order }).eq("id", tasks[i].id),
-    supabase.from("tasks").update({ sort_order: tasks[i].sort_order }).eq("id", tasks[j].id),
-  ]);
-  revalidatePath(`/projects/${projectId}`);
-}
 
 export async function addExpense(formData: FormData) {
   const profile = await requireProfile();
+  if (!canSubmit(profile)) redirect("/dashboard");
   const projectId = str(formData, "project_id");
   const supabase = await createClient();
   const { error } = await supabase.from("expenses").insert({
@@ -200,7 +188,7 @@ export async function addExpense(formData: FormData) {
     source: str(formData, "source") === "mobile" ? "mobile" : "web",
     created_by: profile.id,
   });
-  const back = str(formData, "redirect") || `/projects/${projectId}/budget`;
+  const back = str(formData, "redirect") === "none" ? "none" : safeNext(str(formData, "redirect"), `/projects/${projectId}/budget`);
   if (error && back !== "none") redirect(`${back}?error=${encodeURIComponent(error.message)}`);
   for (const p of [`/projects/${projectId}`, `/projects/${projectId}/planning`, `/projects/${projectId}/budget`, `/projects/${projectId}/events`, "/dashboard"]) revalidatePath(p);
   // Mode "none" : appel depuis le tiroir de tache, on reste sur place (pas de navigation).
@@ -235,6 +223,7 @@ export async function deleteExpense(formData: FormData) {
 
 export async function addJournalEntry(formData: FormData) {
   const profile = await requireProfile();
+  if (!canSubmit(profile)) redirect("/dashboard");
   const projectId = str(formData, "project_id");
   const supabase = await createClient();
   const { error } = await supabase.from("journal_entries").insert({
@@ -246,7 +235,7 @@ export async function addJournalEntry(formData: FormData) {
     source: str(formData, "source") === "mobile" ? "mobile" : "web",
     author_id: profile.id,
   });
-  const back = str(formData, "redirect") || `/projects/${projectId}/journal`;
+  const back = safeNext(str(formData, "redirect"), `/projects/${projectId}/journal`);
   if (error) redirect(`${back}?error=${encodeURIComponent(error.message)}`);
   revalidatePath(`/projects/${projectId}/journal`);
   redirect(`${back}?ok=1`);
@@ -254,6 +243,7 @@ export async function addJournalEntry(formData: FormData) {
 
 export async function addRegisterEntry(formData: FormData) {
   const profile = await requireProfile();
+  if (!canSubmit(profile)) redirect("/dashboard");
   const projectId = str(formData, "project_id");
   const data: Record<string, string | number> = {};
   for (const [k, v] of formData.entries()) {
@@ -272,7 +262,7 @@ export async function addRegisterEntry(formData: FormData) {
     source: str(formData, "source") === "mobile" ? "mobile" : "web",
     author_id: profile.id,
   });
-  const back = str(formData, "redirect") || `/projects/${projectId}/register`;
+  const back = safeNext(str(formData, "redirect"), `/projects/${projectId}/register`);
   if (error) redirect(`${back}?error=${encodeURIComponent(error.message)}`);
   revalidatePath(`/projects/${projectId}/register`);
   redirect(`${back}?ok=1`);

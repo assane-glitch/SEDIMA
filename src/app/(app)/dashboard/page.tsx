@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Badge, CategoryIcon, Empty, PageHeader, Stat } from "@/components/ui";
 import { ProjectCard } from "@/components/projects/ProjectCard";
-import { formatDate, formatMoney, pct, today } from "@/lib/format";
+import { addDays, formatDate, formatMoney, isoWeek, mondayOf, pct, today } from "@/lib/format";
 import { projectHealth, type Health } from "@/lib/health";
 import { getLists } from "@/lib/reference";
 import { labelOf } from "@/lib/reference-types";
@@ -11,8 +11,6 @@ import { ACTIVE_STATUSES, CATEGORY_LABELS, PROJECT_CATEGORIES, type Expense, typ
 
 export const metadata = { title: "Tableau de bord" };
 
-const addDays = (iso: string, n: number) => { const d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
-const isoWeek = (iso: string) => { const d = new Date(iso + "T00:00:00Z"); const day = d.getUTCDay() || 7; d.setUTCDate(d.getUTCDate() + 4 - day); const y0 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1)); return Math.ceil(((d.getTime() - y0.getTime()) / 86400000 + 1) / 7); };
 const k = (v: number) => `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(Math.round(v / 1_000_000))} M`;
 const ORDER: Record<Health, number> = { bad: 0, warn: 1, good: 2, idle: 3, done: 4 };
 
@@ -20,7 +18,7 @@ export default async function DashboardPage() {
   const profile = await requireProfile();
   const supabase = await createClient();
   const t0 = today();
-  const monday = addDays(t0, -((new Date(t0 + "T00:00:00Z").getUTCDay() + 6) % 7)), sunday = addDays(monday, 6), in30 = addDays(t0, 30), ago7 = addDays(t0, -7);
+  const monday = mondayOf(t0), sunday = addDays(monday, 6), in30 = addDays(t0, 30), ago7 = addDays(t0, -7);
   const [{ data: projects }, { data: stats }, { data: people }, { data: tasks }, { data: ms }, { data: jr }, { data: rg }, { data: ex }, lists, { data: favRows }] = await Promise.all([
     supabase.from("projects").select("*").neq("status", "hors_perimetre").order("code"),
     supabase.from("project_stats").select("*"),

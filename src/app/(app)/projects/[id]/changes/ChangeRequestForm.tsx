@@ -36,7 +36,7 @@ export function ChangeRequestForm({ projectId, tasks }: { projectId: string; tas
             <tr key={t.id} className={`cursor-pointer ${t.isLot ? "font-bold" : ""}`} onClick={() => toggle(t.id)}>
               <td onClick={(e) => e.stopPropagation()}><input type="checkbox" name="task_id" value={t.id} checked={sel.has(t.id)} onChange={() => toggle(t.id)} /></td>
               <td className="font-mono text-[9.5px] text-ink-faint">{t.wbs_code}</td><td className="max-w-[320px] truncate">{t.name}</td>
-              <td className="whitespace-nowrap text-ink-muted">{t.baseline_start ? `${formatDate(t.baseline_start)} → ${formatDate(t.baseline_end!)}` : "—"}</td>
+              <td className="whitespace-nowrap text-ink-muted">{t.baseline_start ? `${formatDate(t.baseline_start)} → ${formatDate(t.baseline_end ?? t.baseline_start)}` : "—"}</td>
               <td className="whitespace-nowrap">{formatDate(t.start_date)} → {formatDate(t.end_date)}</td>
               <td className={`num ${d === null ? "text-ink-faint" : d > 0 ? "font-semibold text-alert" : d < 0 ? "font-semibold text-ok" : "text-ink-faint"}`}>{d === null ? "—" : d === 0 ? "=" : `${d > 0 ? "+" : "−"}${Math.abs(d)} j`}</td>
             </tr>

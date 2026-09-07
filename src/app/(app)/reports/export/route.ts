@@ -5,12 +5,12 @@ import { getLists } from "@/lib/reference";
 import { labelOf } from "@/lib/reference-types";
 import { CATEGORY_LABELS, PROJECT_STATUS_LABELS, TASK_STATUS_LABELS, type Expense, type JournalEntry, type Milestone, type Profile, type Project, type ProjectStats, type RegisterEntry, type Task } from "@/lib/types";
 
-const cell = (v: unknown) => { if (v === null || v === undefined) return ""; const s = typeof v === "number" ? String(v).replace(".", ",") : String(v); return /[;"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+const cell = (v: unknown) => { if (v === null || v === undefined) return ""; let s = typeof v === "number" ? String(v).replace(".", ",") : String(v); if (typeof v !== "number" && /^[=+\-@\t\r]/.test(s)) s = "'" + s; return /[;"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
 const csv = (rows: unknown[][]) => "﻿" + rows.map((r) => r.map(cell).join(";")).join("\r\n");
 
 /** Exports CSV (Excel, separateur ;) : taches, depenses, journal, registres, jalons, projets. */
 export async function GET(req: Request) {
-  const profile = await requireProfile();
+  await requireProfile();
   const url = new URL(req.url); const type = url.searchParams.get("type") ?? "tasks"; const pid = url.searchParams.get("project") || null;
   const supabase = await createClient();
   const lists = await getLists();
@@ -48,6 +48,5 @@ export async function GET(req: Request) {
       ...list.map((p) => { const s = sm.get(p.id); return [p.code, p.name, CATEGORY_LABELS[p.category], PROJECT_STATUS_LABELS[p.status], (p.manager_id && who.get(p.manager_id)) || p.manager_name, p.site, p.business_unit, p.start_date, p.end_date, Number(p.budget), Number(p.budget_kpmg ?? 0), Number(s?.rebuilt_cost ?? 0), Number(s?.spent ?? 0), Number(s?.progress ?? 0), Number(s?.task_count ?? 0), Number(s?.done_count ?? 0), Number(s?.late_count ?? 0), ...ys.map((y) => Number((years ?? []).find((r) => r.project_id === p.id && Number(r.year) === y)?.amount ?? 0))]; })];
   } else return NextResponse.json({ error: "type inconnu" }, { status: 400 });
   const name = `sedima-${type}${pid ? "-" + (pmap.get(pid)?.code ?? "projet").toLowerCase() : ""}-${new Date().toISOString().slice(0, 10)}.csv`;
-  void profile;
   return new NextResponse(csv(rows), { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="${name}"` } });
 }

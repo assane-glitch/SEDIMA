@@ -60,7 +60,7 @@ export default async function ChangesPage({ params, searchParams }: { params: Pr
               <table className="tbl"><thead><tr><th className="w-14">WBS</th><th>Tache</th><th>Reference actuelle</th><th>Nouvelle reference</th><th className="num">Ecart fin</th></tr></thead><tbody>
                 {its.map((i) => { const t = tmap.get(i.task_id); const d = i.old_end ? daysBetween(i.old_end, i.new_end) : null; return (
                   <tr key={i.task_id}><td className="font-mono text-[9.5px] text-ink-faint">{t?.wbs_code}</td><td className="max-w-[320px] truncate">{t?.name ?? "(tache supprimee)"}</td>
-                    <td className="whitespace-nowrap text-ink-muted">{i.old_start ? `${formatDate(i.old_start)} → ${formatDate(i.old_end!)}` : "—"}</td>
+                    <td className="whitespace-nowrap text-ink-muted">{i.old_start ? `${formatDate(i.old_start)} → ${formatDate(i.old_end ?? i.old_start)}` : "—"}</td>
                     <td className="whitespace-nowrap">{formatDate(i.new_start)} → {formatDate(i.new_end)}</td>
                     <td className={`num ${d === null ? "text-ink-faint" : d > 0 ? "font-semibold text-alert" : d < 0 ? "font-semibold text-ok" : "text-ink-faint"}`}>{d === null ? "—" : d === 0 ? "=" : `${d > 0 ? "+" : "−"}${Math.abs(d)} j`}</td></tr>
                 ); })}

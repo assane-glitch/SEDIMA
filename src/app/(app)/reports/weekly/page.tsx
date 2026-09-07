@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui";
-import { formatDate, formatMoney, pct, today } from "@/lib/format";
-import { HEALTH_LABELS, projectHealth, type Health } from "@/lib/health";
+import { addDays, formatDate, formatMoney, isoWeek, mondayOf, pct, today } from "@/lib/format";
+import { HEALTH_BADGE, HEALTH_LABELS, projectHealth } from "@/lib/health";
 import { getLists } from "@/lib/reference";
 import { labelOf } from "@/lib/reference-types";
 import { requireProfile } from "@/lib/session";
@@ -10,15 +10,12 @@ import { PROJECT_STATUS_LABELS, PROJECT_STATUS_TONE, type Expense, type JournalE
 import { PrintButton } from "./PrintButton";
 
 export const metadata = { title: "Rapport hebdomadaire" };
-const addDays = (iso: string, n: number) => { const d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
-const isoWeek = (iso: string) => { const d = new Date(iso + "T00:00:00Z"); const day = d.getUTCDay() || 7; d.setUTCDate(d.getUTCDate() + 4 - day); const y0 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1)); return Math.ceil(((d.getTime() - y0.getTime()) / 86400000 + 1) / 7); };
-const HEALTH_TONE: Record<Health, string> = { good: "ok", warn: "warn", bad: "alert", done: "info", idle: "neutral" };
 
 export default async function WeeklyReport({ searchParams }: { searchParams: Promise<{ project?: string; print?: string }> }) {
   const { project: pid, print } = await searchParams;
   const me = await requireProfile();
   const supabase = await createClient();
-  const t0 = today(), monday = addDays(t0, -((new Date(t0 + "T00:00:00Z").getUTCDay() + 6) % 7)), sunday = addDays(monday, 6), nextSunday = addDays(sunday, 7), in30 = addDays(t0, 30);
+  const t0 = today(), monday = mondayOf(t0), sunday = addDays(monday, 6), nextSunday = addDays(sunday, 7), in30 = addDays(t0, 30);
   const pq = supabase.from("projects").select("*").neq("status", "hors_perimetre").order("code");
   const [{ data: projects }, { data: stats }, { data: people }, { data: tasks }, { data: ms }, { data: ex }, { data: jr }, lists] = await Promise.all([
     pid ? pq.eq("id", pid) : pq, supabase.from("project_stats").select("*"), supabase.from("profiles").select("id,email,full_name,role"),
@@ -50,7 +47,7 @@ export default async function WeeklyReport({ searchParams }: { searchParams: Pro
         <h2 className="mb-1.5 mt-4 text-[12.5px] font-bold">1. Etat des projets</h2>
         <table className="tbl"><thead><tr><th>Projet</th><th>Chef de projet</th><th>Statut</th><th>Sante</th><th className="num">Avanc.</th><th className="num">Engage</th><th className="num">Consomme</th><th className="num">Retards</th><th>Fin prevue</th></tr></thead><tbody>
           {list.map((p) => { const s = statMap.get(p.id), h = projectHealth(p, s), spent = Number(s?.spent ?? 0); return (
-            <tr key={p.id}><td className="font-semibold">{p.code} <span className="font-normal text-ink-muted">{p.name}</span></td><td>{(p.manager_id && who.get(p.manager_id)) || p.manager_name || "—"}</td><td><Badge tone={PROJECT_STATUS_TONE[p.status]}>{PROJECT_STATUS_LABELS[p.status]}</Badge></td><td><Badge tone={HEALTH_TONE[h]}>{HEALTH_LABELS[h]}</Badge></td><td className="num">{Number(s?.progress ?? 0)} %</td><td className="num">{formatMoney(spent, p.currency)}</td><td className="num">{Number(p.budget) ? `${pct(spent, Number(p.budget))} %` : "—"}</td><td className={`num ${Number(s?.late_count) ? "font-bold text-alert" : ""}`}>{Number(s?.late_count ?? 0) || "—"}</td><td className="whitespace-nowrap">{formatDate(p.end_date)}</td></tr>
+            <tr key={p.id}><td className="font-semibold">{p.code} <span className="font-normal text-ink-muted">{p.name}</span></td><td>{(p.manager_id && who.get(p.manager_id)) || p.manager_name || "—"}</td><td><Badge tone={PROJECT_STATUS_TONE[p.status]}>{PROJECT_STATUS_LABELS[p.status]}</Badge></td><td><Badge tone={HEALTH_BADGE[h]}>{HEALTH_LABELS[h]}</Badge></td><td className="num">{Number(s?.progress ?? 0)} %</td><td className="num">{formatMoney(spent, p.currency)}</td><td className="num">{Number(p.budget) ? `${pct(spent, Number(p.budget))} %` : "—"}</td><td className={`num ${Number(s?.late_count) ? "font-bold text-alert" : ""}`}>{Number(s?.late_count ?? 0) || "—"}</td><td className="whitespace-nowrap">{formatDate(p.end_date)}</td></tr>
           ); })}
         </tbody></table>
 

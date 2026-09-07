@@ -5,17 +5,17 @@ import { usePathname } from "next/navigation";
 export function ProjectTabs({ id, canEdit }: { id: string; canEdit: boolean }) {
   const pathname = usePathname();
   const tabs = [
-    { href: `/projects/${id}`, label: "Aperçu" },
+    { href: `/projects/${id}`, label: "Apercu" },
     { href: `/projects/${id}/planning`, label: "Planning" },
-    { href: `/projects/${id}/tasks`, label: "Tâches" },
+    { href: `/projects/${id}/tasks`, label: "Taches" },
     { href: `/projects/${id}/budget`, label: "Budget" },
-    { href: `/projects/${id}/events`, label: "Évènements" },
+    { href: `/projects/${id}/events`, label: "Evenements" },
     { href: `/projects/${id}/journal`, label: "Journal" },
     { href: `/projects/${id}/register`, label: "Registres" },
     { href: `/projects/${id}/documents`, label: "Documents" },
     { href: `/projects/${id}/changes`, label: "Changements" },
     { href: `/projects/${id}/history`, label: "Historique" },
-    ...(canEdit ? [{ href: `/projects/${id}/settings`, label: "Paramètres" }] : []),
+    ...(canEdit ? [{ href: `/projects/${id}/settings`, label: "Parametres" }] : []),
   ];
   return (
     <div className="mb-5 flex gap-1 overflow-x-auto overflow-y-hidden border-b border-line-hair [scrollbar-width:none]">

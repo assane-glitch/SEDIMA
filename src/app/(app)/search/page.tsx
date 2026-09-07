@@ -13,7 +13,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   const { q = "" } = await searchParams;
   await requireProfile();
   const needle = q.trim();
-  const like = `%${needle.replace(/[%_,()]/g, " ").trim()}%`;
+  const like = `%${needle.replace(/[%_,()\\]/g, " ").trim()}%`;
   const supabase = await createClient();
   const empty = { data: [] as never[] };
   const [{ data: projects }, { data: tasks }, { data: ms }, { data: ex }, { data: jr }, { data: rg }, { data: docs }, { data: people }, { data: allProjects }, lists] = needle.length < 2

@@ -5,7 +5,7 @@ import { deleteTask, saveTask, setTaskActuals, setTaskProgress } from "@/app/(ap
 import { ExpenseForm } from "@/components/ExpenseForm";
 import { ProgressBar, Badge } from "@/components/ui";
 import { describeAudit, relativeTime } from "@/lib/audit";
-import { formatDate, formatMoney, pct } from "@/lib/format";
+import { formatDate, formatMoney, pct, weekLabel } from "@/lib/format";
 import { excludedStatuses, labelOf, registerFields, type Lists } from "@/lib/reference-types";
 import { TASK_STATUS_LABELS, type AuditEntry, type Expense, type JournalEntry, type Profile, type RegisterEntry, type Task } from "@/lib/types";
 
@@ -14,6 +14,8 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, regist
   lists?: Lists; people: Profile[]; currency: string; projectId: string; projectCode?: string; canEdit: boolean; defaults: { start: string; end: string; parentId?: string; wbs?: string }; spent: number; onClose: () => void;
 }) {
   const [pending, start] = useTransition();
+  const [err, setErr] = useState<string | null>(null);
+  const run = (fn: () => Promise<{ error?: string } | void>) => start(async () => { setErr(null); const r = await fn(); if (r && "error" in r && r.error) setErr(r.error); else onClose(); });
   const [tab, setTab] = useState<"suivi" | "fiche" | "events">(task ? "suivi" : "fiche");
   const [progress, setProgress] = useState<string>(String(task?.progress ?? 0));
   useEffect(() => {
@@ -32,7 +34,6 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, regist
   const suggestWbs = (lotId: string) => { const lot = tasks.find((t) => t.id === lotId); if (!lot?.wbs_code) return ""; const nums = tasks.filter((t) => t.parent_id === lotId && t.wbs_code).map((t) => Number((t.wbs_code ?? "").split(".").pop())).filter((n) => Number.isFinite(n)); return `${lot.wbs_code}.${(nums.length ? Math.max(...nums) : 0) + 1}`; };
   const [linkType, setLinkType] = useState(task?.link_type || "FD");
   const [lag, setLag] = useState(String(task?.lag_weeks ?? 0));
-  const weekOf = (iso: string) => { const d = new Date(iso + "T00:00:00Z"); const day = d.getUTCDay() || 7; d.setUTCDate(d.getUTCDate() + 4 - day); const y0 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1)); return `S${Math.ceil(((d.getTime() - y0.getTime()) / 86400000 + 1) / 7)}`; };
   const earliest = (() => {
     const p = depId ? tasks.find((t) => t.id === depId) : undefined; if (!p) return null;
     const ref = new Date((linkType === "DD" ? p.start_date : p.end_date) + "T00:00:00Z");
@@ -45,7 +46,6 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, regist
   const progressNum = Math.max(0, Math.min(100, Math.round(Number(progress) || 0)));
   const [actualStart, setActualStart] = useState(task?.actual_start ?? "");
   const [actualEnd, setActualEnd] = useState(task?.actual_end ?? "");
-  const week = (iso: string) => { if (!iso) return ""; const d = new Date(iso + "T00:00:00Z"); const day = d.getUTCDay() || 7; d.setUTCDate(d.getUTCDate() + 4 - day); const y0 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1)); return `S${Math.ceil(((d.getTime() - y0.getTime()) / 86400000 + 1) / 7)}`; };
   const actualsChanged = task ? actualStart !== (task.actual_start ?? "") || actualEnd !== (task.actual_end ?? "") : false;
   const changed = task ? progressNum !== task.progress : false;
 
@@ -69,10 +69,11 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, regist
             <div className="eyebrow">{task ? (isLot ? "Lot" : "Tache") : "Nouvelle tache"} {task?.wbs_code}</div>
             <h2 className="mt-0.5 truncate text-[16px] font-bold tracking-[-0.01em]">{task ? task.name : ""}</h2>
             {task && <div className="mt-1 text-[10.5px] text-ink-muted">{formatDate(task.start_date)} → {formatDate(task.end_date)} · {responsible || "—"} · {TASK_STATUS_LABELS[task.status]}</div>}
+            {err && <div className="mt-2 rounded-md border border-alert-bd bg-alert-bg px-3 py-1.5 text-[10.5px] text-alert">{err}</div>}
           </div>
           <button onClick={onClose} className="btn-ghost text-[16px]" aria-label="Fermer">×</button>
         </div>
-        {task && <div className="flex border-b border-line-hair px-7">{tabBtn("suivi", "Suivi")}{tabBtn("fiche", "Fiche")}{tabBtn("events", `Évènements (${events.length})`)}</div>}
+        {task && <div className="flex border-b border-line-hair px-7">{tabBtn("suivi", "Suivi")}{tabBtn("fiche", "Fiche")}{tabBtn("events", `Evenements (${events.length})`)}</div>}
 
         <div className="flex-1 overflow-y-auto px-7 py-5">
           {/* ---------- Suivi ---------- */}
@@ -83,7 +84,7 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, regist
                 {isLot ? (
                   <><div className="mb-1.5 flex items-center justify-between"><span className="text-ink-muted">Moyenne des taches du lot, ponderee par leur budget</span><span className="text-[16px] font-bold tabular-nums">{task.progress} %</span></div><ProgressBar value={task.progress} /></>
                 ) : (
-                  <form action={(fd) => start(async () => { await setTaskProgress(fd); onClose(); })} className="flex items-end gap-4">
+                  <form action={(fd) => run(() => setTaskProgress(fd))} className="flex items-end gap-4">
                     <input type="hidden" name="project_id" value={projectId} /><input type="hidden" name="id" value={task.id} />
                     <Field label="Nouvelle valeur (%)">
                       <div className="flex items-center gap-1">
@@ -106,7 +107,7 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, regist
               </div>
 
               {!isLot && (
-                <form action={(fd) => start(async () => { await setTaskActuals(fd); onClose(); })} className="rounded-lg border border-line-hair bg-surface-alt p-4">
+                <form action={(fd) => run(() => setTaskActuals(fd))} className="rounded-lg border border-line-hair bg-surface-alt p-4">
                   <input type="hidden" name="project_id" value={projectId} /><input type="hidden" name="id" value={task.id} />
                   <div className="eyebrow mb-3">Dates reelles</div>
                   <div className="grid grid-cols-[1fr_1fr_auto] items-end gap-4">
@@ -114,7 +115,7 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, regist
                     <Field label="Fin reelle"><DateInput name="actual_end" value={actualEnd} onChange={(e) => setActualEnd(e.target.value)} disabled={!canEdit} className="input" /></Field>
                     {canEdit && <button type="submit" disabled={pending || !actualsChanged} className="btn-primary">{pending ? "…" : "Enregistrer"}</button>}
                   </div>
-                  <div className="hint mt-2">Planifie : {week(task.start_date)} → {week(task.end_date)}{task.baseline_start ? ` · Reference : ${week(task.baseline_start)} → ${week(task.baseline_end ?? task.baseline_start)}` : ""}. Le planning suit le reel : la barre se deplace (duree conservee tant que la fin reelle est inconnue), la reference ne bouge pas, le lot et les taches liees sont recalcules.</div>
+                  <div className="hint mt-2">Planifie : {weekLabel(task.start_date)} → {weekLabel(task.end_date)}{task.baseline_start ? ` · Reference : ${weekLabel(task.baseline_start)} → ${weekLabel(task.baseline_end ?? task.baseline_start)}` : ""}. Le planning suit le reel : la barre se deplace (duree conservee tant que la fin reelle est inconnue), la reference ne bouge pas, le lot et les taches liees sont recalcules.</div>
                 </form>
               )}
 
@@ -157,7 +158,7 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, regist
 
           {/* ---------- Fiche ---------- */}
           {(tab === "fiche" || !task) && (canEdit ? (
-            <form action={(fd) => start(async () => { await saveTask(fd); onClose(); })} className="space-y-4">
+            <form action={(fd) => run(() => saveTask(fd))} className="space-y-4">
               <input type="hidden" name="project_id" value={projectId} />
               {task && <input type="hidden" name="id" value={task.id} />}
               <div className="grid grid-cols-[100px_1fr] gap-4">
@@ -174,15 +175,15 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, regist
               ) : <p className="hint">Les dates, l&apos;avancement, le budget et les depenses d&apos;un lot sont calcules a partir de ses taches.</p>}
               {!isLot && (
                 <div className="grid grid-cols-2 gap-4">
-                  <Field label="Reference : debut"><div className="input !bg-surface-mut !border-line-lock text-ink-muted" title="Modifiable par une demande de changement approuvee">{task?.baseline_start ? `${formatDate(task.baseline_start)} · ${weekOf(task.baseline_start)}` : "—"}</div></Field>
-                  <Field label="Reference : fin"><div className="input !bg-surface-mut !border-line-lock text-ink-muted" title="Modifiable par une demande de changement approuvee">{task?.baseline_end ? `${formatDate(task.baseline_end)} · ${weekOf(task.baseline_end)}` : "—"}</div></Field>
+                  <Field label="Reference : debut"><div className="input !bg-surface-mut !border-line-lock text-ink-muted" title="Modifiable par une demande de changement approuvee">{task?.baseline_start ? `${formatDate(task.baseline_start)} · ${weekLabel(task.baseline_start)}` : "—"}</div></Field>
+                  <Field label="Reference : fin"><div className="input !bg-surface-mut !border-line-lock text-ink-muted" title="Modifiable par une demande de changement approuvee">{task?.baseline_end ? `${formatDate(task.baseline_end)} · ${weekLabel(task.baseline_end)}` : "—"}</div></Field>
                 </div>
               )}
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Responsable (compte)"><select name="responsible_id" defaultValue={task?.responsible_id ?? ""} className="input"><option value="">—</option>{people.map((p) => <option key={p.id} value={p.id}>{p.full_name || p.email}</option>)}</select></Field>
                 <Field label="Role responsable"><input name="responsible_role" list="roles" defaultValue={task?.responsible_role ?? ""} placeholder="Conducteur de travaux" className="input" /><datalist id="roles">{(lists?.responsible_role ?? []).map((r) => <option key={r.value} value={r.value} />)}</datalist></Field>
               </div>
-              {!isLot && earliest && <p className="hint -mt-2">Demarrage au plus tot : lundi {formatDate(earliest)} ({weekOf(earliest)}), la semaine suivant {linkType === "DD" ? "le debut" : "la fin"} de la tache precedente plus le decalage. Une date plus tot sera recalee automatiquement, ainsi que les taches qui en dependent.</p>}
+              {!isLot && earliest && <p className="hint -mt-2">Demarrage au plus tot : lundi {formatDate(earliest)} ({weekLabel(earliest)}), la semaine suivant {linkType === "DD" ? "le debut" : "la fin"} de la tache precedente plus le decalage. Une date plus tot sera recalee automatiquement, ainsi que les taches qui en dependent.</p>}
               {!isLot && (
                 <div className="grid grid-cols-[1fr_130px_110px] gap-4">
                   <Field label="Depend de"><select name="depends_on" value={depId} onChange={(e) => setDepId(e.target.value)} className="input"><option value="">—</option>{tasks.filter((t) => t.id !== task?.id).map((t) => <option key={t.id} value={t.id}>{t.wbs_code ? `${t.wbs_code} · ` : ""}{t.name}</option>)}</select></Field>
@@ -205,7 +206,7 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, regist
               )}
               <Field label="Notes"><textarea name="notes" rows={4} defaultValue={task?.notes} className="input" /></Field>
               <div className="flex items-center justify-between pt-2">
-                {task ? <button type="button" disabled={pending} className="btn-danger" onClick={() => { if (!confirm(isLot ? "Supprimer ce lot et toutes ses taches ?" : "Supprimer cette tache ?")) return; const fd = new FormData(); fd.set("project_id", projectId); fd.set("id", task.id); start(async () => { await deleteTask(fd); onClose(); }); }}>Supprimer</button> : <span />}
+                {task ? <button type="button" disabled={pending} className="btn-danger" onClick={() => { if (!confirm(isLot ? "Supprimer ce lot et toutes ses taches ?" : "Supprimer cette tache ?")) return; const fd = new FormData(); fd.set("project_id", projectId); fd.set("id", task.id); run(() => deleteTask(fd)); }}>Supprimer</button> : <span />}
                 <button type="submit" disabled={pending} className="btn-primary">{pending ? "Enregistrement…" : "Enregistrer"}</button>
               </div>
             </form>

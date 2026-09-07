@@ -1,13 +1,14 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { addDays, daysBetween, formatDate, today } from "@/lib/format";
+import { addDays, daysBetween, formatDate, isoWeek, kMoney, today } from "@/lib/format";
 import { freezeBaseline } from "@/app/(app)/projects/actions";
 import { HEALTH_DOT, HEALTH_LABELS, type Health } from "@/lib/health";
 import type { AuditEntry, Expense, JournalEntry, Milestone, Profile, RegisterEntry, Task } from "@/lib/types";
 import type { Lists } from "@/lib/reference-types";
 import { TaskDrawer } from "./TaskDrawer";
 import { MilestoneDrawer } from "./MilestoneDrawer";
+import { Bar, Diamond } from "./GanttMarks";
 
 export type RowKind = "project" | "lot" | "task";
 export interface GanttRow {
@@ -27,12 +28,6 @@ const HEAD_H = 44;
 const PX: Record<Scale, number> = { day: 26, week: 8, month: 3.2, year: 1.2 };
 const SCALE_LABEL: Record<Scale, string> = { day: "Jour", week: "Semaine", month: "Mois", year: "Trimestre" };
 
-function isoWeek(d: Date) {
-  const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-  const day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day);
-  const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
-  return Math.ceil(((t.getTime() - y0.getTime()) / MS_DAY + 1) / 7);
-}
 
 export function Gantt({ rows, milestones, expenses = [], journal = [], registers = [], audit = [], lists, people, currency, canEdit, projectId, projectCode, projectStart, projectEnd, mode, pendingChanges = 0 }: {
   rows: GanttRow[]; milestones: GanttMilestone[]; expenses?: Expense[]; journal?: JournalEntry[]; registers?: RegisterEntry[]; audit?: AuditEntry[]; lists?: Lists; people: Profile[]; currency: string; canEdit: boolean;
@@ -124,7 +119,7 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
       // Bandes = mois (avec l'annee), ticks = semaines ou jours
       for (const d = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1)); d <= end; d.setUTCMonth(d.getUTCMonth() + 1)) { const n = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)); bands.push({ left: Math.max(0, off(d)), width: clampW(d, n), label: d.toLocaleDateString("fr-FR", { month: scale === "month" ? "short" : "long", year: "numeric", timeZone: "UTC" }) }); }
       if (scale === "day") for (const d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) ticks.push({ left: off(d), width: px, label: String(d.getUTCDate()), major: d.getUTCDay() === 1, iso: d.toISOString().slice(0, 10) });
-      else { const d = new Date(start); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); for (; d <= end; d.setUTCDate(d.getUTCDate() + 7)) ticks.push({ left: off(d), width: 7 * px, label: `S${isoWeek(d)}`, major: d.getUTCDate() <= 7, iso: d.toISOString().slice(0, 10) }); }
+      else { const d = new Date(start); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); for (; d <= end; d.setUTCDate(d.getUTCDate() + 7)) ticks.push({ left: off(d), width: 7 * px, label: `S${isoWeek(d.toISOString().slice(0, 10))}`, major: d.getUTCDate() <= 7, iso: d.toISOString().slice(0, 10) }); }
     }
     return { bands, ticks };
   }, [rangeStart, rangeEnd, scale, px, totalDays]);
@@ -156,7 +151,7 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
 
   const todayX = x(t0) + px / 2;
   todayXRef.current = todayX;
-  const hl = hlWeek ? { left: x(hlWeek), width: 7 * px, label: `S${isoWeek(new Date(hlWeek + "T00:00:00Z"))} ${hlWeek.slice(0, 4)}` } : null;
+  const hl = hlWeek ? { left: x(hlWeek), width: 7 * px, label: `S${isoWeek(hlWeek)} ${hlWeek.slice(0, 4)}` } : null;
   const gridH = (tops.length ? tops[tops.length - 1] + rowH(visible[visible.length - 1]) : HEAD_H + msRow * ROW_MS);
   const showDrift = mode === "project" && showBaseline;
   const colsShown = showDrift ? widths : widths.slice(0, 6);
@@ -164,8 +159,7 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
   const leftPx = colsShown.reduce((a, b) => a + b, 0) + 16;
   const driftCell = (r: GanttRow) => { const d = driftOf(r); if (d === null) return <span className="text-ink-faint">—</span>; if (d === 0) return <span className="text-ink-faint">=</span>; return <span className={`font-semibold ${d > 0 ? "text-alert" : "text-ok"}`}>{d > 0 ? "+" : "−"}{Math.abs(d)} j</span>; };
   const headRef = useRef<HTMLDivElement>(null);
-  const kMoney = (v: number) => `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(Math.round(v / 1000))} k`;
-  const weekLabel = (a: string, b: string) => `S${isoWeek(new Date(a + "T00:00:00Z"))} → S${isoWeek(new Date(b + "T00:00:00Z"))}`;
+  const weekLabel = (a: string, b: string) => `S${isoWeek(a)} → S${isoWeek(b)}`;
 
   return (
     <div className="card overflow-hidden">
@@ -344,20 +338,4 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
       {selMilestone && projectId && <MilestoneDrawer milestone={selMilestone === "new" ? null : (selMilestone.milestone ?? null)} projectId={projectId} defaultDate={projectEnd} onClose={() => setSelMilestone(null)} />}
     </div>
   );
-}
-
-function Bar({ fill, track, progress }: { fill: string; track: string; progress: number }) {
-  // Piste claire de la couleur du type, remplie en fonce au fur et a mesure de l'avancement
-  return (
-    <div className={`relative h-full w-full overflow-hidden rounded-full ${track}`}>
-      <div className={`absolute inset-y-0 left-0 rounded-full ${progress >= 100 ? "bg-ok" : fill}`} style={{ width: `${Math.max(0, Math.min(100, progress))}%` }} />
-    </div>
-  );
-}
-
-function Diamond({ m, left, top, t0, onClick, small }: { m: GanttMilestone; left: number; top: number; t0: string; onClick?: () => void; small?: boolean }) {
-  const overdue = !m.reached && m.due < t0;
-  const size = small ? 8 : 11;
-  const cls = m.reached ? "border-ok bg-ok" : overdue ? "border-alert bg-alert" : "border-ink bg-surface";
-  return <button onClick={onClick} title={`${m.name}\n${m.reached ? `atteint le ${formatDate(m.reached)}` : formatDate(m.due)}`} className={`absolute z-[5] rotate-45 cursor-pointer border ${cls}`} style={{ left: left - size / 2, top: top - size / 2, width: size, height: size }} />;
 }

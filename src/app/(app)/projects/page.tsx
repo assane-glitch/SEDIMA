@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { CategoryIcon, Empty, PageHeader } from "@/components/ui";
-import { ProjectCard, isAlert, rebuiltOf, shortMoney } from "@/components/projects/ProjectCard";
+import { ProjectCard, isAlert, rebuiltOf } from "@/components/projects/ProjectCard";
 import { Icon } from "@/components/icons";
-import { pct } from "@/lib/format";
+import { pct, shortMoney } from "@/lib/format";
 import { projectHealth } from "@/lib/health";
 import { canEdit, requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
@@ -25,7 +25,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
   if (sp.category) query = query.eq("category", sp.category);
   if (sp.status) query = query.eq("status", sp.status);
   if (sp.manager) query = query.eq("manager_id", sp.manager);
-  if (q) query = query.or(`name.ilike.%${q.replace(/[%,()]/g, "")}%,code.ilike.%${q.replace(/[%,()]/g, "")}%`);
+  if (q) { const safe = q.replace(/[%_,()\\]/g, ""); query = query.or(`name.ilike.%${safe}%,code.ilike.%${safe}%`); }
   const [{ data: projects }, { data: stats }, { data: taskRows }, { data: favRows }] = await Promise.all([
     query, supabase.from("project_stats").select("*"), supabase.from("tasks").select("id,project_id,parent_id,budget,customs,vat"),
     supabase.from("user_favorites").select("project_id").eq("user_id", profile.id),

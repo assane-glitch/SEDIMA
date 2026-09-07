@@ -79,16 +79,6 @@ export const PROJECT_CATEGORIES: { value: ProjectCategory; label: string; icon: 
   { value: "autres", label: "Autres", icon: "/brand/autres.png" },
 ];
 export const CATEGORY_LABELS = Object.fromEntries(PROJECT_CATEGORIES.map((c) => [c.value, c.label])) as Record<ProjectCategory, string>;
-export const CATEGORY_ICONS = Object.fromEntries(PROJECT_CATEGORIES.map((c) => [c.value, c.icon])) as Record<ProjectCategory, string>;
-
-export const DOC_TYPES: { value: string; label: string }[] = [
-  { value: "photo", label: "Photo" },
-  { value: "plan", label: "Plan" },
-  { value: "contrat", label: "Contrat" },
-  { value: "facture", label: "Facture" },
-  { value: "rapport", label: "Rapport" },
-  { value: "autre", label: "Autre" },
-];
 
 export interface ProjectStats {
   project_id: string;
@@ -151,16 +141,6 @@ export interface Expense {
   created_at: string;
 }
 
-export const EXPENSE_STATUS_LABELS: Record<string, string> = {
-  da_emise: "DA emise", commandee: "Commandee", livree: "Livree", facturee: "Facturee", payee: "Payee", annulee: "Annulee",
-};
-export const EXPENSE_STATUS_TONE: Record<string, "neutral" | "info" | "ok" | "warn" | "alert"> = {
-  da_emise: "neutral", commandee: "info", livree: "info", facturee: "warn", payee: "ok", annulee: "alert",
-};
-export const EXPENSE_CATEGORIES: { value: string; label: string }[] = [
-  { value: "materiaux", label: "Materiaux" }, { value: "main_oeuvre", label: "Main d'oeuvre" }, { value: "equipement", label: "Equipement" },
-  { value: "transport", label: "Transport" }, { value: "services", label: "Services" }, { value: "etudes", label: "Etudes" }, { value: "general", label: "General" },
-];
 
 export interface JournalEntry {
   id: string;
@@ -194,16 +174,16 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 };
 
 export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
-  plan: "Plan",
+  plan: "Planification",
   cadrage: "Cadrage",
   approuve: "Approuve",
   engage: "Engage",
-  execution: "En execution",
+  execution: "Execution",
   cloture: "Cloture",
   hors_perimetre: "Hors perimetre",
 };
-export const PROJECT_STATUS_TONE: Record<ProjectStatus, "slate" | "blue" | "green" | "amber" | "red"> = {
-  plan: "slate", cadrage: "amber", approuve: "blue", engage: "green", execution: "green", cloture: "slate", hors_perimetre: "slate",
+export const PROJECT_STATUS_TONE: Record<ProjectStatus, "neutral" | "info" | "ok" | "warn" | "alert"> = {
+  plan: "neutral", cadrage: "warn", approuve: "info", engage: "ok", execution: "ok", cloture: "neutral", hors_perimetre: "neutral",
 };
 // Statuts consideres comme "en cours" pour la saisie terrain et les compteurs
 export const ACTIVE_STATUSES: ProjectStatus[] = ["cadrage", "approuve", "engage", "execution"];
@@ -214,13 +194,6 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   done: "Termine",
   blocked: "Bloque",
 };
-
-export const REGISTER_TYPES: { value: string; label: string; fields: { key: string; label: string; type: "text" | "number" }[] }[] = [
-  { value: "presence", label: "Presence", fields: [{ key: "personnes", label: "Nombre de personnes", type: "number" }, { key: "equipe", label: "Equipe", type: "text" }] },
-  { value: "materiel", label: "Materiel", fields: [{ key: "designation", label: "Designation", type: "text" }, { key: "quantite", label: "Quantite", type: "number" }, { key: "etat", label: "Etat", type: "text" }] },
-  { value: "livraison", label: "Livraison", fields: [{ key: "fournisseur", label: "Fournisseur", type: "text" }, { key: "designation", label: "Designation", type: "text" }, { key: "quantite", label: "Quantite", type: "number" }] },
-  { value: "incident", label: "Incident", fields: [{ key: "gravite", label: "Gravite (1-5)", type: "number" }, { key: "description", label: "Description", type: "text" }] },
-];
 
 export interface ChangeRequest {
   id: string; project_id: string; ref: string; title: string; reason: string;

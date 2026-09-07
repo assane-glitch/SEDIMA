@@ -6,7 +6,7 @@ import { TaskDrawer } from "@/components/gantt/TaskDrawer";
 import { ProgressBar } from "@/components/ui";
 import { loadTaskContext } from "@/app/(app)/tasks/actions";
 import { HEALTH_DOT, HEALTH_LABELS, taskHealth, type Health } from "@/lib/health";
-import { formatDate, today } from "@/lib/format";
+import { addDays, formatDate, kMoney, mondayOf, today, weekLabel } from "@/lib/format";
 import type { Lists } from "@/lib/reference-types";
 import { TASK_STATUS_LABELS, type AuditEntry, type Expense, type JournalEntry, type Profile, type RegisterEntry, type Task } from "@/lib/types";
 
@@ -17,12 +17,6 @@ type SortKey = "project" | "wbs" | "name" | "responsible" | "start" | "end" | "p
 type Due = "all" | "late" | "week" | "month";
 const DUE_LABELS: Record<Due, string> = { all: "Toutes", late: "En retard", week: "Cette semaine", month: "4 prochaines semaines" };
 
-function isoWeek(iso: string) {
-  const d = new Date(iso + "T00:00:00Z"); const day = d.getUTCDay() || 7; d.setUTCDate(d.getUTCDate() + 4 - day);
-  const y0 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1)); return `S${Math.ceil(((d.getTime() - y0.getTime()) / 86400000 + 1) / 7)}`;
-}
-const addDays = (iso: string, n: number) => { const d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
-const kMoney = (v: number) => (v ? `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(Math.round(v / 1000))} k` : "—");
 
 /**
  * Liste de taches, tous projets (mode global) ou un seul (mode projet).
@@ -56,7 +50,7 @@ export function TaskList({ tasks, projects, people, spentByTask, lists, me, canE
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: mode === "global" ? "end" : "wbs", dir: 1 });
 
   const responsibles = useMemo(() => Array.from(new Set(items.map((i) => i.responsible).filter(Boolean))).sort((a, b) => a.localeCompare(b, "fr")), [items]);
-  const monday = addDays(t0, -((new Date(t0 + "T00:00:00Z").getUTCDay() + 6) % 7)), sunday = addDays(monday, 6), in4w = addDays(t0, 28);
+  const monday = mondayOf(t0), sunday = addDays(monday, 6), in4w = addDays(t0, 28);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -155,11 +149,11 @@ export function TaskList({ tasks, projects, people, spentByTask, lists, me, canE
                     {i.lot && <div className="truncate text-[9.5px] text-ink-faint">{i.lot.wbs_code ? `${i.lot.wbs_code} · ` : ""}{i.lot.name}</div>}
                   </td>
                   <td className="hidden max-w-[160px] truncate text-ink-muted md:table-cell">{i.responsible || "—"}</td>
-                  <td className="hidden whitespace-nowrap tabular-nums md:table-cell">{formatDate(t.start_date)} <span className="text-ink-faint">{isoWeek(t.start_date)}</span></td>
-                  <td className={`whitespace-nowrap tabular-nums ${lateRow ? "font-bold text-alert" : ""}`}>{formatDate(t.end_date)} <span className={lateRow ? "text-alert/70" : "text-ink-faint"}>{isoWeek(t.end_date)}</span></td>
+                  <td className="hidden whitespace-nowrap tabular-nums md:table-cell">{formatDate(t.start_date)} <span className="text-ink-faint">{weekLabel(t.start_date)}</span></td>
+                  <td className={`whitespace-nowrap tabular-nums ${lateRow ? "font-bold text-alert" : ""}`}>{formatDate(t.end_date)} <span className={lateRow ? "text-alert/70" : "text-ink-faint"}>{weekLabel(t.end_date)}</span></td>
                   <td><div className="flex items-center gap-2"><div className="w-16"><ProgressBar value={t.progress} tone={t.progress >= 100 ? "ok" : undefined} /></div><span className="w-8 text-right tabular-nums">{t.progress} %</span></div></td>
-                  <td className="num hidden lg:table-cell">{kMoney(Number(t.budget))}</td>
-                  <td className={`num hidden lg:table-cell ${over ? "font-bold text-alert" : "text-ink-muted"}`}>{kMoney(i.spent)}</td>
+                  <td className="num hidden lg:table-cell">{Number(t.budget) ? kMoney(Number(t.budget)) : "—"}</td>
+                  <td className={`num hidden lg:table-cell ${over ? "font-bold text-alert" : "text-ink-muted"}`}>{i.spent ? kMoney(i.spent) : "—"}</td>
                   <td className="hidden whitespace-nowrap md:table-cell"><span className={`chip ${t.status === "done" ? "chip-ok" : t.status === "blocked" ? "chip-alert" : t.status === "in_progress" ? "chip-info" : "chip-neutral"}`}>{TASK_STATUS_LABELS[t.status]}</span></td>
                 </tr>
               );

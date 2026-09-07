@@ -15,21 +15,21 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
     [
       { href: "/dashboard", label: "Tableau de bord", icon: "dashboard" },
       { href: "/projects", label: "Projets", icon: "projects" },
-      { href: "/tasks", label: "Tâches", icon: "tasks" },
+      { href: "/tasks", label: "Taches", icon: "tasks" },
     ],
     [
       { href: "/forms", label: "Formulaires", icon: "forms" },
       { href: "/documents", label: "Documents", icon: "documents" },
     ],
     [
-      { href: "/team", label: "Équipe", icon: "team" },
+      { href: "/team", label: "Equipe", icon: "team" },
       { href: "/reports", label: "Rapports", icon: "reports" },
     ],
     ...(isAdmin ? [[{ href: "/admin", label: "Administration", icon: "admin" as const }]] : []),
   ];
   const mobile: NavItem[] = [
     { href: "/projects", label: "Projets", icon: "projects" },
-    { href: "/tasks", label: "Tâches", icon: "tasks" },
+    { href: "/tasks", label: "Taches", icon: "tasks" },
     { href: "/forms", label: "Formulaires", icon: "forms" },
   ];
 

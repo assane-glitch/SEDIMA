@@ -6,7 +6,7 @@ import { getLists } from "@/lib/reference";
 import { labelOf, registerFields, toneOf } from "@/lib/reference-types";
 import { canSubmit, requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import type { Expense, JournalEntry, Profile, Project, RegisterEntry } from "@/lib/types";
+import { ACTIVE_STATUSES, type Expense, type JournalEntry, type Profile, type Project, type RegisterEntry } from "@/lib/types";
 import { InstallHint } from "./InstallHint";
 
 export const metadata = { title: "Formulaires" };
@@ -34,7 +34,7 @@ export default async function FormsHome({ searchParams }: { searchParams: Promis
   ].filter((i) => pmap.has(i.projectId)).map((i) => ({ ...i, projectCode: pmap.get(i.projectId)!.code, projectName: pmap.get(i.projectId)!.name, author: (i.authorId && who.get(i.authorId)) || "—" })).sort((a, b) => (a.at < b.at ? 1 : -1));
   const authorIds = new Set(items.map((i) => i.authorId).filter(Boolean));
   const authors = [...authorIds].map((id) => ({ id: id!, name: who.get(id!) ?? "—" })).sort((a, b) => a.name.localeCompare(b.name, "fr"));
-  const active = projs.filter((p) => ["cadrage", "approuve", "engage", "execution"].includes(p.status));
+  const active = projs.filter((p) => (ACTIVE_STATUSES as string[]).includes(p.status));
   const isField = profile.role === "field";
   const actions = [
     { href: "/forms/journal", label: "Journal du jour", hint: "Compte rendu, effectifs, difficultes", icon: "✎" },

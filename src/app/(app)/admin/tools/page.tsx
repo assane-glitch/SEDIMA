@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PageHeader, Stat } from "@/components/ui";
+import { addDays, mondayOf } from "@/lib/format";
 import { requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { RealignTool } from "./RealignTool";
@@ -19,8 +20,7 @@ export default async function ToolsPage() {
     supabase.from("expenses").select("*", { count: "exact", head: true }),
   ]);
   const all = tasks ?? []; const byId = new Map(all.map((t) => [t.id, t]));
-  const monday = (iso: string) => { const d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return d; };
-  const toFix = (pid: string) => all.filter((t) => t.project_id === pid && t.depends_on && byId.get(t.depends_on)).filter((t) => { const p = byId.get(t.depends_on!)!; const m = monday(t.link_type === "DD" ? p.start_date : p.end_date); m.setUTCDate(m.getUTCDate() + 7 * (1 + Math.max(0, t.lag_weeks ?? 0))); return t.start_date < m.toISOString().slice(0, 10); }).length;
+  const toFix = (pid: string) => all.filter((t) => t.project_id === pid && t.depends_on && byId.get(t.depends_on)).filter((t) => { const p = byId.get(t.depends_on!)!; const min = addDays(mondayOf(t.link_type === "DD" ? p.start_date : p.end_date), 7 * (1 + Math.max(0, t.lag_weeks ?? 0))); return t.start_date < min; }).length;
   const list = (projects ?? []).map((p) => ({ ...p, toFix: toFix(p.id) }));
   const bytes = (docs ?? []).reduce((s, d) => s + Number(d.size_bytes), 0);
   return (

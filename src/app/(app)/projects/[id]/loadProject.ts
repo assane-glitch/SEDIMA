@@ -9,7 +9,7 @@ export async function loadProject(id: string) {
     supabase.from("project_stats").select("*").eq("project_id", id).maybeSingle(),
     supabase.from("tasks").select("*").eq("project_id", id).order("sort_order").order("start_date"),
     supabase.from("profiles").select("id,email,full_name,role").order("full_name"),
-    supabase.from("expenses").select("task_id,amount").eq("project_id", id),
+    supabase.from("expenses").select("task_id,amount").eq("project_id", id).neq("status", "annulee"),
     supabase.from("user_favorites").select("project_id").eq("project_id", id).maybeSingle(),
   ]);
   if (!project) notFound();

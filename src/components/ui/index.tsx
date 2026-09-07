@@ -5,7 +5,6 @@ export type Tone = "neutral" | "info" | "ok" | "warn" | "alert";
 // Compatibilite avec les anciens noms de tons
 const TONE_ALIAS: Record<string, Tone> = { slate: "neutral", blue: "info", green: "ok", amber: "warn", red: "alert", good: "ok", bad: "alert", default: "neutral" };
 export function tone(t?: string): Tone { return (t && (TONE_ALIAS[t] ?? (t as Tone))) || "neutral"; }
-const DOT: Record<Tone, string> = { neutral: "bg-neutral-dot", info: "bg-ink-faint", ok: "bg-ok", warn: "bg-warn-dot", alert: "bg-alert" };
 const TEXT: Record<Tone, string> = { neutral: "text-ink", info: "text-ink-body", ok: "text-ok", warn: "text-warn", alert: "text-alert" };
 
 export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: ReactNode; actions?: ReactNode }) {
@@ -44,10 +43,6 @@ export function Badge({ children, tone: t = "neutral" }: { children: ReactNode; 
   return <span className={`chip-${tone(t)}`}>{children}</span>;
 }
 
-export function Dot({ tone: t = "neutral", title }: { tone?: string; title?: string }) {
-  return <span className={`dot ${DOT[tone(t)]}`} title={title} />;
-}
-
 export function Empty({ title, hint, action }: { title: string; hint?: string; action?: { href: string; label: string } }) {
   return (
     <div className="card flex flex-col items-center justify-center px-6 py-10 text-center">
@@ -62,16 +57,6 @@ export function Alert({ children, tone: t = "alert" }: { children: ReactNode; to
   const k = tone(t);
   const cls = { neutral: "border-line-soft bg-surface-sub text-ink-muted", info: "border-line-hair bg-surface-alt text-ink-body", ok: "border-ok-bd bg-ok-bg text-ok", warn: "border-warn-bd bg-warn-bg text-warn", alert: "border-alert-bd bg-alert-bg text-alert" }[k];
   return <div className={`rounded-md border px-3 py-2 text-[11px] ${cls}`}>{children}</div>;
-}
-
-export function ComingSoon({ title, step, hint }: { title: string; step: number; hint: string }) {
-  return (
-    <div className="card flex flex-col items-center justify-center px-6 py-14 text-center">
-      <div className="text-[12.5px] font-bold">{title}</div>
-      <div className="hint mt-1 max-w-md">{hint}</div>
-      <div className="mt-4"><Badge tone="warn">Prevu a l&apos;etape {step}</Badge></div>
-    </div>
-  );
 }
 
 export function CategoryIcon({ category, className = "h-6 w-6", tone = "brand" }: { category: string; className?: string; tone?: "brand" | "ink" | "surface" | "raw" }) {
