@@ -1,10 +1,11 @@
 "use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { TaskDrawer } from "@/components/gantt/TaskDrawer";
 import { ProgressBar } from "@/components/ui";
 import { loadTaskContext } from "@/app/(app)/tasks/actions";
+import { deleteTasks } from "@/app/(app)/projects/actions";
 import { HEALTH_DOT, HEALTH_LABELS, taskHealth, type Health } from "@/lib/health";
 import { addDays, formatDate, kMoney, mondayOf, today, weekLabel } from "@/lib/format";
 import type { Lists } from "@/lib/reference-types";
@@ -85,6 +86,29 @@ export function TaskList({ tasks, projects, people, spentByTask, lists, me, canE
   const selProject = selected ? byProject.get(selected.project_id) : undefined;
   const projTasks = selected ? tasks.filter((t) => t.project_id === selected.project_id) : [];
 
+  // Suppression en lot : mode selection avec cases a cocher, reserve aux editeurs
+  const [selecting, setSelecting] = useState(false);
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [err, setErr] = useState<string | null>(null);
+  const [pending, startDelete] = useTransition();
+  const toggleChecked = (id: string) => setChecked((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const visibleChecked = filtered.filter((i) => checked.has(i.task.id)).length;
+  const allVisible = filtered.length > 0 && visibleChecked === filtered.length;
+  const toggleAllVisible = () => setChecked((s) => { const n = new Set(s); for (const i of filtered) { if (allVisible) n.delete(i.task.id); else n.add(i.task.id); } return n; });
+  const stopSelecting = () => { setSelecting(false); setChecked(new Set()); setErr(null); };
+  const removeChecked = () => {
+    const ids = Array.from(checked);
+    if (ids.length === 0) return;
+    if (!confirm(ids.length === 1 ? "Supprimer la tache selectionnee ? Les depenses, entrees de journal et de registre liees seront detachees." : `Supprimer les ${ids.length} taches selectionnees ? Les depenses, entrees de journal et de registre liees seront detachees.`)) return;
+    startDelete(async () => {
+      setErr(null);
+      const r = await deleteTasks(ids);
+      if (r && "error" in r && r.error) { setErr(r.error); return; }
+      stopSelecting();
+      router.refresh();
+    });
+  };
+
   const Th = ({ k, children, className = "" }: { k: SortKey; children: React.ReactNode; className?: string }) => (
     <th className={`cursor-pointer select-none whitespace-nowrap hover:text-ink ${className}`} onClick={() => setSort((s) => ({ key: k, dir: s.key === k ? (s.dir === 1 ? -1 : 1) : 1 }))}>
       {children}{sort.key === k && <span className="ml-1 text-ink-muted">{sort.dir === 1 ? "↑" : "↓"}</span>}
@@ -117,12 +141,27 @@ export function TaskList({ tasks, projects, people, spentByTask, lists, me, canE
           </button>
         ))}
         <span className="ml-auto text-[10px] text-ink-muted">{filtered.length} / {items.length} taches</span>
+        {canEdit && !selecting && <button type="button" onClick={() => setSelecting(true)} className="btn-secondary" title="Selectionner des taches a supprimer">Supprimer des taches</button>}
       </div>
+      {selecting && (
+        <div className="mb-3 flex flex-wrap items-center gap-3 rounded-md border border-alert-bd bg-alert-bg px-3 py-2 text-[10.5px]">
+          <span className="font-semibold text-alert">{checked.size} tache{checked.size > 1 ? "s" : ""} selectionnee{checked.size > 1 ? "s" : ""}</span>
+          <button type="button" onClick={toggleAllVisible} className="btn-ghost">{allVisible ? "Aucune" : `Toutes les taches affichees (${filtered.length})`}</button>
+          {checked.size > 0 && !allVisible && <button type="button" onClick={() => setChecked(new Set())} className="btn-ghost">Aucune</button>}
+          <span className="text-ink-muted">Cocher les taches a supprimer, puis confirmer. Cette action est definitive.</span>
+          {err && <span className="font-semibold text-alert">{err}</span>}
+          <span className="ml-auto flex items-center gap-2">
+            <button type="button" onClick={stopSelecting} disabled={pending} className="btn-secondary">Annuler</button>
+            <button type="button" onClick={removeChecked} disabled={pending || checked.size === 0} className="btn-danger">{pending ? "Suppression…" : `Supprimer (${checked.size})`}</button>
+          </span>
+        </div>
+      )}
 
       <div className="card overflow-x-auto">
         <table className="tbl">
           <thead>
             <tr>
+              {selecting && <th className="w-6"><input type="checkbox" checked={allVisible} onChange={toggleAllVisible} aria-label="Tout selectionner" /></th>}
               <th className="w-6" />
               {mode === "global" && <Th k="project">Projet</Th>}
               <Th k="wbs" className="hidden w-14 md:table-cell">WBS</Th>
@@ -140,7 +179,8 @@ export function TaskList({ tasks, projects, people, spentByTask, lists, me, canE
             {filtered.map((i) => {
               const t = i.task, over = Number(t.budget) > 0 && i.spent > Number(t.budget), lateRow = t.end_date < t0 && t.status !== "done";
               return (
-                <tr key={t.id} className="cursor-pointer" onClick={() => open(t)}>
+                <tr key={t.id} className={`cursor-pointer ${selecting && checked.has(t.id) ? "[&>td]:!bg-alert-bg" : ""}`} onClick={() => (selecting ? toggleChecked(t.id) : open(t))}>
+                  {selecting && <td onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={checked.has(t.id)} onChange={() => toggleChecked(t.id)} aria-label={`Selectionner ${t.name}`} /></td>}
                   <td><span className={`dot ${HEALTH_DOT[i.health as Health]}`} title={HEALTH_LABELS[i.health as Health]} /></td>
                   {mode === "global" && <td className="whitespace-nowrap"><Link href={`/projects/${t.project_id}/planning`} onClick={(e) => e.stopPropagation()} className="font-semibold hover:underline" title={i.project?.name}>{i.project?.code ?? "—"}</Link></td>}
                   <td className="hidden font-mono text-[9.5px] text-ink-faint md:table-cell">{t.wbs_code ?? ""}</td>
@@ -158,7 +198,7 @@ export function TaskList({ tasks, projects, people, spentByTask, lists, me, canE
                 </tr>
               );
             })}
-            {filtered.length === 0 && <tr><td colSpan={11} className="!py-8 text-center text-ink-faint">Aucune tache ne correspond aux filtres.</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={12} className="!py-8 text-center text-ink-faint">Aucune tache ne correspond aux filtres.</td></tr>}
           </tbody>
         </table>
       </div>

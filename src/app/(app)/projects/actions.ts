@@ -169,6 +169,26 @@ export async function deleteTask(formData: FormData) {
   revalidatePath("/dashboard");
 }
 
+/** Suppression en lot depuis la liste des taches : les identifiants peuvent appartenir a plusieurs projets. */
+export async function deleteTasks(ids: string[]) {
+  const profile = await requireProfile();
+  if (!canEdit(profile)) return { error: "Droits insuffisants" };
+  const clean = Array.from(new Set(ids.filter((id) => /^[0-9a-f-]{36}$/i.test(id))));
+  if (clean.length === 0) return { error: "Aucune tache selectionnee" };
+  const supabase = await createClient();
+  const { data: rows } = await supabase.from("tasks").select("project_id").in("id", clean);
+  const { error, count } = await supabase.from("tasks").delete({ count: "exact" }).in("id", clean);
+  if (error) return { error: error.message };
+  for (const pid of new Set((rows ?? []).map((r) => r.project_id))) {
+    revalidatePath(`/projects/${pid}`);
+    revalidatePath(`/projects/${pid}/planning`);
+    revalidatePath(`/projects/${pid}/tasks`);
+  }
+  revalidatePath("/tasks");
+  revalidatePath("/dashboard");
+  return { deleted: count ?? clean.length };
+}
+
 
 export async function addExpense(formData: FormData) {
   const profile = await requireProfile();
