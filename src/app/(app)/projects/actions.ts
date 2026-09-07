@@ -85,8 +85,15 @@ export async function saveTask(formData: FormData) {
   const projectId = str(formData, "project_id");
   const id = str(formData, "id");
   const supabase = await createClient();
-  const parentId = str(formData, "parent_id") || null;
+  let parentId = str(formData, "parent_id") || null;
   const dependsOn = str(formData, "depends_on") || null;
+  // Aucun lot choisi mais un code WBS du type L2.3 : rattachement automatique au lot L2
+  const wbs = str(formData, "wbs_code");
+  const m = /^([A-Za-z]+\d+)\.\d+/.exec(wbs);
+  if (!parentId && m) {
+    const { data: lot } = await supabase.from("tasks").select("id").eq("project_id", projectId).is("parent_id", null).ilike("wbs_code", m[1]).neq("id", id || "00000000-0000-0000-0000-000000000000").maybeSingle();
+    if (lot) parentId = lot.id;
+  }
   const payload = {
     project_id: projectId,
     name: str(formData, "name"),
@@ -112,8 +119,11 @@ export async function saveTask(formData: FormData) {
   if (id) {
     await supabase.from("tasks").update(payload).eq("id", id);
   } else {
-    const { data: last } = await supabase.from("tasks").select("sort_order").eq("project_id", projectId).order("sort_order", { ascending: false }).limit(1).maybeSingle();
-    await supabase.from("tasks").insert({ ...payload, sort_order: (last?.sort_order ?? 0) + 10 });
+    let q = supabase.from("tasks").select("sort_order").eq("project_id", projectId).order("sort_order", { ascending: false }).limit(1);
+    if (parentId) q = q.or(`parent_id.eq.${parentId},id.eq.${parentId}`);
+    const { data: last } = await q.maybeSingle();
+    const { error: insErr } = await supabase.from("tasks").insert({ ...payload, sort_order: (last?.sort_order ?? 0) + 1 });
+    if (insErr) redirect(`/projects/${projectId}/planning?error=${encodeURIComponent(insErr.message)}`);
   }
   revalidatePath(`/projects/${projectId}`);
   revalidatePath(`/projects/${projectId}/planning`);

@@ -1,3 +1,4 @@
+import { Alert } from "@/components/ui";
 import { Gantt, type GanttMilestone } from "@/components/gantt/Gantt";
 import { canEdit, requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
@@ -8,8 +9,9 @@ import { ProjectHeader } from "../ProjectHeader";
 import { ProjectTabs } from "../ProjectTabs";
 import { loadProject } from "../loadProject";
 
-export default async function ProjectPlanningPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ProjectPlanningPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; ok?: string }> }) {
   const { id } = await params;
+  const { error, ok } = await searchParams;
   const profile = await requireProfile();
   const { project, tasks, people, spentByTask } = await loadProject(id);
   const supabase = await createClient();
@@ -30,6 +32,8 @@ export default async function ProjectPlanningPage({ params }: { params: Promise<
     <>
       <ProjectHeader project={project} manager={people.find((p) => p.id === project.manager_id)} />
       <ProjectTabs id={id} canEdit={editor} />
+      {error && <div className="mb-3"><Alert>{error}</Alert></div>}
+      {ok && <div className="mb-3"><Alert tone="ok">{ok}</Alert></div>}
       <Gantt mode="project" rows={rows} milestones={milestones} expenses={(exp ?? []) as Expense[]} journal={(jr ?? []) as JournalEntry[]} registers={(rg ?? []) as RegisterEntry[]} audit={(au ?? []) as AuditEntry[]} lists={lists} people={people} currency={project.currency} canEdit={editor} projectId={id} projectCode={project.code} projectStart={project.start_date} projectEnd={project.end_date} pendingChanges={pending ?? 0} />
     </>
   );

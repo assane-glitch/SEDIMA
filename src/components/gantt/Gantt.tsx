@@ -40,6 +40,10 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
 }) {
   const t0 = today();
   const [selected, setSelected] = useState<GanttRow | "new" | null>(null);
+  const [newDefaults, setNewDefaults] = useState<{ parentId?: string; wbs?: string; start?: string; end?: string }>({});
+  // Prochain code WBS sous un lot : L2 -> L2.5 si L2.4 est le dernier
+  const nextWbs = (lot: GanttRow) => { const nums = rows.filter((r) => r.parentId === lot.id && r.code).map((r) => Number((r.code ?? "").split(".").pop())).filter((n) => Number.isFinite(n)); return lot.code ? `${lot.code}.${(nums.length ? Math.max(...nums) : 0) + 1}` : ""; };
+  const addUnder = (lot: GanttRow) => { setNewDefaults({ parentId: lot.id, wbs: nextWbs(lot), start: lot.end, end: addDays(lot.end, 13) }); setSelected("new"); };
   const [selMilestone, setSelMilestone] = useState<GanttMilestone | "new" | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [scaleChoice, setScaleChoice] = useState<Scale | "auto">("auto");
@@ -200,7 +204,7 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
           {canEdit && mode === "project" && <>
             <span className="mx-1 h-4 w-px bg-line-hair" />
             <button onClick={() => setSelMilestone("new")} className="btn-secondary !py-[2px]">+ Jalon</button>
-            <button onClick={() => setSelected("new")} className="btn-primary !py-[2px]">+ Tache</button>
+            <button onClick={() => { setNewDefaults({}); setSelected("new"); }} className="btn-primary !py-[2px]">+ Tache</button>
           </>}
         </div>
       </div>
@@ -253,7 +257,7 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
               const over = r.budget > 0 && r.spent > r.budget;
               const h = r.health ?? "idle";
               return (
-                <div key={r.id} className={`grid items-center border-b border-line-light px-2 ${isLot ? "bg-surface-alt text-[12px] font-bold" : "text-[11px] hover:bg-surface-alt"}`} style={{ ...gridStyle, height: rowH(r) }}>
+                <div key={r.id} className={`group grid items-center border-b border-line-light px-2 ${isLot ? "bg-surface-alt text-[12px] font-bold" : "text-[11px] hover:bg-surface-alt"}`} style={{ ...gridStyle, height: rowH(r) }}>
                   <div className="flex items-center gap-1 truncate pr-1">
                     <span className={`dot ${HEALTH_DOT[h]}`} title={HEALTH_LABELS[h]} />
                     {mode === "project" && <span className={`font-mono text-[9px] ${isLot ? "text-ink" : "text-ink-faint"}`}>{r.code}</span>}
@@ -263,6 +267,7 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
                     {r.href
                       ? <Link href={r.href} className="truncate font-semibold hover:underline">{r.name}</Link>
                       : <button onClick={() => setSelected(r)} className={`min-w-0 cursor-pointer truncate text-left ${isLot ? "font-bold text-ink" : "font-normal text-ink-body"}`}>{r.name}</button>}
+                    {isLot && canEdit && mode === "project" && <button onClick={() => addUnder(r)} className="ml-auto hidden shrink-0 cursor-pointer rounded-sm border border-line px-1 text-[9px] font-semibold leading-[14px] text-ink-muted hover:bg-surface-sub hover:text-ink group-hover:inline-block" title={`Ajouter une tache sous ${r.code ?? r.name}`}>+ tache</button>}
                   </div>
                   <div className={`truncate pr-1 text-[10px] ${isLot ? "text-ink-body" : "text-ink-muted"}`}>{r.responsible || "—"}</div>
                   <div className="pr-3.5 text-right tabular-nums">{r.progress} %</div>
@@ -334,7 +339,7 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
           expenses={selected === "new" ? [] : expenses.filter((e) => e.task_id === selected.id || (selected.kind === "lot" && rows.some((c) => c.parentId === selected.id && c.id === e.task_id)))}
           journal={selected === "new" ? [] : journal.filter((e) => e.task_id === selected.id)} registers={selected === "new" ? [] : registers.filter((e) => e.task_id === selected.id)}
           audit={selected === "new" ? [] : audit.filter((a) => (a.table_name === "tasks" && a.record_id === selected.id) || (a.table_name === "expenses" && (a.new_data?.task_id === selected.id || a.old_data?.task_id === selected.id)))}
-          people={people} currency={currency} projectId={projectId} projectCode={projectCode} canEdit={canEdit} defaults={{ start: projectStart, end: projectEnd }} spent={selected === "new" ? 0 : selected.spent} onClose={() => setSelected(null)} />
+          people={people} currency={currency} projectId={projectId} projectCode={projectCode} canEdit={canEdit} defaults={{ start: newDefaults.start ?? projectStart, end: newDefaults.end ?? projectEnd, parentId: newDefaults.parentId, wbs: newDefaults.wbs }} spent={selected === "new" ? 0 : selected.spent} onClose={() => setSelected(null)} />
       )}
       {selMilestone && projectId && <MilestoneDrawer milestone={selMilestone === "new" ? null : (selMilestone.milestone ?? null)} projectId={projectId} defaultDate={projectEnd} onClose={() => setSelMilestone(null)} />}
     </div>

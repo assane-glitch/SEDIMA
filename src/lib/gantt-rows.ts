@@ -5,7 +5,8 @@ import type { Task } from "@/lib/types";
 export function buildRows(tasks: Task[], spentByTask: Map<string, number>, who: Map<string, string>): GanttRow[] {
   const byParent = new Map<string | null, Task[]>();
   for (const t of tasks) { const k = t.parent_id ?? null; byParent.set(k, [...(byParent.get(k) ?? []), t]); }
-  const sortT = (a: Task, b: Task) => a.sort_order - b.sort_order || a.start_date.localeCompare(b.start_date);
+  // Ordre : code WBS naturel (L2.3 avant L2.10) quand les deux en ont un, sinon ordre de saisie puis date
+  const sortT = (a: Task, b: Task) => (a.wbs_code && b.wbs_code ? a.wbs_code.localeCompare(b.wbs_code, "fr", { numeric: true }) : 0) || a.sort_order - b.sort_order || a.start_date.localeCompare(b.start_date);
   const rows: GanttRow[] = [];
   const taskRow = (t: Task, parentId: string | null): GanttRow => ({
     id: t.id, kind: "task", parentId, code: t.wbs_code, name: t.name, start: t.start_date, end: t.end_date, progress: t.progress,

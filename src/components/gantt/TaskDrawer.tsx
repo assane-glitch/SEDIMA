@@ -11,7 +11,7 @@ import { TASK_STATUS_LABELS, type AuditEntry, type Expense, type JournalEntry, t
 
 export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, registers, audit, lists, people, currency, projectId, projectCode, canEdit, defaults, spent, onClose }: {
   task: Task | null; isLot: boolean; lots: { id: string; name: string }[]; tasks: Task[]; expenses: Expense[]; journal: JournalEntry[]; registers: RegisterEntry[]; audit: AuditEntry[];
-  lists?: Lists; people: Profile[]; currency: string; projectId: string; projectCode?: string; canEdit: boolean; defaults: { start: string; end: string }; spent: number; onClose: () => void;
+  lists?: Lists; people: Profile[]; currency: string; projectId: string; projectCode?: string; canEdit: boolean; defaults: { start: string; end: string; parentId?: string; wbs?: string }; spent: number; onClose: () => void;
 }) {
   const [pending, start] = useTransition();
   const [tab, setTab] = useState<"suivi" | "fiche" | "events">(task ? "suivi" : "fiche");
@@ -27,6 +27,9 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, regist
   const over = budget > 0 && spent > budget;
   const dep = task?.depends_on ? tasks.find((t) => t.id === task.depends_on) : undefined;
   const [depId, setDepId] = useState(task?.depends_on ?? "");
+  const [parentSel, setParentSel] = useState(task?.parent_id ?? defaults.parentId ?? "");
+  const [wbsVal, setWbsVal] = useState(task?.wbs_code ?? defaults.wbs ?? "");
+  const suggestWbs = (lotId: string) => { const lot = tasks.find((t) => t.id === lotId); if (!lot?.wbs_code) return ""; const nums = tasks.filter((t) => t.parent_id === lotId && t.wbs_code).map((t) => Number((t.wbs_code ?? "").split(".").pop())).filter((n) => Number.isFinite(n)); return `${lot.wbs_code}.${(nums.length ? Math.max(...nums) : 0) + 1}`; };
   const [linkType, setLinkType] = useState(task?.link_type || "FD");
   const [lag, setLag] = useState(String(task?.lag_weeks ?? 0));
   const weekOf = (iso: string) => { const d = new Date(iso + "T00:00:00Z"); const day = d.getUTCDay() || 7; d.setUTCDate(d.getUTCDate() + 4 - day); const y0 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1)); return `S${Math.ceil(((d.getTime() - y0.getTime()) / 86400000 + 1) / 7)}`; };
@@ -158,10 +161,10 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, regist
               <input type="hidden" name="project_id" value={projectId} />
               {task && <input type="hidden" name="id" value={task.id} />}
               <div className="grid grid-cols-[100px_1fr] gap-4">
-                <Field label="Code WBS"><input name="wbs_code" defaultValue={task?.wbs_code ?? ""} placeholder="L2.3" className="input" /></Field>
+                <Field label="Code WBS"><input name="wbs_code" value={wbsVal} onChange={(e) => setWbsVal(e.target.value)} placeholder="L2.3" className="input" /></Field>
                 <Field label="Nom"><input name="name" required defaultValue={task?.name} className="input" /></Field>
               </div>
-              {!isLot && <Field label="Lot"><select name="parent_id" defaultValue={task?.parent_id ?? ""} className="input"><option value="">Aucun (premier niveau)</option>{lots.filter((l) => l.id !== task?.id).map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}</select></Field>}
+              {!isLot && <Field label="Lot"><select name="parent_id" value={parentSel} onChange={(e) => { setParentSel(e.target.value); if (!task && e.target.value) setWbsVal(suggestWbs(e.target.value)); }} className="input"><option value="">Aucun (premier niveau)</option>{lots.filter((l) => l.id !== task?.id).map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}</select><p className="hint mt-1">Sans lot choisi, un code WBS du type L2.3 rattache automatiquement la tache au lot L2.</p></Field>}
               {!isLot ? (
                 <div className="grid grid-cols-3 gap-4">
                   <Field label="Debut"><DateInput name="start_date" required defaultValue={task?.start_date ?? defaults.start} className="input" /></Field>
