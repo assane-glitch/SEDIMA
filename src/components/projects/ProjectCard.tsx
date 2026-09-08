@@ -20,7 +20,7 @@ export function ProjectCard({ row, href, favorite, canEdit }: { row: CardRow; hr
   const alert = isAlert(row);
   return (
     <div className="card relative transition-colors hover:border-line hover:bg-surface-alt">
-      <div className="absolute right-1.5 top-1.5 z-10 flex items-center gap-0.5">
+      <div className="absolute right-1.5 top-1.5 flex items-center gap-0.5">
         {favorite !== undefined && <FavoriteStar projectId={p.id} favorite={favorite} />}
         {canEdit !== undefined && <ProjectCardMenu projectId={p.id} code={p.code} name={p.name} canEdit={canEdit} />}
       </div>

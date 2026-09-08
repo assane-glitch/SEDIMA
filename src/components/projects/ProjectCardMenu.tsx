@@ -41,13 +41,13 @@ export function ProjectCardMenu({ projectId, code, name, canEdit }: { projectId:
   };
   const item = "block rounded-md px-2.5 py-1.5 text-[10.5px] text-ink-body hover:bg-surface-sub";
   return (
-    <div ref={ref} className="relative" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+    <div ref={ref} className={`relative ${open ? "z-40" : ""}`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
       <button type="button" aria-label="Actions du projet" aria-expanded={open} title="Actions" onClick={() => (open ? close() : setOpen(true))}
         className={`flex h-6 w-6 cursor-pointer items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-surface-sub hover:text-ink ${open ? "bg-surface-sub text-ink" : ""}`}>
         <Icon name="more" className="h-4 w-4" strokeWidth={2.2} />
       </button>
       {open && (
-        <div className="absolute right-0 top-7 z-30 w-56 rounded-lg border border-line-hair bg-surface p-1.5">
+        <div className="absolute right-0 top-7 z-40 w-56 rounded-lg border border-line-hair bg-surface p-1.5">
           {!confirming ? (
             <>
               <Link href={`/projects/${projectId}`} className={item}>Apercu</Link>
