@@ -29,31 +29,35 @@ export default async function ProjectSettingsPage({ params, searchParams }: { pa
   const frozen = tasks.filter((t) => t.baseline_start).length;
   const drift = tasks.filter((t) => t.baseline_start && (t.baseline_start !== t.start_date || t.baseline_end !== t.end_date)).length;
   return (
-    <div className="mx-auto max-w-2xl">
+    <>
       <ProjectHeader project={project} manager={people.find((p) => p.id === project.manager_id)} />
       <ProjectTabs id={id} canEdit />
       {error && <div className="mb-4"><Alert>{error}</Alert></div>}
       {ok && <div className="mb-4"><Alert tone="ok">{ok}</Alert></div>}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
       <ProjectForm project={project} people={people} action={updateProject} submitLabel="Enregistrer" />
-      <section className="card card-pad mt-4">
+      <div className="grid gap-4">
+      <section className="card card-pad">
         <div className="card-title">Planning de reference</div>
         <p className="hint mt-1">La reference est le planning fige, compare au planning actuel dans le Gantt (bouton « Reference »). Elle se fixe une premiere fois en figeant le planning, puis ne change que par une demande de changement approuvee dans le registre.</p>
-        <div className="mt-3 flex items-center justify-between gap-4 text-[10.5px]">
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-[10.5px]">
           <div className="text-ink-muted">{frozen} ligne{frozen > 1 ? "s" : ""} avec une reference · {drift} en ecart avec le planning actuel · projet du {formatDate(project.start_date)} au {formatDate(project.end_date)}</div>
           {frozen === 0
             ? <form action={freezeBaseline}><input type="hidden" name="id" value={id} /><SubmitButton className="btn-secondary" pendingText="Figeage…">▭ Figer le planning actuel comme reference</SubmitButton></form>
             : <Link href={`/projects/${id}/changes`} className="btn-secondary">Registre des changements</Link>}
         </div>
       </section>
-      <section className="card card-pad mt-4">
+      <section className="card card-pad">
         <div className="card-title">Calendrier de travail</div>
         <p className="hint mt-1">Commun a tous les projets : le Gantt grise les jours chomes et le tiroir d&apos;une tache affiche sa duree en jours ouvres.</p>
-        <div className="mt-3 flex items-center justify-between gap-4 text-[10.5px]">
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-[10.5px]">
           <div className="text-ink-muted">Jours ouvres : {workLabel} · {cal.hoursPerDay} h par jour · {cal.holidays.length} jour{cal.holidays.length > 1 ? "s" : ""} ferie{cal.holidays.length > 1 ? "s" : ""}</div>
           {profile.role === "admin" && <Link href="/admin/calendar" className="btn-secondary">Gerer le calendrier</Link>}
         </div>
       </section>
       <DeleteProjectForm projectId={id} code={project.code} name={project.name} counts={{ tasks: tasks.length, expenses: expenses ?? 0, documents: documents ?? 0 }} />
-    </div>
+      </div>
+      </div>
+    </>
   );
 }

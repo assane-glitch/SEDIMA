@@ -29,7 +29,7 @@ export function DeleteProjectForm({ projectId, code, name, counts }: { projectId
     });
   };
   return (
-    <section id="supprimer" className="card card-pad mt-4 border-alert-bd">
+    <section id="supprimer" className="card card-pad border-alert-bd">
       <div className="card-title text-alert">Supprimer le projet</div>
       <p className="hint mt-1">
         Supprime le projet et toutes ses donnees : {counts.tasks} tache{counts.tasks > 1 ? "s" : ""} (lots compris), {counts.expenses} depense{counts.expenses > 1 ? "s" : ""}, {counts.documents} document{counts.documents > 1 ? "s" : ""}, ainsi que les jalons, le journal, les registres et les demandes de changement.
