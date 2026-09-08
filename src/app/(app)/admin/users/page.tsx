@@ -18,7 +18,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
   const users = (data ?? []) as (Profile & { created_at: string })[];
   return (
     <>
-      <PageHeader title="Utilisateurs" subtitle="Invitez les chefs de projet, lecteurs et equipes terrain" />
+      <PageHeader crumbs={[{ href: "/admin", label: "Administration" }]} title="Utilisateurs" subtitle="Invitez les chefs de projet, lecteurs et equipes terrain" />
       {error && <div className="mb-4"><Alert>{error}</Alert></div>}
       {ok && <div className="mb-4"><Alert tone="green">{ok}</Alert></div>}
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">

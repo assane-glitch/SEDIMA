@@ -6,6 +6,7 @@ import { freezeBaseline } from "@/app/(app)/projects/actions";
 import { HEALTH_DOT, HEALTH_LABELS, type Health } from "@/lib/health";
 import type { AuditEntry, Expense, JournalEntry, Milestone, Profile, RegisterEntry, Task } from "@/lib/types";
 import type { Lists } from "@/lib/reference-types";
+import { DEFAULT_CALENDAR, holidayIndex, holidayOn, isoWeekday, type WorkCalendar } from "@/lib/calendar-types";
 import { TaskDrawer } from "./TaskDrawer";
 import { MilestoneDrawer } from "./MilestoneDrawer";
 import { Bar, Diamond } from "./GanttMarks";
@@ -26,13 +27,13 @@ const ROW_LOT = 26;
 const ROW_TASK = 20;
 const ROW_MS = 22;
 const HEAD_H = 44;
-const PX: Record<Scale, number> = { day: 26, week: 8, month: 3.2, year: 1.2 };
+const PX: Record<Scale, number> = { day: 26, week: 8, month: 4, year: 1.5 };
 const SCALE_LABEL: Record<Scale, string> = { day: "Jour", week: "Semaine", month: "Mois", year: "Trimestre" };
 
 
-export function Gantt({ rows, milestones, expenses = [], journal = [], registers = [], audit = [], lists, people, currency, canEdit, projectId, projectCode, projectStart, projectEnd, mode, pendingChanges = 0 }: {
+export function Gantt({ rows, milestones, expenses = [], journal = [], registers = [], audit = [], lists, people, currency, canEdit, projectId, projectCode, projectStart, projectEnd, mode, pendingChanges = 0, calendar = DEFAULT_CALENDAR }: {
   rows: GanttRow[]; milestones: GanttMilestone[]; expenses?: Expense[]; journal?: JournalEntry[]; registers?: RegisterEntry[]; audit?: AuditEntry[]; lists?: Lists; people: Profile[]; currency: string; canEdit: boolean;
-  projectId?: string; projectCode?: string; projectStart: string; projectEnd: string; mode: "project" | "portfolio"; pendingChanges?: number;
+  projectId?: string; projectCode?: string; projectStart: string; projectEnd: string; mode: "project" | "portfolio"; pendingChanges?: number; calendar?: WorkCalendar;
 }) {
   const t0 = today();
   const [selected, setSelected] = useState<GanttRow | "new" | null>(null);
@@ -106,24 +107,33 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
   const tops = useMemo(() => { let y = HEAD_H + msRow * ROW_MS; return visible.map((r) => { const t = y; y += rowH(r); return t; }); }, [visible, msRow]);
   const rowTop = (i: number) => tops[i] ?? HEAD_H;
 
-  // ---- Graduations : bandes (haut) et ticks (bas) ----
-  const { bands, ticks } = useMemo(() => {
+  // ---- Graduations : bandes (haut) et ticks (bas), jours chomes (calendrier de travail) ----
+  const { bands, ticks, offDays } = useMemo(() => {
     const start = new Date(rangeStart + "T00:00:00Z"), end = new Date(rangeEnd + "T00:00:00Z");
     const off = (d: Date) => Math.round((d.getTime() - start.getTime()) / MS_DAY) * px;
     const clampW = (a: Date, b: Date) => (Math.min(totalDays, Math.round((b.getTime() - start.getTime()) / MS_DAY)) - Math.max(0, Math.round((a.getTime() - start.getTime()) / MS_DAY))) * px;
     const bands: { left: number; width: number; label: string }[] = [];
-    const ticks: { left: number; width: number; label: string; major?: boolean; iso?: string }[] = [];
+    const ticks: { left: number; width: number; label: string; major?: boolean; iso?: string; off?: boolean; holiday?: string }[] = [];
+    const offDays: { left: number; width: number; title: string; holiday: boolean }[] = [];
+    const hIdx = holidayIndex(calendar);
     if (scale === "year") {
-      for (const d = new Date(Date.UTC(start.getUTCFullYear(), 0, 1)); d <= end; d.setUTCFullYear(d.getUTCFullYear() + 1)) { const n = new Date(Date.UTC(d.getUTCFullYear() + 1, 0, 1)); bands.push({ left: Math.max(0, off(d)), width: clampW(d, n), label: String(d.getUTCFullYear()) }); }
-      for (const d = new Date(Date.UTC(start.getUTCFullYear(), Math.floor(start.getUTCMonth() / 3) * 3, 1)); d <= end; d.setUTCMonth(d.getUTCMonth() + 3)) { const n = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 3, 1)); ticks.push({ left: off(d), width: Math.round((n.getTime() - d.getTime()) / MS_DAY) * px, label: `T${Math.floor(d.getUTCMonth() / 3) + 1}`, major: d.getUTCMonth() === 0 }); }
+      // Trimestres en haut, mois en bas
+      for (const d = new Date(Date.UTC(start.getUTCFullYear(), Math.floor(start.getUTCMonth() / 3) * 3, 1)); d <= end; d.setUTCMonth(d.getUTCMonth() + 3)) { const n = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 3, 1)); bands.push({ left: Math.max(0, off(d)), width: clampW(d, n), label: `T${Math.floor(d.getUTCMonth() / 3) + 1} ${d.getUTCFullYear()}` }); }
+      for (const d = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1)); d <= end; d.setUTCMonth(d.getUTCMonth() + 1)) { const n = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)); ticks.push({ left: off(d), width: Math.round((n.getTime() - d.getTime()) / MS_DAY) * px, label: d.toLocaleDateString("fr-FR", { month: "short", timeZone: "UTC" }).replace(".", ""), major: d.getUTCMonth() % 3 === 0 }); }
     } else {
-      // Bandes = mois (avec l'annee), ticks = semaines ou jours
+      // Mois en haut (avec l'annee), semaines ou jours en bas
       for (const d = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1)); d <= end; d.setUTCMonth(d.getUTCMonth() + 1)) { const n = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)); bands.push({ left: Math.max(0, off(d)), width: clampW(d, n), label: d.toLocaleDateString("fr-FR", { month: scale === "month" ? "short" : "long", year: "numeric", timeZone: "UTC" }) }); }
-      if (scale === "day") for (const d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) ticks.push({ left: off(d), width: px, label: String(d.getUTCDate()), major: d.getUTCDay() === 1, iso: d.toISOString().slice(0, 10) });
+      if (scale === "day") for (const d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) { const iso = d.toISOString().slice(0, 10), holiday = holidayOn(iso, hIdx), isOff = holiday !== undefined || !calendar.workDays.includes(isoWeekday(iso)); ticks.push({ left: off(d), width: px, label: String(d.getUTCDate()), major: d.getUTCDay() === 1, iso, off: isOff, holiday }); }
       else { const d = new Date(start); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); for (; d <= end; d.setUTCDate(d.getUTCDate() + 7)) ticks.push({ left: off(d), width: 7 * px, label: `S${isoWeek(d.toISOString().slice(0, 10))}`, major: d.getUTCDate() <= 7, iso: d.toISOString().slice(0, 10) }); }
+      // Colonnes grisees : tous les jours chomes a l'echelle jour, seulement les feries aux echelles semaine et mois
+      for (const d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
+        const iso = d.toISOString().slice(0, 10), holiday = holidayOn(iso, hIdx);
+        if (holiday !== undefined) offDays.push({ left: off(d), width: px, title: `${holiday} · ${formatDate(iso)}`, holiday: true });
+        else if (scale === "day" && !calendar.workDays.includes(isoWeekday(iso))) offDays.push({ left: off(d), width: px, title: "Jour non ouvre", holiday: false });
+      }
     }
-    return { bands, ticks };
-  }, [rangeStart, rangeEnd, scale, px, totalDays]);
+    return { bands, ticks, offDays };
+  }, [rangeStart, rangeEnd, scale, px, totalDays, calendar]);
 
   // ---- Liens de dependance : du predecesseur vers le successeur, fleche entrante a gauche ----
   const links = useMemo(() => {
@@ -230,8 +240,8 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
               {ticks.map((t, i) => {
                 const cur = todayX >= t.left && todayX < t.left + t.width && scale !== "day";
                 const isHl = !!hl && t.iso !== undefined && t.left >= hl.left - 1 && t.left + t.width <= hl.left + hl.width + 1;
-                const cls = cur ? "border-x border-brand bg-alert-bg font-bold text-brand" : isHl ? "border-x border-accent bg-accent-bg font-bold text-ink" : t.major ? "border-r border-line-hair text-ink-faint" : "border-r border-line-light text-ink-faint";
-                return <div key={i} role={t.iso ? "button" : undefined} onClick={t.iso ? () => toggleHlWeek(t.iso!) : undefined} title={t.iso ? "Surligner cette semaine" : undefined}
+                const cls = cur ? "border-x border-brand bg-alert-bg font-bold text-brand" : isHl ? "border-x border-accent bg-accent-bg font-bold text-ink" : t.off ? `border-r border-line-light bg-surface-mut ${t.holiday ? "text-ink-muted" : "text-ink-faint/70"}` : t.major ? "border-r border-line-hair text-ink-faint" : "border-r border-line-light text-ink-faint";
+                return <div key={i} role={t.iso ? "button" : undefined} onClick={t.iso ? () => toggleHlWeek(t.iso!) : undefined} title={t.holiday ? t.holiday : t.iso ? "Surligner cette semaine" : undefined}
                   className={`absolute bottom-0 h-6 overflow-hidden text-center text-[9px] leading-6 ${t.iso ? "cursor-pointer hover:bg-surface-sub" : ""} ${cls}`} style={{ left: t.left, width: t.width }}>{t.width > 16 ? t.label : ""}</div>;
               })}
               {scale === "day" && todayX >= 0 && todayX <= width && <div className="absolute bottom-0 -ml-[18px] rounded-xs bg-brand px-1 text-[8px] font-bold leading-[13px] text-surface" style={{ left: todayX }}>Auj.</div>}
@@ -285,6 +295,8 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
               {(() => { const wk = ticks.find((t) => todayX >= t.left && todayX < t.left + t.width); return wk && scale !== "day" ? <div className="pointer-events-none absolute bottom-0 top-0 z-[6] border-x border-brand bg-alert-bg/70" style={{ left: wk.left, width: wk.width }} /> : null; })()}
               {/* Semaine surlignee par l'utilisateur */}
               {hl && hl.left + hl.width > 0 && hl.left < width && <div className="pointer-events-none absolute bottom-0 top-0 z-[6] border-x border-accent bg-accent-bg/70" style={{ left: hl.left, width: hl.width }} />}
+              {/* Jours chomes : week-ends (echelle jour) et jours feries */}
+              {offDays.map((o, i) => <div key={i} title={o.title} className={`absolute bottom-0 top-0 ${o.holiday ? "bg-surface-mut" : "bg-surface-sub/70"}`} style={{ left: o.left, width: o.width }} />)}
               {ticks.map((t, i) => <div key={i} className={`absolute bottom-0 top-0 border-r ${t.major ? "border-line-hair" : "border-line-light"}`} style={{ left: t.left + t.width - 1 }} />)}
               {visible.map((r, i) => <div key={i} className={`absolute left-0 right-0 border-b border-line-light ${r.kind === "lot" ? "bg-surface-alt/50" : ""}`} style={{ top: rowTop(i) - HEAD_H, height: rowH(r) }} />)}
               {scale === "day" && todayX >= 0 && todayX <= width && <div className="absolute bottom-0 top-0 z-[6] w-px bg-brand" style={{ left: todayX }} />}
@@ -334,7 +346,7 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
           expenses={selected === "new" ? [] : expenses.filter((e) => e.task_id === selected.id || (selected.kind === "lot" && rows.some((c) => c.parentId === selected.id && c.id === e.task_id)))}
           journal={selected === "new" ? [] : journal.filter((e) => e.task_id === selected.id)} registers={selected === "new" ? [] : registers.filter((e) => e.task_id === selected.id)}
           audit={selected === "new" ? [] : audit.filter((a) => (a.table_name === "tasks" && a.record_id === selected.id) || (a.table_name === "expenses" && (a.new_data?.task_id === selected.id || a.old_data?.task_id === selected.id)))}
-          people={people} currency={currency} projectId={projectId} projectCode={projectCode} canEdit={canEdit} defaults={{ start: newDefaults.start ?? projectStart, end: newDefaults.end ?? projectEnd, parentId: newDefaults.parentId, wbs: newDefaults.wbs }} spent={selected === "new" ? 0 : selected.spent} onClose={() => setSelected(null)} />
+          people={people} currency={currency} projectId={projectId} projectCode={projectCode} canEdit={canEdit} calendar={calendar} defaults={{ start: newDefaults.start ?? projectStart, end: newDefaults.end ?? projectEnd, parentId: newDefaults.parentId, wbs: newDefaults.wbs }} spent={selected === "new" ? 0 : selected.spent} onClose={() => setSelected(null)} />
       )}
       {selMilestone && projectId && <MilestoneDrawer milestone={selMilestone === "new" ? null : (selMilestone.milestone ?? null)} projectId={projectId} defaultDate={projectEnd} onClose={() => setSelMilestone(null)} />}
     </div>

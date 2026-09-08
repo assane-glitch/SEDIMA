@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { Alert } from "@/components/ui";
+import { Alert, PageHeader } from "@/components/ui";
 import { JournalForm } from "@/components/forms/EntryForms";
 import { createClient } from "@/lib/supabase/server";
 
@@ -13,8 +12,7 @@ export default async function FieldJournal({ params, searchParams }: { params: P
   ]);
   return (
     <div className="mx-auto max-w-lg">
-      <Link href={`/forms/${projectId}`} className="text-[10px] text-ink-muted">‹ Retour</Link>
-      <h1 className="mb-4 mt-1 text-[16px] font-semibold">Journal du jour{project ? ` · ${project.code}` : ""}</h1>
+      <PageHeader crumbs={[{ href: "/forms", label: "Formulaires" }, { href: `/forms/${projectId}`, label: project?.code ?? "Projet" }]} title="Journal du jour" />
       {error && <div className="mb-4"><Alert>{error}</Alert></div>}
       <JournalForm projects={project ? [project] : []} tasks={tasks ?? []} projectId={projectId} redirect={`/forms/${projectId}`} />
     </div>

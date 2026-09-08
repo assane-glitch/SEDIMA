@@ -7,6 +7,7 @@ import { canEdit, requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { PROJECT_CATEGORIES, PROJECT_STATUS_LABELS, type Milestone, type Profile, type Project, type ProjectStats } from "@/lib/types";
 import { ViewToggle } from "../ViewToggle";
+import { getCalendar } from "@/lib/calendar";
 
 export const metadata = { title: "Planning" };
 
@@ -17,8 +18,8 @@ export default async function PortfolioPlanningPage({ searchParams }: { searchPa
   let q = supabase.from("projects").select("*").neq("status", "hors_perimetre").order("start_date");
   if (sp.category) q = q.eq("category", sp.category);
   if (sp.status) q = q.eq("status", sp.status);
-  const [{ data: projects }, { data: stats }, { data: people }, { data: ms }] = await Promise.all([
-    q, supabase.from("project_stats").select("*"), supabase.from("profiles").select("id,email,full_name,role"), supabase.from("milestones").select("*"),
+  const [{ data: projects }, { data: stats }, { data: people }, { data: ms }, calendar] = await Promise.all([
+    q, supabase.from("project_stats").select("*"), supabase.from("profiles").select("id,email,full_name,role"), supabase.from("milestones").select("*"), getCalendar(),
   ]);
   const list = (projects ?? []) as Project[];
   const statMap = new Map(((stats ?? []) as ProjectStats[]).map((s) => [s.project_id, s]));
@@ -51,7 +52,7 @@ export default async function PortfolioPlanningPage({ searchParams }: { searchPa
           <Link key={st} href={link({ status: st })} className={`filter-chip ${sp.status === st ? "filter-chip-active" : ""}`}>{PROJECT_STATUS_LABELS[st]}</Link>
         ))}
       </div>
-      <Gantt mode="portfolio" rows={rows} milestones={milestones} people={(people ?? []) as Profile[]} currency="XOF" canEdit={canEdit(profile)} projectStart={start} projectEnd={end} />
+      <Gantt mode="portfolio" rows={rows} milestones={milestones} people={(people ?? []) as Profile[]} currency="XOF" canEdit={canEdit(profile)} projectStart={start} projectEnd={end} calendar={calendar} />
       <p className="hint mt-2">Une barre par projet, du debut a la fin prevus, remplie selon l&apos;avancement. Les losanges sont les jalons. Cliquez sur un projet pour ouvrir son planning detaille. Les projets hors perimetre ne sont pas affiches.</p>
     </>
   );

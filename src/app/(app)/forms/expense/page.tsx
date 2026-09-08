@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { Alert } from "@/components/ui";
+import { Alert, PageHeader } from "@/components/ui";
 import { ExpenseForm } from "@/components/ExpenseForm";
 import { canSubmit, requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
@@ -18,8 +17,7 @@ export default async function GlobalExpensePage({ searchParams }: { searchParams
   ]);
   return (
     <div className="mx-auto max-w-lg">
-      <Link href="/forms" className="text-[10px] text-ink-muted">‹ Formulaires</Link>
-      <h1 className="mb-1 mt-1 text-[16px] font-bold">Journal des depenses</h1>
+      <PageHeader crumbs={[{ href: "/forms", label: "Formulaires" }]} title="Journal des depenses" />
       <p className="hint mb-4">La depense recoit un identifiant automatique et apparait dans l&apos;onglet Evenements du projet.</p>
       {ok && <div className="mb-3"><Alert tone="ok">Depense enregistree.</Alert></div>}
       {error && <div className="mb-3"><Alert>{error}</Alert></div>}

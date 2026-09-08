@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { Alert } from "@/components/ui";
+import { Alert, PageHeader } from "@/components/ui";
 import { ExpenseForm } from "@/components/ExpenseForm";
 import { createClient } from "@/lib/supabase/server";
 import { getLists } from "@/lib/reference";
@@ -15,8 +14,7 @@ export default async function FieldExpense({ params, searchParams }: { params: P
   ]);
   return (
     <div className="mx-auto max-w-lg">
-      <Link href={`/forms/${projectId}`} className="text-[10px] text-ink-muted">‹ Retour</Link>
-      <h1 className="mb-4 mt-1 text-[16px] font-bold">Depense · {project?.code}</h1>
+      <PageHeader crumbs={[{ href: "/forms", label: "Formulaires" }, { href: `/forms/${projectId}`, label: project?.code ?? "Projet" }]} title="Depense" />
       {error && <div className="mb-4"><Alert>{error}</Alert></div>}
       <div className="card card-pad">
         <ExpenseForm projects={project ? [project] : []} tasks={tasks ?? []} projectId={projectId} redirect={`/forms/${projectId}`} source="mobile" mobile categories={lists.expense_category} statuses={lists.expense_status} />

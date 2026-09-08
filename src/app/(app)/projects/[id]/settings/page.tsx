@@ -8,6 +8,7 @@ import { ProjectForm } from "@/components/ProjectForm";
 import { canEdit, requireProfile } from "@/lib/session";
 import { deleteProject, freezeBaseline, updateProject } from "../../actions";
 import { formatDate } from "@/lib/format";
+import { WEEKDAYS, getCalendar } from "@/lib/calendar";
 import { ProjectTabs } from "../ProjectTabs";
 import { loadProject } from "../loadProject";
 
@@ -16,7 +17,8 @@ export default async function ProjectSettingsPage({ params, searchParams }: { pa
   const { error, ok } = await searchParams;
   const profile = await requireProfile();
   if (!canEdit(profile)) redirect(`/projects/${id}`);
-  const { project, people, tasks } = await loadProject(id);
+  const [{ project, people, tasks }, cal] = await Promise.all([loadProject(id), getCalendar()]);
+  const workLabel = WEEKDAYS.filter((w) => cal.workDays.includes(w.value)).map((w) => w.short).join(", ");
   const frozen = tasks.filter((t) => t.baseline_start).length;
   const drift = tasks.filter((t) => t.baseline_start && (t.baseline_start !== t.start_date || t.baseline_end !== t.end_date)).length;
   return (
@@ -34,6 +36,14 @@ export default async function ProjectSettingsPage({ params, searchParams }: { pa
           {frozen === 0
             ? <form action={freezeBaseline}><input type="hidden" name="id" value={id} /><SubmitButton className="btn-secondary" pendingText="Figeage…">▭ Figer le planning actuel comme reference</SubmitButton></form>
             : <Link href={`/projects/${id}/changes`} className="btn-secondary">Registre des changements</Link>}
+        </div>
+      </section>
+      <section className="card card-pad mt-4">
+        <div className="card-title">Calendrier de travail</div>
+        <p className="hint mt-1">Commun a tous les projets : le Gantt grise les jours chomes et le tiroir d&apos;une tache affiche sa duree en jours ouvres.</p>
+        <div className="mt-3 flex items-center justify-between gap-4 text-[10.5px]">
+          <div className="text-ink-muted">Jours ouvres : {workLabel} · {cal.hoursPerDay} h par jour · {cal.holidays.length} jour{cal.holidays.length > 1 ? "s" : ""} ferie{cal.holidays.length > 1 ? "s" : ""}</div>
+          {profile.role === "admin" && <Link href="/admin/calendar" className="btn-secondary">Gerer le calendrier</Link>}
         </div>
       </section>
       <form action={deleteProject} className="mt-6 flex justify-end">

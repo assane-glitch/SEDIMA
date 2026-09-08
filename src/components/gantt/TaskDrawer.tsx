@@ -5,13 +5,14 @@ import { deleteTask, saveTask, setTaskActuals, setTaskProgress } from "@/app/(ap
 import { ExpenseForm } from "@/components/ExpenseForm";
 import { ProgressBar, Badge } from "@/components/ui";
 import { describeAudit, relativeTime } from "@/lib/audit";
-import { formatDate, formatMoney, pct, weekLabel } from "@/lib/format";
+import { daysBetween, formatDate, formatMoney, pct, weekLabel } from "@/lib/format";
+import { workingDays, type WorkCalendar } from "@/lib/calendar-types";
 import { excludedStatuses, labelOf, registerFields, type Lists } from "@/lib/reference-types";
 import { TASK_STATUS_LABELS, type AuditEntry, type Expense, type JournalEntry, type Profile, type RegisterEntry, type Task } from "@/lib/types";
 
-export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, registers, audit, lists, people, currency, projectId, projectCode, canEdit, defaults, spent, onClose }: {
+export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, registers, audit, lists, people, currency, projectId, projectCode, canEdit, defaults, spent, onClose, calendar }: {
   task: Task | null; isLot: boolean; lots: { id: string; name: string }[]; tasks: Task[]; expenses: Expense[]; journal: JournalEntry[]; registers: RegisterEntry[]; audit: AuditEntry[];
-  lists?: Lists; people: Profile[]; currency: string; projectId: string; projectCode?: string; canEdit: boolean; defaults: { start: string; end: string; parentId?: string; wbs?: string }; spent: number; onClose: () => void;
+  lists?: Lists; people: Profile[]; currency: string; projectId: string; projectCode?: string; canEdit: boolean; defaults: { start: string; end: string; parentId?: string; wbs?: string }; spent: number; onClose: () => void; calendar?: WorkCalendar;
 }) {
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
@@ -68,7 +69,7 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, regist
           <div className="min-w-0">
             <div className="eyebrow">{task ? (isLot ? "Lot" : "Tache") : "Nouvelle tache"} {task?.wbs_code}</div>
             <h2 className="mt-0.5 truncate text-[16px] font-bold tracking-[-0.01em]">{task ? task.name : ""}</h2>
-            {task && <div className="mt-1 text-[10.5px] text-ink-muted">{formatDate(task.start_date)} → {formatDate(task.end_date)} · {responsible || "—"} · {TASK_STATUS_LABELS[task.status]}</div>}
+            {task && <div className="mt-1 text-[10.5px] text-ink-muted">{formatDate(task.start_date)} → {formatDate(task.end_date)} · {daysBetween(task.start_date, task.end_date) + 1} j{calendar ? ` dont ${workingDays(task.start_date, task.end_date, calendar)} ouvres` : ""} · {responsible || "—"} · {TASK_STATUS_LABELS[task.status]}</div>}
             {err && <div className="mt-2 rounded-md border border-alert-bd bg-alert-bg px-3 py-1.5 text-[10.5px] text-alert">{err}</div>}
           </div>
           <button onClick={onClose} className="btn-ghost text-[16px]" aria-label="Fermer">×</button>

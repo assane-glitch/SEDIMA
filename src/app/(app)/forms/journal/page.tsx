@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { Alert } from "@/components/ui";
+import { Alert, PageHeader } from "@/components/ui";
 import { JournalForm } from "@/components/forms/EntryForms";
 import { canSubmit, requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
@@ -16,8 +15,7 @@ export default async function GlobalJournalFormPage({ searchParams }: { searchPa
   ]);
   return (
     <div className="mx-auto max-w-lg">
-      <Link href="/forms" className="text-[10px] text-ink-muted">‹ Formulaires</Link>
-      <h1 className="mb-4 mt-1 text-[16px] font-semibold">Journal du jour</h1>
+      <PageHeader crumbs={[{ href: "/forms", label: "Formulaires" }]} title="Journal du jour" />
       {error && <div className="mb-4"><Alert>{error}</Alert></div>}
       {canSubmit(profile) ? <JournalForm projects={projects ?? []} tasks={tasks ?? []} redirect="/forms" /> : <Alert tone="amber">Votre compte est en lecture seule.</Alert>}
     </div>

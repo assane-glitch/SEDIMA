@@ -26,7 +26,7 @@ export default async function ToolsPage() {
   return (
     <>
       <Link href="/admin" className="text-[10px] text-ink-muted">‹ Administration</Link>
-      <PageHeader title="Outils et etat de la base" />
+      <PageHeader crumbs={[{ href: "/admin", label: "Administration" }]} title="Outils et etat de la base" />
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Taches" value={all.length} hint={`${list.length} projets`} />
         <Stat label="Depenses" value={expenses ?? 0} />

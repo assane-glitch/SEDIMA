@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { Icon } from "@/components/icons";
 
 export type Tone = "neutral" | "info" | "ok" | "warn" | "alert";
 // Compatibilite avec les anciens noms de tons
@@ -7,10 +8,26 @@ const TONE_ALIAS: Record<string, Tone> = { slate: "neutral", blue: "info", green
 export function tone(t?: string): Tone { return (t && (TONE_ALIAS[t] ?? (t as Tone))) || "neutral"; }
 const TEXT: Record<Tone, string> = { neutral: "text-ink", info: "text-ink-body", ok: "text-ok", warn: "text-warn", alert: "text-alert" };
 
-export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: ReactNode; actions?: ReactNode }) {
+export interface Crumb { href: string; label: string }
+
+/** Fil d'Ariane : bouton retour vers le niveau precedent puis le chemin complet jusqu'a la page courante. */
+export function Breadcrumb({ crumbs, current }: { crumbs: Crumb[]; current: string }) {
+  if (crumbs.length === 0) return null;
+  const back = crumbs[crumbs.length - 1];
+  return (
+    <nav aria-label="Fil d'Ariane" className="mb-2 flex flex-wrap items-center gap-1.5 text-[10.5px] text-ink-muted">
+      <Link href={back.href} title={`Retour a ${back.label}`} aria-label={`Retour a ${back.label}`} className="inline-flex h-5 w-5 items-center justify-center rounded-md border border-line bg-surface text-ink-body hover:bg-surface-sub"><Icon name="chevronLeft" className="h-3.5 w-3.5" strokeWidth={2.2} /></Link>
+      {crumbs.map((c) => <span key={c.href} className="flex items-center gap-1.5"><Link href={c.href} className="hover:text-ink hover:underline">{c.label}</Link><span className="text-ink-faint">›</span></span>)}
+      <span className="font-semibold text-ink">{current}</span>
+    </nav>
+  );
+}
+
+export function PageHeader({ title, subtitle, actions, crumbs }: { title: string; subtitle?: ReactNode; actions?: ReactNode; crumbs?: Crumb[] }) {
   return (
     <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
       <div>
+        {crumbs && crumbs.length > 0 && <Breadcrumb crumbs={crumbs} current={title} />}
         <h1 className="text-[16px] font-bold tracking-[-0.01em] text-ink">{title}</h1>
         {subtitle && <div className="mt-0.5 text-[10.5px] text-ink-muted">{subtitle}</div>}
       </div>

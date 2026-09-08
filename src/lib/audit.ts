@@ -4,12 +4,14 @@ import { formatMoney } from "@/lib/format";
 const TABLE_LABELS: Record<string, string> = {
   projects: "le projet", tasks: "la tache", milestones: "le jalon", expenses: "une depense",
   journal_entries: "une entree de journal", register_entries: "une entree de registre", documents: "un document",
+  holidays: "un jour ferie", calendar_settings: "le calendrier de travail", reference_lists: "une liste de reference",
 };
 const FIELD_LABELS: Record<string, string> = {
   name: "nom", status: "statut", progress: "avancement", budget: "budget", start_date: "debut", end_date: "fin",
   responsible_id: "responsable", manager_id: "chef de projet", amount: "montant", due_date: "echeance",
   reached_on: "atteint le", category: "categorie", description: "description", notes: "notes", content: "contenu",
   spent_on: "date", entry_date: "date", location: "lieu", doc_type: "type", currency: "devise", code: "code", sort_order: "ordre",
+  day: "date", label: "libelle", recurring: "chaque annee", work_days: "jours ouvres", hours_per_day: "heures par jour",
 };
 
 function val(v: unknown, field: string, currency = "XOF") {

@@ -23,7 +23,7 @@ export default async function ActivityPage() {
   return (
     <>
       <Link href="/admin" className="text-[10px] text-ink-muted">‹ Administration</Link>
-      <PageHeader title="Journal d'activite" subtitle="Toutes les modifications, tous projets confondus (2 000 dernieres)." />
+      <PageHeader crumbs={[{ href: "/admin", label: "Administration" }]} title="Journal d'activite" subtitle="Toutes les modifications, tous projets confondus (2 000 dernieres)." />
       <HistoryList items={items} global />
     </>
   );

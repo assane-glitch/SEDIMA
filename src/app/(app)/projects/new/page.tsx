@@ -16,7 +16,7 @@ export default async function NewProjectPage({ searchParams }: { searchParams: P
   const { data: people } = await supabase.from("profiles").select("id,email,full_name,role").order("full_name");
   return (
     <div className="mx-auto max-w-2xl">
-      <PageHeader title="Nouveau projet" />
+      <PageHeader crumbs={[{ href: "/projects", label: "Projets" }]} title="Nouveau projet" />
       {error && <div className="mb-4"><Alert>{error}</Alert></div>}
       <ProjectForm people={(people ?? []) as Profile[]} action={createProject} submitLabel="Creer le projet" />
     </div>

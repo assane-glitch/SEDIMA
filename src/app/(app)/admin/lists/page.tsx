@@ -21,7 +21,7 @@ export default async function ListsPage({ searchParams }: { searchParams: Promis
 
   return (
     <>
-      <PageHeader title="Listes de reference" subtitle="Les valeurs des listes deroulantes de l'application. Desactiver une valeur la retire des formulaires sans toucher aux enregistrements existants." />
+      <PageHeader crumbs={[{ href: "/admin", label: "Administration" }]} title="Listes de reference" subtitle="Les valeurs des listes deroulantes de l'application. Desactiver une valeur la retire des formulaires sans toucher aux enregistrements existants." />
       {sp.ok && <div className="mb-3"><Alert tone="ok">{sp.ok}</Alert></div>}
       {sp.error && <div className="mb-3"><Alert>{sp.error}</Alert></div>}
       <div className="grid gap-4 lg:grid-cols-[220px_1fr_300px]">

@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { Alert } from "@/components/ui";
+import { Alert, PageHeader } from "@/components/ui";
 import { RegisterForm } from "@/components/forms/EntryForms";
 import { getLists, registerFields } from "@/lib/reference";
 import { canSubmit, requireProfile } from "@/lib/session";
@@ -19,8 +18,7 @@ export default async function GlobalRegisterFormPage({ searchParams }: { searchP
   const types = lists.register_type.map((r) => ({ value: r.value, label: r.label, fields: registerFields(r) }));
   return (
     <div className="mx-auto max-w-lg">
-      <Link href="/forms" className="text-[10px] text-ink-muted">‹ Formulaires</Link>
-      <h1 className="mb-4 mt-1 text-[16px] font-semibold">Registre</h1>
+      <PageHeader crumbs={[{ href: "/forms", label: "Formulaires" }]} title="Registre" />
       {error && <div className="mb-4"><Alert>{error}</Alert></div>}
       {canSubmit(profile) ? <RegisterForm projects={projects ?? []} tasks={tasks ?? []} redirect="/forms" types={types} /> : <Alert tone="amber">Votre compte est en lecture seule.</Alert>}
     </div>

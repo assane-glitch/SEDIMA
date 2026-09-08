@@ -4,6 +4,7 @@ import { canEdit, requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import type { AuditEntry, Expense, JournalEntry, Milestone, RegisterEntry } from "@/lib/types";
 import { getLists } from "@/lib/reference";
+import { getCalendar } from "@/lib/calendar";
 import { buildRows } from "@/lib/gantt-rows";
 import { ProjectHeader } from "../ProjectHeader";
 import { ProjectTabs } from "../ProjectTabs";
@@ -15,7 +16,7 @@ export default async function ProjectPlanningPage({ params, searchParams }: { pa
   const profile = await requireProfile();
   const { project, tasks, people, spentByTask } = await loadProject(id);
   const supabase = await createClient();
-  const [{ data: ms }, { data: exp }, { data: jr }, { data: rg }, { data: au }, lists, { count: pending }] = await Promise.all([
+  const [{ data: ms }, { data: exp }, { data: jr }, { data: rg }, { data: au }, lists, { count: pending }, calendar] = await Promise.all([
     supabase.from("milestones").select("*").eq("project_id", id).order("due_date"),
     supabase.from("expenses").select("*").eq("project_id", id).order("spent_on", { ascending: false }),
     supabase.from("journal_entries").select("*").eq("project_id", id).not("task_id", "is", null).order("entry_date", { ascending: false }).limit(500),
@@ -23,6 +24,7 @@ export default async function ProjectPlanningPage({ params, searchParams }: { pa
     supabase.from("audit_log").select("*").eq("project_id", id).in("table_name", ["tasks", "expenses"]).order("changed_at", { ascending: false }).limit(1000),
     getLists(),
     supabase.from("change_requests").select("*", { count: "exact", head: true }).eq("project_id", id).eq("status", "soumise"),
+    getCalendar(),
   ]);
   const who = new Map(people.map((p) => [p.id, p.full_name || p.email]));
   const rows = buildRows(tasks, spentByTask, who);
@@ -34,7 +36,7 @@ export default async function ProjectPlanningPage({ params, searchParams }: { pa
       <ProjectTabs id={id} canEdit={editor} />
       {error && <div className="mb-3"><Alert>{error}</Alert></div>}
       {ok && <div className="mb-3"><Alert tone="ok">{ok}</Alert></div>}
-      <Gantt mode="project" rows={rows} milestones={milestones} expenses={(exp ?? []) as Expense[]} journal={(jr ?? []) as JournalEntry[]} registers={(rg ?? []) as RegisterEntry[]} audit={(au ?? []) as AuditEntry[]} lists={lists} people={people} currency={project.currency} canEdit={editor} projectId={id} projectCode={project.code} projectStart={project.start_date} projectEnd={project.end_date} pendingChanges={pending ?? 0} />
+      <Gantt mode="project" rows={rows} milestones={milestones} expenses={(exp ?? []) as Expense[]} journal={(jr ?? []) as JournalEntry[]} registers={(rg ?? []) as RegisterEntry[]} audit={(au ?? []) as AuditEntry[]} lists={lists} people={people} currency={project.currency} canEdit={editor} projectId={id} projectCode={project.code} projectStart={project.start_date} projectEnd={project.end_date} pendingChanges={pending ?? 0} calendar={calendar} />
     </>
   );
 }
