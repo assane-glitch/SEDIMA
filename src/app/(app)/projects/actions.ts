@@ -72,12 +72,14 @@ export async function freezeBaseline(formData: FormData) {
 
 export async function deleteProject(formData: FormData) {
   const profile = await requireProfile();
-  if (!canEdit(profile)) return;
+  if (!canEdit(profile)) return { error: "Droits insuffisants" };
   const id = str(formData, "id");
   const supabase = await createClient();
-  await supabase.from("projects").delete().eq("id", id);
-  revalidatePath("/dashboard");
-  redirect("/dashboard");
+  const { error, count } = await supabase.from("projects").delete({ count: "exact" }).eq("id", id);
+  if (error) return { error: error.message };
+  if (!count) return { error: "Projet introuvable ou suppression refusee" };
+  // Pas de revalidation ici : la page courante (le projet supprime) ne peut plus etre rendue ; le client navigue puis rafraichit.
+  return { ok: true };
 }
 
 export async function saveTask(formData: FormData) {

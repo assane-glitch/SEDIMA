@@ -1,29 +1,32 @@
 import Link from "next/link";
 import { Badge, CategoryIcon, PageHeader, Stat } from "@/components/ui";
 import { ViewToggle } from "../ViewToggle";
+import { FavoritesToggle } from "@/components/projects/FavoritesToggle";
 import { formatMoney, pct } from "@/lib/format";
 import { requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { PROJECT_CATEGORIES, PROJECT_STATUS_LABELS, PROJECT_STATUS_TONE, type Project, type ProjectStats, type ProjectStatus } from "@/lib/types";
 
 export const metadata = { title: "Budget portefeuille" };
-type Params = { category?: string; status?: string; sort?: string; dir?: string };
+type Params = { category?: string; status?: string; sort?: string; dir?: string; fav?: string };
 const SORTS = ["code", "budget", "rebuilt", "spent", "rest", "consumed", "progress", "gap"] as const;
 const k = (v: number) => (v ? new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(Math.round(v / 1000)) : "—");
 
 export default async function PortfolioBudgetPage({ searchParams }: { searchParams: Promise<Params> }) {
   const sp = await searchParams;
-  await requireProfile();
+  const profile = await requireProfile();
   const supabase = await createClient();
   let query = supabase.from("projects").select("*").neq("status", "hors_perimetre");
   if (sp.category) query = query.eq("category", sp.category);
   if (sp.status) query = query.eq("status", sp.status);
-  const [{ data: projects }, { data: stats }, { data: years }] = await Promise.all([query, supabase.from("project_stats").select("*"), supabase.from("project_budget_years").select("project_id,year,amount")]);
+  const [{ data: projects }, { data: stats }, { data: years }, { data: favRows }] = await Promise.all([query, supabase.from("project_stats").select("*"), supabase.from("project_budget_years").select("project_id,year,amount"), supabase.from("user_favorites").select("project_id").eq("user_id", profile.id)]);
+  const favorites = new Set((favRows ?? []).map((f) => f.project_id));
+  const onlyFav = sp.fav === "1";
   const statMap = new Map(((stats ?? []) as ProjectStats[]).map((s) => [s.project_id, s]));
   const yearList = Array.from(new Set((years ?? []).map((y) => Number(y.year)))).sort();
   const yearMap = new Map<string, Map<number, number>>();
   for (const y of years ?? []) { const m = yearMap.get(y.project_id) ?? new Map(); m.set(Number(y.year), Number(y.amount)); yearMap.set(y.project_id, m); }
-  const rows = ((projects ?? []) as Project[]).map((p) => {
+  const rows = ((projects ?? []) as Project[]).filter((p) => !onlyFav || favorites.has(p.id)).map((p) => {
     const s = statMap.get(p.id), budget = Number(p.budget), spent = Number(s?.spent ?? 0), progress = Number(s?.progress ?? 0);
     const consumed = budget > 0 ? Math.round((spent / budget) * 100) : 0;
     return { p, budget, rebuilt: Number(s?.rebuilt_cost ?? 0), spent, rest: budget - spent, consumed, progress, gap: consumed - progress, years: yearMap.get(p.id) ?? new Map<number, number>() };
@@ -42,7 +45,7 @@ export default async function PortfolioBudgetPage({ searchParams }: { searchPara
 
   return (
     <>
-      <PageHeader title="Budget du portefeuille" subtitle="Budget, engagement et tranches annuelles de tous les projets. Montants en k F CFA." actions={<ViewToggle view="budget" />} />
+      <PageHeader title="Budget du portefeuille" subtitle="Budget, engagement et tranches annuelles de tous les projets. Montants en k F CFA." actions={<><FavoritesToggle fav={onlyFav} hrefFav={link({ fav: "1" })} hrefAll={link({ fav: undefined })} count={favorites.size} /><ViewToggle view="budget" fav={onlyFav} /></>} />
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
         <Stat label="Budget total" value={formatMoney(tot.budget, cur)} hint={tot.kpmg ? `Ref. KPMG : ${formatMoney(tot.kpmg, cur)}` : undefined} />
         <Stat label="Cout reconstitue" value={formatMoney(tot.rebuilt, cur)} hint={`${tot.rebuilt > tot.budget ? "+" : ""}${formatMoney(tot.rebuilt - tot.budget, cur)} vs budget`} tone={tot.rebuilt > tot.budget ? "warn" : "default"} />

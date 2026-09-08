@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { Badge, ProgressBar, Stat } from "@/components/ui";
+import { ProgressBar, Stat } from "@/components/ui";
 import { describeAudit, relativeTime } from "@/lib/audit";
 import { formatDate, formatMoney, pct } from "@/lib/format";
-import { HEALTH_BADGE, HEALTH_LABELS, daysLeft, projectHealth } from "@/lib/health";
+import { HEALTH_DOT, HEALTH_LABELS, daysLeft, projectHealth } from "@/lib/health";
 import { canEdit, requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import type { AuditEntry, JournalEntry, Milestone } from "@/lib/types";
@@ -39,14 +39,14 @@ export default async function ProjectOverview({ params }: { params: Promise<{ id
 
   return (
     <>
-      <ProjectHeader project={project} manager={manager} />
+      <ProjectHeader project={project} manager={manager} actions={editor ? <Link href={`/projects/${id}/settings#supprimer`} className="btn-ghost text-ink-faint hover:text-alert" title="Supprimer le projet (onglet Parametres)">Supprimer le projet</Link> : undefined} />
       <ProjectTabs id={id} canEdit={editor} />
 
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
         <div className="card card-pad">
           <div className="eyebrow">Sante</div>
-          <div className="mt-1.5"><Badge tone={HEALTH_BADGE[health]}>{HEALTH_LABELS[health]}</Badge></div>
-          <div className="mt-1 text-[10px] text-ink-muted">{stats.late_count > 0 ? `${stats.late_count} tache${stats.late_count > 1 ? "s" : ""} en retard` : "Aucune tache en retard"}</div>
+          <div className="mt-1 flex items-center gap-2 text-[16px] font-bold tracking-[-0.01em] text-ink"><span className={`dot ${HEALTH_DOT[health]}`} />{HEALTH_LABELS[health]}</div>
+          <div className="hint mt-0.5">{stats.late_count > 0 ? `${stats.late_count} tache${stats.late_count > 1 ? "s" : ""} en retard` : "Aucune tache en retard"}</div>
         </div>
         <Stat label="Avancement" value={`${progress} %`} hint={`${stats.done_count}/${stats.task_count} taches terminees`} tone={health === "bad" ? "bad" : health === "warn" ? "warn" : "good"} />
         <Stat label="Budget consomme" value={`${burn} %`} hint={`${formatMoney(spent, project.currency)} / ${formatMoney(budget, project.currency)}`} tone={burn > 100 ? "bad" : burn > progress + 20 ? "warn" : "default"} />
@@ -67,10 +67,10 @@ export default async function ProjectOverview({ params }: { params: Promise<{ id
                 <li key={x.id}>
                   <div className="flex items-center justify-between gap-2">
                     <span className="truncate">{x.name}</span>
-                    <span className={`shrink-0 text-[10px] tabular-nums ${late.includes(x) ? "font-semibold text-ink" : "text-ink-muted"}`}>{late.includes(x) ? "retard · " : ""}{formatDate(x.end_date)}</span>
+                    <span className="flex shrink-0 items-center gap-1.5 text-[10px] tabular-nums text-ink-muted">{late.includes(x) && <span className="dot bg-alert" title="En retard" />}{formatDate(x.end_date)}</span>
                   </div>
                   <div className="mt-1 flex items-center gap-2 text-[11px] text-ink-muted">
-                    <div className="flex-1"><ProgressBar value={x.progress} tone={late.includes(x) ? "bad" : "good"} /></div>
+                    <div className="flex-1"><ProgressBar value={x.progress} /></div>
                     <span className="w-8 text-right tabular-nums">{x.progress} %</span>
                     <span className="w-24 truncate text-right">{x.responsible_id ? who.get(x.responsible_id) : "—"}</span>
                   </div>
@@ -85,11 +85,11 @@ export default async function ProjectOverview({ params }: { params: Promise<{ id
           <div className="space-y-3 text-[10.5px]">
             <div>
               <div className="mb-1 flex justify-between text-[10px] text-ink-muted"><span>Consomme</span><span className={burn > 100 ? "font-semibold text-ink" : ""}>{burn} %</span></div>
-              <ProgressBar value={burn} tone={burn > 100 ? "bad" : burn > progress + 20 ? "warn" : "good"} />
+              <ProgressBar value={burn} tone={burn > 100 ? "bad" : burn > progress + 20 ? "warn" : undefined} />
             </div>
             <div>
               <div className="mb-1 flex justify-between text-[10px] text-ink-muted"><span>Avancement physique</span><span>{progress} %</span></div>
-              <ProgressBar value={progress} tone="good" />
+              <ProgressBar value={progress} />
             </div>
             <div className="flex justify-between border-t border-line-light pt-2"><span className="text-ink-muted">Reste</span><span className={`tabular-nums ${budget - spent < 0 ? "font-semibold text-ink" : ""}`}>{formatMoney(budget - spent, project.currency)}</span></div>
             <div className="flex justify-between"><span className="text-ink-muted">Alloue aux taches</span><span className="tabular-nums">{formatMoney(taskBudget, project.currency)}{budget > 0 && <span className="text-[10px] text-ink-faint"> ({pct(taskBudget, budget)} %)</span>}</span></div>
@@ -109,7 +109,7 @@ export default async function ProjectOverview({ params }: { params: Promise<{ id
                 const d = describeAudit(e, project.currency);
                 return (
                   <li key={e.id} className="flex gap-3 py-2">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-sub text-[11px] font-semibold text-ink-body">{((e.changed_by && who.get(e.changed_by)) || "?").slice(0, 1).toUpperCase()}</div>
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-sub text-[10px] font-semibold text-ink-muted">{((e.changed_by && who.get(e.changed_by)) || "?").slice(0, 1).toUpperCase()}</div>
                     <div className="min-w-0 flex-1">
                       <div><span className="font-semibold">{(e.changed_by && who.get(e.changed_by)) || "Systeme"}</span> {d.what}</div>
                       {d.details.length > 0 && <div className="mt-0.5 text-[10px] text-ink-muted">{d.details.join(" · ")}</div>}

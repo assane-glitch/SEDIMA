@@ -7,21 +7,25 @@ import { canEdit, requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { PROJECT_CATEGORIES, PROJECT_STATUS_LABELS, type Milestone, type Profile, type Project, type ProjectStats } from "@/lib/types";
 import { ViewToggle } from "../ViewToggle";
+import { FavoritesToggle } from "@/components/projects/FavoritesToggle";
 import { getCalendar } from "@/lib/calendar";
 
 export const metadata = { title: "Planning" };
 
-export default async function PortfolioPlanningPage({ searchParams }: { searchParams: Promise<{ category?: string; status?: string }> }) {
+export default async function PortfolioPlanningPage({ searchParams }: { searchParams: Promise<{ category?: string; status?: string; fav?: string }> }) {
   const sp = await searchParams;
   const profile = await requireProfile();
   const supabase = await createClient();
   let q = supabase.from("projects").select("*").neq("status", "hors_perimetre").order("start_date");
   if (sp.category) q = q.eq("category", sp.category);
   if (sp.status) q = q.eq("status", sp.status);
-  const [{ data: projects }, { data: stats }, { data: people }, { data: ms }, calendar] = await Promise.all([
+  const [{ data: projects }, { data: stats }, { data: people }, { data: ms }, calendar, { data: favRows }] = await Promise.all([
     q, supabase.from("project_stats").select("*"), supabase.from("profiles").select("id,email,full_name,role"), supabase.from("milestones").select("*"), getCalendar(),
+    supabase.from("user_favorites").select("project_id").eq("user_id", profile.id),
   ]);
-  const list = (projects ?? []) as Project[];
+  const favorites = new Set((favRows ?? []).map((f) => f.project_id));
+  const onlyFav = sp.fav === "1";
+  const list = ((projects ?? []) as Project[]).filter((p) => !onlyFav || favorites.has(p.id));
   const statMap = new Map(((stats ?? []) as ProjectStats[]).map((s) => [s.project_id, s]));
   const who = new Map(((people ?? []) as Profile[]).map((p) => [p.id, p.full_name || p.email]));
   const rows: GanttRow[] = list.map((p) => {
@@ -38,7 +42,7 @@ export default async function PortfolioPlanningPage({ searchParams }: { searchPa
 
   return (
     <>
-      <PageHeader title="Projets" subtitle={`Planning multi-projets · ${list.length} projet${list.length > 1 ? "s" : ""} · ${formatMoney(totalBudget)}`} actions={<ViewToggle view="planning" />} />
+      <PageHeader title="Projets" subtitle={`Planning multi-projets · ${list.length} projet${list.length > 1 ? "s" : ""} · ${formatMoney(totalBudget)}`} actions={<><FavoritesToggle fav={onlyFav} hrefFav={link({ fav: "1" })} hrefAll={link({ fav: undefined })} count={favorites.size} /><ViewToggle view="planning" fav={onlyFav} /></>} />
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <Link href={link({ category: undefined })} className={`filter-chip ${!sp.category ? "filter-chip-active" : ""}`}>Toutes les categories</Link>
         {PROJECT_CATEGORIES.map((c) => (

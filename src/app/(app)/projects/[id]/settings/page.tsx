@@ -6,7 +6,9 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 
 import { ProjectForm } from "@/components/ProjectForm";
 import { canEdit, requireProfile } from "@/lib/session";
-import { deleteProject, freezeBaseline, updateProject } from "../../actions";
+import { freezeBaseline, updateProject } from "../../actions";
+import { DeleteProjectForm } from "@/components/projects/DeleteProjectForm";
+import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/format";
 import { WEEKDAYS, getCalendar } from "@/lib/calendar";
 import { ProjectTabs } from "../ProjectTabs";
@@ -17,7 +19,12 @@ export default async function ProjectSettingsPage({ params, searchParams }: { pa
   const { error, ok } = await searchParams;
   const profile = await requireProfile();
   if (!canEdit(profile)) redirect(`/projects/${id}`);
-  const [{ project, people, tasks }, cal] = await Promise.all([loadProject(id), getCalendar()]);
+  const supabase = await createClient();
+  const [{ project, people, tasks }, cal, { count: expenses }, { count: documents }] = await Promise.all([
+    loadProject(id), getCalendar(),
+    supabase.from("expenses").select("*", { count: "exact", head: true }).eq("project_id", id),
+    supabase.from("documents").select("*", { count: "exact", head: true }).eq("project_id", id),
+  ]);
   const workLabel = WEEKDAYS.filter((w) => cal.workDays.includes(w.value)).map((w) => w.short).join(", ");
   const frozen = tasks.filter((t) => t.baseline_start).length;
   const drift = tasks.filter((t) => t.baseline_start && (t.baseline_start !== t.start_date || t.baseline_end !== t.end_date)).length;
@@ -46,10 +53,7 @@ export default async function ProjectSettingsPage({ params, searchParams }: { pa
           {profile.role === "admin" && <Link href="/admin/calendar" className="btn-secondary">Gerer le calendrier</Link>}
         </div>
       </section>
-      <form action={deleteProject} className="mt-6 flex justify-end">
-        <input type="hidden" name="id" value={id} />
-        <SubmitButton className="btn-danger" pendingText="Suppression…">Supprimer le projet et toutes ses donnees</SubmitButton>
-      </form>
+      <DeleteProjectForm projectId={id} code={project.code} name={project.name} counts={{ tasks: tasks.length, expenses: expenses ?? 0, documents: documents ?? 0 }} />
     </div>
   );
 }

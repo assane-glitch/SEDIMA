@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { CategoryIcon, Empty, PageHeader } from "@/components/ui";
+import { Alert, CategoryIcon, Empty, PageHeader } from "@/components/ui";
 import { ProjectCard, isAlert, rebuiltOf } from "@/components/projects/ProjectCard";
+import { FavoritesToggle } from "@/components/projects/FavoritesToggle";
 import { Icon } from "@/components/icons";
 import { pct, shortMoney } from "@/lib/format";
 import { projectHealth } from "@/lib/health";
@@ -11,7 +12,7 @@ import { PROJECT_CATEGORIES, type Project, type ProjectStats } from "@/lib/types
 
 export const metadata = { title: "Projets" };
 
-type Params = { q?: string; category?: string; status?: string; manager?: string; sort?: string; dir?: string };
+type Params = { q?: string; category?: string; status?: string; manager?: string; sort?: string; dir?: string; ok?: string; fav?: string };
 const SORTS = ["code", "name", "start_date", "end_date", "progress", "budget", "spent", "status"] as const;
 
 export default async function ProjectsPage({ searchParams }: { searchParams: Promise<Params> }) {
@@ -31,12 +32,14 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
     supabase.from("user_favorites").select("project_id").eq("user_id", profile.id),
   ]);
   const favorites = new Set((favRows ?? []).map((f) => f.project_id));
+  const onlyFav = sp.fav === "1";
+  const favLink = (on: boolean) => { const u = new URLSearchParams(); for (const [k, v] of Object.entries({ ...sp, ok: undefined, fav: on ? "1" : undefined })) if (v) u.set(k, v); const s = u.toString(); return `/projects${s ? `?${s}` : ""}`; };
   // Cout reconstitue TTC par projet = somme des taches feuilles (HTVA + douanes + TVA)
   const parents = new Set((taskRows ?? []).filter((t) => t.parent_id).map((t) => t.parent_id!));
   const ttc = new Map<string, number>();
   for (const t of taskRows ?? []) if (!parents.has(t.id)) ttc.set(t.project_id, (ttc.get(t.project_id) ?? 0) + Number(t.budget) + Number(t.customs ?? 0) + Number(t.vat ?? 0));
   const statMap = new Map(((stats ?? []) as ProjectStats[]).map((s) => [s.project_id, s]));
-  const rows = ((projects ?? []) as Project[]).map((p) => ({ p, s: statMap.get(p.id), health: projectHealth(p, statMap.get(p.id)) }));
+  const rows = ((projects ?? []) as Project[]).filter((p) => !onlyFav || favorites.has(p.id)).map((p) => ({ p, s: statMap.get(p.id), health: projectHealth(p, statMap.get(p.id)) }));
   const key = (r: typeof rows[number]) => {
     switch (sort) {
       case "code": return r.p.code;
@@ -67,11 +70,13 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
       <div className="sticky top-[52px] z-20 -mx-4 -mt-4 border-b border-line-hair bg-[#e9eaed] px-4 pt-3 md:top-[60px] md:-mx-2 md:px-2">
       <PageHeader title="Projets" subtitle="Pilotage du portefeuille de projets" actions={<>
           <form action="/projects" className="relative"><Icon name="search" className="pointer-events-none absolute left-2.5 top-2 h-3.5 w-3.5 text-ink-faint" /><input name="q" defaultValue={q} placeholder="Rechercher…" className="input !w-48 !pl-8" />{q && <Link href="/projects" className="absolute right-2 top-1.5 text-ink-faint hover:text-ink" aria-label="Effacer">×</Link>}</form>
-          <ViewToggle view="list" />{canEdit(profile) && <Link href="/projects/new" className="btn-primary">+ Nouveau projet</Link>}</>} />
+          <FavoritesToggle fav={onlyFav} hrefFav={favLink(true)} hrefAll={favLink(false)} count={favorites.size} />
+          <ViewToggle view="list" fav={onlyFav} />{canEdit(profile) && <Link href="/projects/new" className="btn-primary">+ Nouveau projet</Link>}</>} />
+      {sp.ok && <div className="mb-3"><Alert tone="ok">{sp.ok}</Alert></div>}
       <div className="card mb-3 grid grid-cols-2 divide-line-hair md:grid-cols-4 md:divide-x">
-        <div className="px-[15px] py-3"><div className="eyebrow">Cout total TTC</div><div className="mt-1 text-[21px] font-bold tabular-nums text-brand">{short(totalTtc)}</div><div className="hint">{nProj} projets</div></div>
+        <div className="px-[15px] py-3"><div className="eyebrow">Cout total TTC</div><div className="mt-1 text-[21px] font-bold tabular-nums text-ink">{short(totalTtc)}</div><div className="hint">{nProj} projets</div></div>
         <div className="px-[15px] py-3"><div className="eyebrow">Enveloppes approuvees</div><div className="mt-1 text-[21px] font-bold tabular-nums">{short(totalBudget)}</div><div className="hint">Cout reconstitue HTVA {short(totalRebuilt)}</div></div>
-        <div className="px-[15px] py-3"><div className="eyebrow">Ecart au budget approuve</div><div className={`mt-1 text-[21px] font-bold tabular-nums ${totalGap > 0 ? "text-brand" : ""}`}>{totalGap > 0 ? "+" : "−"}{short(Math.abs(totalGap))}</div><div className="hint">+{short(gapPlus.reduce((a, b) => a + b, 0))} sur {gapPlus.length} · −{short(Math.abs(gapMinus.reduce((a, b) => a + b, 0)))} sur {gapMinus.length}</div></div>
+        <div className="px-[15px] py-3"><div className="eyebrow">Ecart au budget approuve</div><div className="mt-1 text-[21px] font-bold tabular-nums text-ink">{totalGap > 0 ? "+" : "−"}{short(Math.abs(totalGap))}</div><div className="hint">+{short(gapPlus.reduce((a, b) => a + b, 0))} sur {gapPlus.length} · −{short(Math.abs(gapMinus.reduce((a, b) => a + b, 0)))} sur {gapMinus.length}</div></div>
         <div className="px-[15px] py-3"><div className="eyebrow">Part engagee</div><div className="mt-1 text-[21px] font-bold tabular-nums">{pct(totalSpent, totalBudget)} %</div><div className="hint">{short(totalSpent)} sur {contracted.length} projet{contracted.length > 1 ? "s" : ""}</div></div>
       </div>
 
@@ -83,7 +88,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
                 <div key={b.value} className="min-w-0 border-b-2 border-line pb-2">
                   <div className="flex items-center gap-2"><CategoryIcon category={b.value} className="h-5 w-5" tone="brand" /><h2 className="text-[12.5px] font-bold text-ink">{b.label}</h2></div>
                   <div className="mt-1 text-[17px] font-bold tabular-nums text-ink">{short(bBudget)}</div>
-                  <div className="text-[10.5px] text-ink-muted">{b.rows.length} projet{b.rows.length > 1 ? "s" : ""} · <span className={bAlerts ? "font-semibold text-brand" : ""}>{bAlerts} en alerte</span></div>
+                  <div className="text-[10.5px] text-ink-muted">{b.rows.length} projet{b.rows.length > 1 ? "s" : ""} · <span className={bAlerts ? "inline-flex items-center gap-1 font-semibold text-ink-body" : ""}>{bAlerts > 0 && <span className="dot bg-alert" />}{bAlerts} en alerte</span></div>
                 </div>
               );
             })}
@@ -97,7 +102,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
         <div className={`grid gap-4 ${buckets.length === 1 ? "max-w-md" : "min-w-[1180px] grid-cols-5"}`}>
           {buckets.map((b) => (
             <section key={b.value} className="min-w-0 space-y-3">
-              {b.rows.map((r) => <ProjectCard key={r.p.id} row={r} favorite={favorites.has(r.p.id)} />)}
+              {b.rows.map((r) => <ProjectCard key={r.p.id} row={r} favorite={favorites.has(r.p.id)} canEdit={canEdit(profile)} />)}
               {canEdit(profile) && <Link href="/projects/new" className="block rounded-lg border border-dashed border-line px-3 py-3 text-[10.5px] font-semibold text-ink-muted hover:border-ink-muted hover:text-ink">+ Nouveau projet</Link>}
             </section>
           ))}

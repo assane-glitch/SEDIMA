@@ -12,20 +12,20 @@ import { GlobalSearch } from "./GlobalSearch";
 export function AppShell({ profile, children }: { profile: Profile; children: React.ReactNode }) {
   const isAdmin = profile.role === "admin";
   const groups: NavGroup[] = [
-    [
+    { title: "Pilotage", items: [
       { href: "/dashboard", label: "Tableau de bord", icon: "dashboard" },
       { href: "/projects", label: "Projets", icon: "projects" },
       { href: "/tasks", label: "Taches", icon: "tasks" },
-    ],
-    [
+    ] },
+    { title: "Terrain", items: [
       { href: "/forms", label: "Formulaires", icon: "forms" },
       { href: "/documents", label: "Documents", icon: "documents" },
-    ],
-    [
+    ] },
+    { title: "Organisation", items: [
       { href: "/team", label: "Equipe", icon: "team" },
       { href: "/reports", label: "Rapports", icon: "reports" },
-    ],
-    ...(isAdmin ? [[{ href: "/admin", label: "Administration", icon: "admin" as const }]] : []),
+    ] },
+    ...(isAdmin ? [{ title: "Administration", items: [{ href: "/admin", label: "Administration", icon: "admin" as const }] }] : []),
   ];
   const mobile: NavItem[] = [
     { href: "/projects", label: "Projets", icon: "projects" },

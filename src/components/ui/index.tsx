@@ -6,7 +6,6 @@ export type Tone = "neutral" | "info" | "ok" | "warn" | "alert";
 // Compatibilite avec les anciens noms de tons
 const TONE_ALIAS: Record<string, Tone> = { slate: "neutral", blue: "info", green: "ok", amber: "warn", red: "alert", good: "ok", bad: "alert", default: "neutral" };
 export function tone(t?: string): Tone { return (t && (TONE_ALIAS[t] ?? (t as Tone))) || "neutral"; }
-const TEXT: Record<Tone, string> = { neutral: "text-ink", info: "text-ink-body", ok: "text-ok", warn: "text-warn", alert: "text-alert" };
 
 export interface Crumb { href: string; label: string }
 
@@ -36,12 +35,16 @@ export function PageHeader({ title, subtitle, actions, crumbs }: { title: string
   );
 }
 
+const DOT: Partial<Record<Tone, string>> = { ok: "bg-ok", warn: "bg-warn-dot", alert: "bg-alert" };
+
+/** Indicateur : valeur toujours en anthracite, le ton (ok, warn, alert) n'apparait que comme un point discret devant le complement. */
 export function Stat({ label, value, hint, tone: t = "default" }: { label: string; value: ReactNode; hint?: ReactNode; tone?: string }) {
+  const dot = DOT[tone(t)];
   return (
     <div className="card card-pad">
       <div className="eyebrow">{label}</div>
-      <div className={`mt-1 text-[16px] font-bold tabular-nums tracking-[-0.01em] ${TEXT[tone(t)]}`}>{value}</div>
-      {hint && <div className="hint mt-0.5">{hint}</div>}
+      <div className="mt-1 text-[16px] font-bold tabular-nums tracking-[-0.01em] text-ink">{value}</div>
+      {(hint || dot) && <div className="hint mt-0.5 flex items-center gap-1.5">{dot && <span className={`dot ${dot}`} />}{hint}</div>}
     </div>
   );
 }
