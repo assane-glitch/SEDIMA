@@ -12,7 +12,7 @@ Application de gestion de projets : Next.js 15 (App Router, TypeScript, Tailwind
 - `src/app/(app)/` : pages authentifiees. dashboard, projects (colonnes par categorie ; `planning` et `budget` portefeuille ; `[id]/` avec onglets Apercu, planning, tasks, budget, events, journal, register, documents, changes, history, settings), tasks, forms (saisies terrain et boite de reception), documents, team, reports (rapport hebdo imprimable, export CSV), search, admin (users, lists, activity, tools), account
 - `src/app/login`, `src/app/auth/callback` : authentification Supabase (invitation seulement)
 - `src/lib/` : `supabase/` (clients serveur, navigateur, admin ; le middleware est dans `src/middleware.ts`), `session.ts` (requireProfile, canEdit, canSubmit), `format.ts` (dates, semaines ISO, montants : utiliser ces helpers, ne pas les redefinir), `health.ts`, `gantt-rows.ts`, `reference.ts` (listes de reference, serveur) et `reference-types.ts` (cote client), `audit.ts`, `documents.ts`, `types.ts`
-- `src/components/` : `layout/` (AppShell, Sidebar, GlobalSearch), `gantt/` (Gantt, TaskDrawer, MilestoneDrawer), `projects/` (ProjectCard, FavoriteStar), `tasks/`, `budget/`, `forms/`, `documents/`, `history/`, `ui/`
+- `src/components/` : `layout/` (AppShell, Sidebar, GlobalSearch), `gantt/` (Gantt, TaskDrawer, MilestoneDrawer), `projects/` (ProjectCard, FavoriteStar), `tasks/` (TaskList, avec suppression en lot), `budget/`, `forms/`, `documents/`, `history/`, `ui/` (composants de base et hook `useExpandedLots`)
 - `supabase/migrations/` : schema SQL, idempotent, dans l'ordre des noms ; `supabase/seed/` : referentiel importe depuis `docs/data/*.xlsx` par `scripts/import-referentiel.py`
 
 ## Regles metier portees par la base (triggers, ne pas contourner)
@@ -42,6 +42,7 @@ Application de gestion de projets : Next.js 15 (App Router, TypeScript, Tailwind
 - Le bac a sable ne joint pas le stockage Supabase depuis le navigateur : valider les envois de fichiers avec supabase-js depuis Node.
 - Message de commit en francais, descriptif, avec les trailers Co-Authored-By et Claude-Session.
 
-## Etat et pistes (mis a jour le 2026-09-07)
-- Tout est deploye en production (commit d610b10 : audit securite + nettoyage). Aucune tache en cours.
+## Etat et pistes (mis a jour le 2026-09-08)
+- Tout est deploye en production (commit c5f236b). Derniers ajouts : suppression en lot des taches depuis la liste des taches (mode selection, action `deleteTasks`) ; lots replies par defaut dans le planning et le budget, avec etat memorise dans localStorage par projet et par vue (hook `useExpandedLots`). Aucune tache en cours.
+- QA visuelle : l'utilisateur `qa.claude@sedima.test` se cree en SQL dans `auth.users` avec `invited_at` renseigne, `raw_user_meta_data` `{"full_name","role"}`, mot de passe via `crypt(..., gen_salt('bf'))` et les colonnes de jetons (`confirmation_token`, `recovery_token`, `email_change*`, `phone_change*`, `reauthentication_token`) a chaine vide, sinon la connexion echoue. Playwright n'est pas une dependance du projet : installer `playwright-core` dans le dossier de travail temporaire.
 - Pistes non demandees, a l'appreciation du proprietaire : inviter les autres chefs de projet ; tester l'envoi de photos depuis un telephone sur les formulaires terrain ; reserver l'export CSV aux roles manager et admin ; passe globale sur les accents de l'interface ; plafond de 500 lignes dans l'historique d'une tache ; policy `documents_update` qui laisse l'auteur changer le projet d'un document.
