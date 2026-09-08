@@ -9,10 +9,10 @@ import { deleteMilestone, saveMilestone, toggleMilestone } from "../actions";
 export function MilestonesCard({ projectId, milestones, canEdit, defaultDate }: { projectId: string; milestones: Milestone[]; canEdit: boolean; defaultDate: string }) {
   const t = today();
   return (
-    <section className="card p-4">
+    <section className="card card-pad flex min-w-0 flex-col">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-[10.5px] font-semibold">Jalons <span className="font-normal text-ink-faint">{milestones.filter((m) => m.reached_on).length}/{milestones.length}</span></h2>
-        <Link href={`/projects/${projectId}/planning`} className="text-[10px] text-ink hover:underline">Voir sur le planning</Link>
+        <h2 className="card-title">Jalons <span className="text-[10px] font-normal text-ink-faint">{milestones.filter((m) => m.reached_on).length}/{milestones.length}</span></h2>
+        <Link href={`/projects/${projectId}/planning`} className="text-[10px] text-ink-muted hover:text-ink hover:underline">Voir sur le planning</Link>
       </div>
       {milestones.length === 0 && <p className="mb-3 text-[10.5px] text-ink-muted">Aucun jalon defini.</p>}
       <ul className="space-y-1.5 text-[10.5px]">

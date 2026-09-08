@@ -22,7 +22,7 @@ const PIPE: { value: string; cls: string }[] = [{ value: "payee", cls: "bg-chart
 type Decision = { tone: "alert" | "warn" | "info"; text: string; href: string; action: string };
 
 function Card({ title, action, children, className = "" }: { title: React.ReactNode; action?: React.ReactNode; children: React.ReactNode; className?: string }) {
-  return <section className={`card card-pad min-w-0 ${className}`}><div className="mb-3 flex items-center justify-between gap-3"><h2 className="card-title">{title}</h2>{action}</div>{children}</section>;
+  return <section className={`card card-pad flex min-w-0 flex-col ${className}`}><div className="mb-3 flex items-center justify-between gap-3"><h2 className="card-title">{title}</h2>{action}</div><div className="flex-1">{children}</div></section>;
 }
 /** Indice heros : valeur, statut par point, tendance sur 8 semaines, definition au survol. */
 function Hero({ label, value, status, hint, help, trend, baseline }: { label: string; value: string; status: IndexStatus; hint: string; help: string; trend?: (number | null)[]; baseline?: number }) {
@@ -139,8 +139,8 @@ export default async function ProjectOverview({ params }: { params: Promise<{ id
       <ProjectTabs id={id} canEdit={editor} />
 
       {/* Bandeau de decision */}
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-stretch">
-        <section className="card card-pad min-w-0">
+      <div className="grid gap-4 lg:grid-cols-3 [&>*]:min-w-0">
+        <section className="card card-pad min-w-0 lg:col-span-2">
           <div className="mb-3 flex flex-wrap items-center gap-2 text-[10.5px]">
             <span className={`dot ${HEALTH_DOT[health]}`} /><span className="font-bold text-ink">{HEALTH_LABELS[health]}</span><span className="text-ink-faint">·</span><span className="text-ink-muted">{verdict}</span>
             {project.description && <span className="ml-auto hidden max-w-[45%] truncate text-ink-faint md:inline" title={project.description}>{project.description}</span>}
@@ -167,8 +167,8 @@ export default async function ProjectOverview({ params }: { params: Promise<{ id
       </div>
 
       {/* Courbe en S et chiffres EVM */}
-      <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start">
-        <Card title="Valeur acquise" action={<span className="text-[10px] text-ink-faint">{evm.historySince ? `historique d'avancement depuis le ${formatDate(evm.historySince)}` : "sans historique d'avancement"}{evm.baselineFrozen ? "" : " · reference non figee"}</span>}>
+      <div className="mt-4 grid gap-4 lg:grid-cols-3 [&>*]:min-w-0">
+        <Card className="lg:col-span-2" title="Valeur acquise" action={<span className="text-[10px] text-ink-faint">{evm.historySince ? `historique d'avancement depuis le ${formatDate(evm.historySince)}` : "sans historique d'avancement"}{evm.baselineFrozen ? "" : " · reference non figee"}</span>}>
           <EvmChart points={evm.series} bac={evm.bac} envelope={evm.envelope} eac={evm.eac} forecastEnd={evm.forecastEnd} today={t0} currency={cur} />
         </Card>
         <Card title="Chiffres EVM" action={<Link href={`/projects/${id}/budget`} className={linkCls}>Detail du budget</Link>}>
