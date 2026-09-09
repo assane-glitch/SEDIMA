@@ -36,16 +36,16 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
 
   return (
     <div className="min-h-screen bg-canvas">
-      <header className="sticky top-0 z-30 h-[52px] bg-ink text-surface md:h-[60px]">
+      <header className="sticky top-0 z-30 h-[52px] border-b border-line-hair bg-surface text-ink md:h-[60px]">
         <div className="mx-auto grid h-full max-w-[1600px] grid-cols-[auto_1fr_auto] items-center gap-4 px-4 md:grid-cols-[200px_1fr_auto] md:px-6">
           <Link href="/dashboard" className="flex items-center" aria-label="SEDIMA">
-            <Image src="/brand/logo-horizontal-white.png" alt="SEDIMA" width={150} height={32} priority className="h-6 w-auto md:h-7" />
+            <Image src="/brand/logo-horizontal.png" alt="SEDIMA" width={150} height={32} priority className="h-6 w-auto md:h-7" />
           </Link>
-          <div className="hidden justify-center md:flex"><TopNav menus={menus} /></div>
+          <div className="hidden h-full justify-center md:flex"><TopNav menus={menus} /></div>
           <div className="md:hidden" />
           <div className="flex items-center justify-end gap-2">
-            <div className="hidden w-64 lg:block"><Suspense fallback={null}><GlobalSearch dark compact /></Suspense></div>
-            <Link href="/search" className="flex h-9 w-9 items-center justify-center rounded-full text-white/75 hover:bg-white/10 hover:text-surface lg:hidden" aria-label="Rechercher"><Icon name="search" className="h-5 w-5" /></Link>
+            <div className="hidden w-64 lg:block"><Suspense fallback={null}><GlobalSearch compact /></Suspense></div>
+            <Link href="/search" className="flex h-9 w-9 items-center justify-center rounded-full text-ink-muted hover:bg-surface-sub hover:text-ink lg:hidden" aria-label="Rechercher"><Icon name="search" className="h-5 w-5" /></Link>
             <ProfileMenu profile={profile} signOut={signOut} />
           </div>
         </div>

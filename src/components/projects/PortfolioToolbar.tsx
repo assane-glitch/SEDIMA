@@ -24,21 +24,21 @@ export function PortfolioToolbar({ view, params, favCount, search = false, withO
   const active = [params.category, params.status].filter(Boolean).length;
   const carried = { category: params.category, status: params.status, fav: params.fav };
   const statuses = (Object.keys(PROJECT_STATUS_LABELS) as ProjectStatus[]).filter((s) => withOutOfScope || s !== "hors_perimetre");
-  const seg = (on: boolean) => `flex h-7 items-center gap-1 px-2.5 text-[10px] font-semibold ${on ? "bg-ink text-surface" : "bg-surface text-ink-body hover:bg-surface-sub"}`;
+  const seg = (on: boolean) => `flex h-10 items-center gap-1.5 border-b-2 px-3 text-[10.5px] font-semibold ${on ? "border-brand text-surface" : "border-transparent text-white/70 hover:text-surface"}`;
   return (
-    <div className="mb-3 flex flex-wrap items-center gap-2">
-      <div className="inline-flex overflow-hidden rounded-md border border-line" role="tablist" aria-label="Vue du portefeuille">
+    <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg bg-ink px-2 py-1 text-surface">
+      <div className="flex items-center" role="tablist" aria-label="Vue du portefeuille">
         {VIEWS.map((v) => <Link key={v.view} href={href(BASE[v.view], carried, {})} role="tab" aria-selected={view === v.view} className={seg(view === v.view)}><span aria-hidden="true">{v.glyph}</span>{v.label}</Link>)}
       </div>
-      <span className="mx-1 hidden h-4 w-px bg-line-hair sm:block" />
+      <span className="mx-1 hidden h-4 w-px bg-white/20 sm:block" />
       <FilterSelect label="Categorie" value={params.category ?? ""} options={[{ value: "", label: "Toutes les categories", href: href(base, params, { category: undefined }) }, ...PROJECT_CATEGORIES.map((c) => ({ value: c.value, label: c.label, href: href(base, params, { category: c.value }) }))]} />
       <FilterSelect label="Statut" value={params.status ?? ""} options={[{ value: "", label: "Tous les statuts", href: href(base, params, { status: undefined }) }, ...statuses.map((s) => ({ value: s, label: PROJECT_STATUS_LABELS[s], href: href(base, params, { status: s }) }))]} />
-      {active > 0 && <a href={href(base, params, { category: undefined, status: undefined })} className="btn-ghost flex items-center gap-1 text-ink-muted hover:text-ink"><Icon name="x" className="h-3 w-3" strokeWidth={2.2} />{active} filtre{active > 1 ? "s" : ""} · Effacer</a>}
+      {active > 0 && <a href={href(base, params, { category: undefined, status: undefined })} className="btn-ghost flex items-center gap-1 text-white/70 hover:text-surface"><Icon name="x" className="h-3 w-3" strokeWidth={2.2} />{active} filtre{active > 1 ? "s" : ""} · Effacer</a>}
       <div className="ml-auto flex items-center gap-2">
         <Link href={href(base, params, { fav: fav ? undefined : "1" })} aria-pressed={fav} title={fav ? "Afficher tous les projets" : `Mes favoris${favCount ? ` (${favCount})` : ""}`}
-          className={`flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-[10px] font-semibold transition-colors ${fav ? "border-ink bg-ink text-surface" : "border-line bg-surface text-ink-body hover:bg-surface-sub"}`}>
-          <svg viewBox="0 0 24 24" className={`h-3.5 w-3.5 ${fav ? "fill-surface" : "fill-none"}`} stroke="currentColor" strokeWidth={1.8} strokeLinejoin="round" aria-hidden="true"><path d="m12 2.8 2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.7l-5.9 3.1 1.2-6.5L2.5 9.7l6.6-.9z" /></svg>
-          Favoris{favCount > 0 && <span className={`tabular-nums ${fav ? "text-surface/70" : "text-ink-faint"}`}>{favCount}</span>}
+          className={`flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-[10px] font-semibold transition-colors ${fav ? "border-surface bg-surface text-ink" : "border-white/25 bg-transparent text-surface hover:bg-white/10"}`}>
+          <svg viewBox="0 0 24 24" className={`h-3.5 w-3.5 ${fav ? "fill-ink" : "fill-none"}`} stroke="currentColor" strokeWidth={1.8} strokeLinejoin="round" aria-hidden="true"><path d="m12 2.8 2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.7l-5.9 3.1 1.2-6.5L2.5 9.7l6.6-.9z" /></svg>
+          Favoris{favCount > 0 && <span className={`tabular-nums ${fav ? "text-ink-muted" : "text-white/60"}`}>{favCount}</span>}
         </Link>
         {search && (
           <form action={base} className="relative">

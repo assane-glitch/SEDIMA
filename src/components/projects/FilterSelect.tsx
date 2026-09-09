@@ -6,7 +6,7 @@ export function FilterSelect({ label, value, options, className = "" }: { label:
   const router = useRouter();
   return (
     <select aria-label={label} value={value} onChange={(e) => { const o = options.find((x) => x.value === e.target.value); if (o) router.push(o.href); }}
-      className={`input !w-auto !py-[5px] !pr-7 text-[10.5px] font-semibold ${value ? "!border-ink-muted text-ink" : "text-ink-body"} ${className}`}>
+      className={`input !w-auto !border-transparent !py-[5px] !pr-7 text-[10.5px] font-semibold ${value ? "!bg-surface text-ink" : "!bg-white/10 !text-surface"} ${className}`}>
       {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
     </select>
   );

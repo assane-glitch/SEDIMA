@@ -22,13 +22,13 @@ export function TopNav({ menus }: { menus: NavMenu[] }) {
   useEffect(() => { setOpen(null); }, [pathname]);
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
   const menuActive = (m: NavMenu) => (m.href ? isActive(m.href) : (m.items ?? []).some((i) => isActive(i.href)));
-  const btn = (active: boolean) => `flex h-8 items-center gap-1 rounded-md px-3 text-[11.5px] font-semibold transition-colors ${active ? "bg-white/15 text-surface" : "text-white/75 hover:bg-white/10 hover:text-surface"}`;
+  const btn = (active: boolean) => `flex h-full items-center gap-1 border-b-2 px-3 text-[11.5px] font-semibold transition-colors ${active ? "border-brand text-ink" : "border-transparent text-ink-muted hover:text-ink"}`;
   return (
-    <nav ref={ref} aria-label="Navigation principale" className="flex items-center gap-1">
+    <nav ref={ref} aria-label="Navigation principale" className="flex h-full items-stretch gap-1">
       {menus.map((m) => m.href ? (
         <Link key={m.label} href={m.href} className={btn(menuActive(m))}>{m.label}</Link>
       ) : (
-        <div key={m.label} className="relative" onMouseEnter={() => setOpen(m.label)} onMouseLeave={() => setOpen((o) => (o === m.label ? null : o))}>
+        <div key={m.label} className="relative flex" onMouseEnter={() => setOpen(m.label)} onMouseLeave={() => setOpen((o) => (o === m.label ? null : o))}>
           <button type="button" aria-haspopup="menu" aria-expanded={open === m.label} onClick={() => setOpen(m.label)} className={`${btn(menuActive(m) || open === m.label)} cursor-pointer`}>
             {m.label}<Icon name="chevronDown" className={`h-3.5 w-3.5 transition-transform ${open === m.label ? "rotate-180" : ""}`} strokeWidth={2.2} />
           </button>

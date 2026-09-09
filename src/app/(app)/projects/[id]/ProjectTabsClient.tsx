@@ -39,7 +39,7 @@ export function ProjectTabsClient({ id, canEdit, pending }: { id: string; canEdi
   ];
   const isActive = (href: string) => (href === base ? pathname === base : pathname === href || pathname.startsWith(href + "/"));
   const groupActive = (items: Entry[]) => items.some((i) => isActive(i.href.split("#")[0]));
-  const tabCls = (active: boolean) => `-mb-px flex h-9 shrink-0 items-center gap-1 whitespace-nowrap border-b-2 px-3 text-[10.5px] ${active ? "border-ink font-bold text-ink" : "border-transparent text-ink-muted hover:text-ink"}`;
+  const tabCls = (active: boolean) => `flex h-10 shrink-0 items-center gap-1 whitespace-nowrap border-b-2 px-3 text-[10.5px] font-semibold ${active ? "border-brand text-surface" : "border-transparent text-white/70 hover:text-surface"}`;
   const Menu = ({ items }: { items: Entry[] }) => (
     <div role="menu" className="absolute left-0 top-full z-40 w-64 pt-1">
       <div className="rounded-lg border border-line-hair bg-surface p-1.5">
@@ -54,7 +54,7 @@ export function ProjectTabsClient({ id, canEdit, pending }: { id: string; canEdi
     </div>
   );
   return (
-    <div ref={ref} className="mb-5 flex items-center border-b border-line-hair">
+    <div ref={ref} className="mb-5 flex items-center rounded-lg bg-ink px-2 text-surface">
       <div className="flex min-w-0 flex-1 flex-wrap">
         {tabs.map((t) => <Link key={t.href} href={t.href} className={tabCls(isActive(t.href))}>{t.label}</Link>)}
         <div className="relative shrink-0" onMouseEnter={() => setOpen("terrain")} onMouseLeave={() => setOpen((o) => (o === "terrain" ? null : o))}>
@@ -66,7 +66,7 @@ export function ProjectTabsClient({ id, canEdit, pending }: { id: string; canEdi
       </div>
       <div className="relative shrink-0 pl-2" onMouseEnter={() => setOpen("more")} onMouseLeave={() => setOpen((o) => (o === "more" ? null : o))}>
         <button type="button" aria-label="Plus d'onglets" aria-haspopup="menu" aria-expanded={open === "more"} onClick={() => setOpen("more")} title="Changements, historique, parametres"
-          className={`relative -mb-px flex h-9 cursor-pointer items-center gap-1 border-b-2 px-2 text-[10.5px] ${groupActive(more) ? "border-ink font-bold text-ink" : "border-transparent text-ink-muted hover:text-ink"}`}>
+          className={`relative flex h-10 cursor-pointer items-center gap-1 border-b-2 px-2 text-[10.5px] ${groupActive(more) ? "border-brand text-surface" : "border-transparent text-white/70 hover:text-surface"}`}>
           <Icon name="more" className="h-4 w-4 rotate-90" strokeWidth={2.2} />
           {pending > 0 && <span className="absolute -top-0.5 right-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[9px] font-bold text-ink" title={`${pending} demande${pending > 1 ? "s" : ""} de changement en attente`}>{pending}</span>}
         </button>

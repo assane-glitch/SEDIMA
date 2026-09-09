@@ -23,10 +23,10 @@ export function ProfileMenu({ profile, signOut }: { profile: Profile; signOut: (
   return (
     <div ref={ref} className="relative">
       <button type="button" onClick={() => setOpen((v) => !v)} aria-haspopup="menu" aria-expanded={open} aria-label="Menu du profil" title={name}
-        className={`flex h-9 cursor-pointer items-center gap-2 rounded-full pl-1 pr-2 transition-colors hover:bg-white/10 ${open ? "bg-white/15" : ""}`}>
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-surface text-[10.5px] font-bold text-ink">{name.slice(0, 1).toUpperCase()}</span>
-        <span className="hidden max-w-[140px] truncate text-[11px] font-semibold text-surface md:block">{name}</span>
-        <Icon name="chevronDown" className={`hidden h-3.5 w-3.5 text-white/70 transition-transform md:block ${open ? "rotate-180" : ""}`} strokeWidth={2.2} />
+        className={`flex h-9 cursor-pointer items-center gap-2 rounded-full pl-1 pr-2 transition-colors hover:bg-surface-sub ${open ? "bg-surface-sub" : ""}`}>
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-ink text-[10.5px] font-bold text-surface">{name.slice(0, 1).toUpperCase()}</span>
+        <span className="hidden max-w-[140px] truncate text-[11px] font-semibold text-ink md:block">{name}</span>
+        <Icon name="chevronDown" className={`hidden h-3.5 w-3.5 text-ink-muted transition-transform md:block ${open ? "rotate-180" : ""}`} strokeWidth={2.2} />
       </button>
       {open && (
         <div role="menu" className="absolute right-0 top-full z-40 w-60 pt-2">
