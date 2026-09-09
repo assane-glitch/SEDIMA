@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { Badge, CategoryIcon, PageHeader, Stat } from "@/components/ui";
-import { ViewToggle } from "../ViewToggle";
-import { FavoritesToggle } from "@/components/projects/FavoritesToggle";
+import { PortfolioToolbar } from "@/components/projects/PortfolioToolbar";
 import { formatMoney, pct } from "@/lib/format";
 import { requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { PROJECT_CATEGORIES, PROJECT_STATUS_LABELS, PROJECT_STATUS_TONE, type Project, type ProjectStats, type ProjectStatus } from "@/lib/types";
+import { PROJECT_STATUS_LABELS, PROJECT_STATUS_TONE, type Project, type ProjectStats } from "@/lib/types";
 
 export const metadata = { title: "Budget portefeuille" };
 type Params = { category?: string; status?: string; sort?: string; dir?: string; fav?: string };
@@ -45,7 +44,7 @@ export default async function PortfolioBudgetPage({ searchParams }: { searchPara
 
   return (
     <>
-      <PageHeader crumbs={[{ href: "/projects", label: "Projets" }]} title="Budget du portefeuille" subtitle="Budget, engagement et tranches annuelles de tous les projets. Montants en k F CFA." actions={<><FavoritesToggle fav={onlyFav} hrefFav={link({ fav: "1" })} hrefAll={link({ fav: undefined })} count={favorites.size} /><ViewToggle view="budget" fav={onlyFav} /></>} />
+      <PageHeader crumbs={[{ href: "/projects", label: "Projets" }]} title="Budget du portefeuille" subtitle="Budget, engagement et tranches annuelles de tous les projets. Montants en k F CFA." />
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
         <Stat label="Budget total" value={formatMoney(tot.budget, cur)} hint={tot.kpmg ? `Ref. KPMG : ${formatMoney(tot.kpmg, cur)}` : undefined} />
         <Stat label="Cout reconstitue" value={formatMoney(tot.rebuilt, cur)} hint={`${tot.rebuilt > tot.budget ? "+" : ""}${formatMoney(tot.rebuilt - tot.budget, cur)} vs budget`} tone={tot.rebuilt > tot.budget ? "warn" : "default"} />
@@ -53,13 +52,7 @@ export default async function PortfolioBudgetPage({ searchParams }: { searchPara
         <Stat label="Reste a engager" value={formatMoney(tot.budget - tot.spent, cur)} tone={tot.budget - tot.spent < 0 ? "bad" : "default"} />
         <Stat label="Projets" value={rows.length} hint={`${rows.filter((r) => r.spent > r.budget && r.budget > 0).length} en depassement`} />
       </div>
-      <div className="mb-3 flex flex-wrap items-center gap-1.5">
-        <Link href={link({ category: undefined })} className={`filter-chip ${!sp.category ? "filter-chip-active" : ""}`}>Toutes les categories</Link>
-        {PROJECT_CATEGORIES.map((c) => <Link key={c.value} href={link({ category: c.value })} className={`filter-chip ${sp.category === c.value ? "filter-chip-active" : ""}`}><CategoryIcon category={c.value} className="h-3.5 w-3.5" tone={sp.category === c.value ? "surface" : "brand"} />{c.label}</Link>)}
-        <span className="mx-1 h-4 w-px bg-line-hair" />
-        <Link href={link({ status: undefined })} className={`filter-chip ${!sp.status ? "filter-chip-active" : ""}`}>Tous les statuts</Link>
-        {(Object.keys(PROJECT_STATUS_LABELS) as ProjectStatus[]).filter((s) => s !== "hors_perimetre").map((s) => <Link key={s} href={link({ status: s })} className={`filter-chip ${sp.status === s ? "filter-chip-active" : ""}`}>{PROJECT_STATUS_LABELS[s]}</Link>)}
-      </div>
+      <PortfolioToolbar view="budget" params={{ category: sp.category, status: sp.status, fav: sp.fav, sort: sp.sort, dir: sp.dir }} favCount={favorites.size} />
       <div className="card overflow-x-auto">
         <table className="tbl">
           <thead>

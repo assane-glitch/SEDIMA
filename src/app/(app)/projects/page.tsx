@@ -1,13 +1,11 @@
 import Link from "next/link";
 import { Alert, CategoryIcon, Empty, PageHeader } from "@/components/ui";
 import { ProjectCard, isAlert, rebuiltOf } from "@/components/projects/ProjectCard";
-import { FavoritesToggle } from "@/components/projects/FavoritesToggle";
-import { Icon } from "@/components/icons";
+import { PortfolioToolbar } from "@/components/projects/PortfolioToolbar";
 import { pct, shortMoney } from "@/lib/format";
 import { projectHealth } from "@/lib/health";
 import { canEdit, requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { ViewToggle } from "./ViewToggle";
 import { PROJECT_CATEGORIES, type Project, type ProjectStats } from "@/lib/types";
 
 export const metadata = { title: "Projets" };
@@ -33,7 +31,6 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
   ]);
   const favorites = new Set((favRows ?? []).map((f) => f.project_id));
   const onlyFav = sp.fav === "1";
-  const favLink = (on: boolean) => { const u = new URLSearchParams(); for (const [k, v] of Object.entries({ ...sp, ok: undefined, fav: on ? "1" : undefined })) if (v) u.set(k, v); const s = u.toString(); return `/projects${s ? `?${s}` : ""}`; };
   // Cout reconstitue TTC par projet = somme des taches feuilles (HTVA + douanes + TVA)
   const parents = new Set((taskRows ?? []).filter((t) => t.parent_id).map((t) => t.parent_id!));
   const ttc = new Map<string, number>();
@@ -68,10 +65,8 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
   return (
     <>
       <div className="sticky top-[52px] z-20 -mx-4 -mt-4 border-b border-line-hair bg-[#e9eaed] px-4 pt-3 md:top-[60px] md:-mx-2 md:px-2">
-      <PageHeader title="Projets" subtitle="Pilotage du portefeuille de projets" actions={<>
-          <form action="/projects" className="relative"><Icon name="search" className="pointer-events-none absolute left-2.5 top-2 h-3.5 w-3.5 text-ink-faint" /><input name="q" defaultValue={q} placeholder="Rechercher…" className="input !w-48 !pl-8" />{q && <Link href="/projects" className="absolute right-2 top-1.5 text-ink-faint hover:text-ink" aria-label="Effacer">×</Link>}</form>
-          <FavoritesToggle fav={onlyFav} hrefFav={favLink(true)} hrefAll={favLink(false)} count={favorites.size} />
-          <ViewToggle view="list" fav={onlyFav} />{canEdit(profile) && <Link href="/projects/new" className="btn-primary">+ Nouveau projet</Link>}</>} />
+      <PageHeader title="Projets" subtitle="Pilotage du portefeuille de projets" actions={canEdit(profile) ? <Link href="/projects/new" className="btn-primary">+ Nouveau projet</Link> : undefined} />
+      <PortfolioToolbar view="list" params={{ category: sp.category, status: sp.status, fav: sp.fav, q: q || undefined, manager: sp.manager }} favCount={favorites.size} search withOutOfScope />
       {sp.ok && <div className="mb-3"><Alert tone="ok">{sp.ok}</Alert></div>}
       <div className="card mb-3 grid grid-cols-2 divide-line-hair md:grid-cols-4 md:divide-x">
         <div className="px-[15px] py-3"><div className="eyebrow">Cout total TTC</div><div className="mt-1 text-[21px] font-bold tabular-nums text-ink">{short(totalTtc)}</div><div className="hint">{nProj} projets</div></div>

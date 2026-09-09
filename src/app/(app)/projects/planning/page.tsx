@@ -1,13 +1,11 @@
-import Link from "next/link";
 import { Gantt, type GanttMilestone, type GanttRow } from "@/components/gantt/Gantt";
-import { CategoryIcon, PageHeader } from "@/components/ui";
+import { PageHeader } from "@/components/ui";
 import { formatMoney } from "@/lib/format";
 import { projectHealth } from "@/lib/health";
 import { canEdit, requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { PROJECT_CATEGORIES, PROJECT_STATUS_LABELS, type Milestone, type Profile, type Project, type ProjectStats } from "@/lib/types";
-import { ViewToggle } from "../ViewToggle";
-import { FavoritesToggle } from "@/components/projects/FavoritesToggle";
+import { type Milestone, type Profile, type Project, type ProjectStats } from "@/lib/types";
+import { PortfolioToolbar } from "@/components/projects/PortfolioToolbar";
 import { getCalendar } from "@/lib/calendar";
 
 export const metadata = { title: "Planning" };
@@ -38,24 +36,11 @@ export default async function PortfolioPlanningPage({ searchParams }: { searchPa
   const start = list.reduce((m, p) => (p.start_date < m ? p.start_date : m), list[0]?.start_date ?? new Date().toISOString().slice(0, 10));
   const end = list.reduce((m, p) => (p.end_date > m ? p.end_date : m), list[0]?.end_date ?? start);
   const totalBudget = list.reduce((s, p) => s + Number(p.budget), 0);
-  const link = (patch: Record<string, string | undefined>) => { const u = new URLSearchParams(); for (const [k, v] of Object.entries({ ...sp, ...patch })) if (v) u.set(k, v); const s = u.toString(); return `/projects/planning${s ? `?${s}` : ""}`; };
 
   return (
     <>
-      <PageHeader crumbs={[{ href: "/projects", label: "Projets" }]} title="Planning du portefeuille" subtitle={`Planning multi-projets · ${list.length} projet${list.length > 1 ? "s" : ""} · ${formatMoney(totalBudget)}`} actions={<><FavoritesToggle fav={onlyFav} hrefFav={link({ fav: "1" })} hrefAll={link({ fav: undefined })} count={favorites.size} /><ViewToggle view="planning" fav={onlyFav} /></>} />
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <Link href={link({ category: undefined })} className={`filter-chip ${!sp.category ? "filter-chip-active" : ""}`}>Toutes les categories</Link>
-        {PROJECT_CATEGORIES.map((c) => (
-          <Link key={c.value} href={link({ category: c.value })} className={`filter-chip ${sp.category === c.value ? "filter-chip-active" : ""}`}>
-            <CategoryIcon category={c.value} className="h-3.5 w-3.5" tone={sp.category === c.value ? "surface" : "brand"} />{c.label}
-          </Link>
-        ))}
-        <span className="mx-1 h-4 w-px bg-line-hair" />
-        <Link href={link({ status: undefined })} className={`filter-chip ${!sp.status ? "filter-chip-active" : ""}`}>Tous les statuts</Link>
-        {(["cadrage", "approuve", "engage", "execution", "plan", "cloture"] as const).map((st) => (
-          <Link key={st} href={link({ status: st })} className={`filter-chip ${sp.status === st ? "filter-chip-active" : ""}`}>{PROJECT_STATUS_LABELS[st]}</Link>
-        ))}
-      </div>
+      <PageHeader crumbs={[{ href: "/projects", label: "Projets" }]} title="Planning du portefeuille" subtitle={`Planning multi-projets · ${list.length} projet${list.length > 1 ? "s" : ""} · ${formatMoney(totalBudget)}`} />
+      <PortfolioToolbar view="planning" params={{ category: sp.category, status: sp.status, fav: sp.fav }} favCount={favorites.size} />
       <Gantt mode="portfolio" rows={rows} milestones={milestones} people={(people ?? []) as Profile[]} currency="XOF" canEdit={canEdit(profile)} projectStart={start} projectEnd={end} calendar={calendar} />
       <p className="hint mt-2">Une barre par projet, du debut a la fin prevus, remplie selon l&apos;avancement. Les losanges sont les jalons. Cliquez sur un projet pour ouvrir son planning detaille. Les projets hors perimetre ne sont pas affiches.</p>
     </>

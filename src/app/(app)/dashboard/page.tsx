@@ -74,7 +74,7 @@ export default async function DashboardPage() {
     <>
       <div className="sticky top-[52px] z-20 -mx-4 -mt-4 border-b border-line-hair bg-[#e9eaed] px-4 pt-3 md:top-[60px] md:-mx-2 md:px-2">
       <PageHeader title="Tableau de bord" subtitle={`Semaine ${isoWeek(t0)} · ${formatDate(monday)} → ${formatDate(sunday)} · ${list.length} projets, ${activeIds.size} en cours`}
-        actions={<><Link href="/projects/planning" className="btn-secondary">Planning</Link><Link href="/projects/budget" className="btn-secondary">Budget</Link>{canEdit(profile) && <Link href="/projects/new" className="btn-primary">+ Nouveau projet</Link>}</>} />
+        actions={canEdit(profile) ? <Link href="/projects/new" className="btn-primary">+ Nouveau projet</Link> : undefined} />
       {list.length > 0 && (
           <div className="mb-3 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
             <Stat label="Budget portefeuille" value={formatMoney(totalBudget)} hint={`${list.length} projets`} />
