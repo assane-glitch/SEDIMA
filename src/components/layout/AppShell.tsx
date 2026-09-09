@@ -35,7 +35,7 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
   return (
     <div className="min-h-screen bg-canvas">
       <header className="sticky top-0 z-30 h-11 border-b border-line-hair bg-surface text-ink">
-        <div className="mx-auto grid h-full max-w-[1600px] grid-cols-[auto_1fr_auto] items-center gap-4 px-4 md:grid-cols-[200px_1fr_auto] md:px-6">
+        <div className="mx-auto grid h-full grid-cols-[auto_1fr_auto] items-center gap-4 px-4 md:grid-cols-[200px_1fr_auto] md:px-6">
           <Link href="/dashboard" className="flex items-center" aria-label="SEDIMA">
             <Image src="/brand/logo-horizontal.png" alt="SEDIMA" width={150} height={32} priority className="h-5 w-auto md:h-[22px]" />
           </Link>
@@ -47,7 +47,7 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
           </div>
         </div>
       </header>
-      <div className="mx-auto max-w-[1600px]">
+      <div className="mx-auto">
         <main className="px-4 pb-24 pt-4 md:px-6 md:pb-8">{children}</main>
       </div>
       <nav className="fixed inset-x-0 bottom-0 z-20 flex border-t border-line-hair bg-surface md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
