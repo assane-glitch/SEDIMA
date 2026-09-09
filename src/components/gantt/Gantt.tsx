@@ -11,6 +11,7 @@ import { TaskDrawer } from "./TaskDrawer";
 import { MilestoneDrawer } from "./MilestoneDrawer";
 import { Bar, Diamond } from "./GanttMarks";
 import { useExpandedLots } from "@/components/ui/useExpandedLots";
+import { ToolbarMenu, type ToolbarMenuItem } from "@/components/ui/ToolbarMenu";
 
 export type RowKind = "project" | "lot" | "task";
 export interface GanttRow {
@@ -31,9 +32,9 @@ const PX: Record<Scale, number> = { day: 26, week: 8, month: 4, year: 1.5 };
 const SCALE_LABEL: Record<Scale, string> = { day: "Jour", week: "Semaine", month: "Mois", year: "Trimestre" };
 
 
-export function Gantt({ rows, milestones, expenses = [], journal = [], registers = [], audit = [], lists, people, currency, canEdit, projectId, projectCode, projectStart, projectEnd, mode, pendingChanges = 0, calendar = DEFAULT_CALENDAR }: {
+export function Gantt({ rows, milestones, expenses = [], journal = [], registers = [], audit = [], lists, people, currency, canEdit, projectId, projectCode, projectStart, projectEnd, mode, calendar = DEFAULT_CALENDAR }: {
   rows: GanttRow[]; milestones: GanttMilestone[]; expenses?: Expense[]; journal?: JournalEntry[]; registers?: RegisterEntry[]; audit?: AuditEntry[]; lists?: Lists; people: Profile[]; currency: string; canEdit: boolean;
-  projectId?: string; projectCode?: string; projectStart: string; projectEnd: string; mode: "project" | "portfolio"; pendingChanges?: number; calendar?: WorkCalendar;
+  projectId?: string; projectCode?: string; projectStart: string; projectEnd: string; mode: "project" | "portfolio"; calendar?: WorkCalendar;
 }) {
   const t0 = today();
   const [selected, setSelected] = useState<GanttRow | "new" | null>(null);
@@ -196,21 +197,23 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
           {showBaseline && hasBaseline && <span className="inline-flex items-center gap-2 rounded-sm border border-line-hair bg-surface-sub px-1.5 py-[1px] font-semibold text-ink-body"><span>vs reference :</span><span className={blSummary.late ? "text-alert" : ""}>{blSummary.late} en retard</span><span className={blSummary.early ? "text-ok" : ""}>{blSummary.early} en avance</span><span className={blSummary.endDelta > 0 ? "text-alert" : blSummary.endDelta < 0 ? "text-ok" : ""}>fin {blSummary.endDelta > 0 ? "+" : blSummary.endDelta < 0 ? "−" : "="}{blSummary.endDelta ? `${Math.abs(blSummary.endDelta)} j` : ""}</span></span>}
           {hl && <button onClick={() => setHlWeek(null)} className="inline-flex cursor-pointer items-center gap-1.5 rounded-sm border border-accent bg-accent-bg px-1.5 py-[1px] font-semibold text-ink hover:bg-accent/30" title="Retirer le surlignage"><span className="inline-block h-2 w-2 border-x border-accent bg-accent-bg" />{hl.label} ×</button>}
         </div>
-        <div className="flex shrink-0 items-center gap-1">
-          {(["day", "week", "month", "year"] as Scale[]).map((s) => <button key={s} onClick={() => setScaleChoice(s)} className={`filter-chip !py-[2px] ${scale === s ? "filter-chip-active" : ""}`}>{SCALE_LABEL[s]}</button>)}
-          <button onClick={scrollToToday} className="btn-primary !py-[2px]">Aujourd&apos;hui</button>
-          {lots.length > 0 && <>
-            <span className="mx-1 h-4 w-px bg-line-hair" />
-            <button onClick={() => setAll(allCollapsed)} className="btn-secondary !py-[2px]">{allCollapsed ? "+ Tout deplier" : "− Tout replier"}</button>
-          </>}
-          {mode === "project" && <button onClick={() => setShowLinks((v) => !v)} className={`btn-secondary !py-[2px] ${showLinks ? "!bg-surface-sub" : ""}`}>⇢ Liens</button>}
-          {mode === "project" && <button onClick={toggleBaseline} className={`btn-secondary !py-[2px] ${showBaseline ? "!bg-surface-sub" : ""}`} title="Comparer au planning de reference : barre fantome sous chaque barre et colonne d'ecart">▭ Reference</button>}
-          {mode === "project" && projectId && <Link href={`/projects/${projectId}/changes`} className={`btn-secondary !py-[2px] ${pendingChanges ? "!border-accent !bg-accent-bg" : ""}`} title="Registre des demandes de changement de la reference">Changements{pendingChanges ? ` · ${pendingChanges} en attente` : ""}</Link>}
-          {canEdit && mode === "project" && <>
-            <span className="mx-1 h-4 w-px bg-line-hair" />
-            <button onClick={() => setSelMilestone("new")} className="btn-secondary !py-[2px]">+ Jalon</button>
-            <button onClick={() => { setNewDefaults({}); setSelected("new"); }} className="btn-primary !py-[2px]">+ Tache</button>
-          </>}
+        <div className="flex shrink-0 items-center gap-1.5">
+          <div className="inline-flex overflow-hidden rounded-md border border-line" role="tablist" aria-label="Echelle du planning">
+            {(["day", "week", "month", "year"] as Scale[]).map((s) => <button key={s} role="tab" aria-selected={scale === s} onClick={() => setScaleChoice(s)} className={`h-6 cursor-pointer px-2.5 text-[10px] font-semibold ${scale === s ? "bg-ink text-surface" : "bg-surface text-ink-body hover:bg-surface-sub"}`}>{SCALE_LABEL[s]}</button>)}
+          </div>
+          <button onClick={scrollToToday} className="btn-secondary !py-[2px]" title="Centrer le planning sur aujourd'hui">Aujourd&apos;hui</button>
+          <ToolbarMenu label="Affichage" items={[
+            ...(mode === "project" ? [
+              { label: "Liens de dependance", hint: "Fleches entre predecesseurs et successeurs", checked: showLinks, onSelect: () => setShowLinks((v) => !v), keepOpen: true },
+              { label: "Planning de reference", hint: "Barre fantome et colonne d'ecart", checked: showBaseline, onSelect: toggleBaseline, keepOpen: true },
+            ] : []),
+            ...(lots.length > 0 ? [{ label: allCollapsed ? "Tout deplier" : "Tout replier", hint: "Lots et leurs taches", onSelect: () => setAll(allCollapsed) }] : []),
+            ...(hl ? [{ label: "Retirer le surlignage", hint: hl.label, onSelect: () => setHlWeek(null) }] : []),
+          ] as ToolbarMenuItem[]} />
+          {canEdit && mode === "project" && <ToolbarMenu label="+ Ajouter" primary items={[
+            { label: "Tache", hint: "Nouvelle tache dans un lot", onSelect: () => { setNewDefaults({}); setSelected("new"); } },
+            { label: "Jalon", hint: "Date cle du projet", onSelect: () => setSelMilestone("new") },
+          ]} />}
         </div>
       </div>
 
