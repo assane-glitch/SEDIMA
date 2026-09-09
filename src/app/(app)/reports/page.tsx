@@ -21,7 +21,7 @@ export default async function ReportsPage() {
   ];
   return (
     <>
-      <PageHeader title="Rapports" subtitle="Rapport hebdomadaire imprimable (PDF via le navigateur) et exports Excel (CSV)." />
+      <PageHeader crumbs={[{ label: "Organisation" }]} title="Rapports" subtitle="Rapport hebdomadaire imprimable (PDF via le navigateur) et exports Excel (CSV)." />
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="card card-pad">
           <div className="card-title mb-1">Rapport hebdomadaire</div>

@@ -42,7 +42,7 @@ export default async function PortfolioPlanningPage({ searchParams }: { searchPa
 
   return (
     <>
-      <PageHeader title="Projets" subtitle={`Planning multi-projets · ${list.length} projet${list.length > 1 ? "s" : ""} · ${formatMoney(totalBudget)}`} actions={<><FavoritesToggle fav={onlyFav} hrefFav={link({ fav: "1" })} hrefAll={link({ fav: undefined })} count={favorites.size} /><ViewToggle view="planning" fav={onlyFav} /></>} />
+      <PageHeader crumbs={[{ href: "/projects", label: "Projets" }]} title="Planning du portefeuille" subtitle={`Planning multi-projets · ${list.length} projet${list.length > 1 ? "s" : ""} · ${formatMoney(totalBudget)}`} actions={<><FavoritesToggle fav={onlyFav} hrefFav={link({ fav: "1" })} hrefAll={link({ fav: undefined })} count={favorites.size} /><ViewToggle view="planning" fav={onlyFav} /></>} />
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <Link href={link({ category: undefined })} className={`filter-chip ${!sp.category ? "filter-chip-active" : ""}`}>Toutes les categories</Link>
         {PROJECT_CATEGORIES.map((c) => (

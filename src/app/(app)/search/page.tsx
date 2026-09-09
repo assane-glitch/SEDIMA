@@ -44,7 +44,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
 
   return (
     <>
-      <PageHeader title={needle ? `Resultats pour « ${needle} »` : "Recherche"} subtitle={needle.length < 2 ? "Tapez au moins deux caracteres dans la barre de recherche en haut de page. Raccourci : touche / ou Ctrl K." : `${total} resultat${total > 1 ? "s" : ""} · ${groups.filter((g) => g.n).map((g) => `${g.label} ${g.n}`).join(" · ") || "aucun"}`} />
+      <PageHeader crumbs={[{ href: "/dashboard", label: "Tableau de bord" }]} title={needle ? `Resultats pour « ${needle} »` : "Recherche"} subtitle={needle.length < 2 ? "Tapez au moins deux caracteres dans la barre de recherche en haut de page. Raccourci : touche / ou Ctrl K." : `${total} resultat${total > 1 ? "s" : ""} · ${groups.filter((g) => g.n).map((g) => `${g.label} ${g.n}`).join(" · ") || "aucun"}`} />
       {needle.length >= 2 && total === 0 && <div className="card px-4 py-10 text-center text-[10.5px] text-ink-faint">Aucun resultat. Essayez un code (PI-03, L2.1, D00001), un mot du nom ou un fournisseur.</div>}
       <div className="grid gap-4 xl:grid-cols-2">
         <Section title="Projets" n={(projects ?? []).length}>

@@ -18,7 +18,7 @@ export default async function GlobalRegisterFormPage({ searchParams }: { searchP
   const types = lists.register_type.map((r) => ({ value: r.value, label: r.label, fields: registerFields(r) }));
   return (
     <div className="mx-auto max-w-lg">
-      <PageHeader crumbs={[{ href: "/forms", label: "Formulaires" }]} title="Registre" />
+      <PageHeader crumbs={[{ label: "Activites" }, { href: "/forms", label: "Formulaires" }]} title="Registre" />
       {error && <div className="mb-4"><Alert>{error}</Alert></div>}
       {canSubmit(profile) ? <RegisterForm projects={projects ?? []} tasks={tasks ?? []} redirect="/forms" types={types} /> : <Alert tone="amber">Votre compte est en lecture seule.</Alert>}
     </div>

@@ -33,7 +33,7 @@ export default async function FieldProject({ params, searchParams }: { params: P
 
   return (
     <div className="mx-auto max-w-lg">
-      <PageHeader crumbs={[{ href: "/forms", label: "Formulaires" }]} title={p.name} subtitle={p.code} />
+      <PageHeader crumbs={[{ label: "Activites" }, { href: "/forms", label: "Formulaires" }]} title={p.name} subtitle={p.code} />
       {ok && <div className="mb-4"><Alert tone="green">Entree enregistree. Merci.</Alert></div>}
       {!canSubmit(profile) && <div className="mb-4"><Alert tone="amber">Votre compte est en lecture seule.</Alert></div>}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">

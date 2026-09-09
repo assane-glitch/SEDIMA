@@ -1,11 +1,14 @@
 import type { ReactNode } from "react";
 import { FavoriteStar } from "@/components/projects/FavoriteStar";
+import { ProjectCrumb } from "./ProjectCrumb";
 import { Badge, CategoryIcon } from "@/components/ui";
 import { formatDate } from "@/lib/format";
 import { CATEGORY_LABELS, PROJECT_STATUS_LABELS, type Profile, type Project } from "@/lib/types";
 
 export function ProjectHeader({ project, manager, favorite, actions }: { project: Project; manager?: Profile; favorite?: boolean; actions?: ReactNode }) {
   return (
+    <>
+    <ProjectCrumb id={project.id} code={project.code} name={project.name} />
     <div className="mb-5 flex items-start gap-4">
       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-surface-sub"><CategoryIcon category={project.category} className="h-7 w-7" /></div>
       <div className="min-w-0">
@@ -19,5 +22,6 @@ export function ProjectHeader({ project, manager, favorite, actions }: { project
       </div>
       {actions && <div className="ml-auto flex shrink-0 items-center gap-2 pt-1">{actions}</div>}
     </div>
+    </>
   );
 }

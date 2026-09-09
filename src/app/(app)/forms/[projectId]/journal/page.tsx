@@ -12,7 +12,7 @@ export default async function FieldJournal({ params, searchParams }: { params: P
   ]);
   return (
     <div className="mx-auto max-w-lg">
-      <PageHeader crumbs={[{ href: "/forms", label: "Formulaires" }, { href: `/forms/${projectId}`, label: project?.code ?? "Projet" }]} title="Journal du jour" />
+      <PageHeader crumbs={[{ label: "Activites" }, { href: "/forms", label: "Formulaires" }, { href: `/forms/${projectId}`, label: project?.code ?? "Projet" }]} title="Journal du jour" />
       {error && <div className="mb-4"><Alert>{error}</Alert></div>}
       <JournalForm projects={project ? [project] : []} tasks={tasks ?? []} projectId={projectId} redirect={`/forms/${projectId}`} />
     </div>

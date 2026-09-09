@@ -15,7 +15,7 @@ export default async function GlobalJournalFormPage({ searchParams }: { searchPa
   ]);
   return (
     <div className="mx-auto max-w-lg">
-      <PageHeader crumbs={[{ href: "/forms", label: "Formulaires" }]} title="Journal du jour" />
+      <PageHeader crumbs={[{ label: "Activites" }, { href: "/forms", label: "Formulaires" }]} title="Journal du jour" />
       {error && <div className="mb-4"><Alert>{error}</Alert></div>}
       {canSubmit(profile) ? <JournalForm projects={projects ?? []} tasks={tasks ?? []} redirect="/forms" /> : <Alert tone="amber">Votre compte est en lecture seule.</Alert>}
     </div>

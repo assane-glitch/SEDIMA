@@ -14,7 +14,7 @@ export default async function FieldExpense({ params, searchParams }: { params: P
   ]);
   return (
     <div className="mx-auto max-w-lg">
-      <PageHeader crumbs={[{ href: "/forms", label: "Formulaires" }, { href: `/forms/${projectId}`, label: project?.code ?? "Projet" }]} title="Depense" />
+      <PageHeader crumbs={[{ label: "Activites" }, { href: "/forms", label: "Formulaires" }, { href: `/forms/${projectId}`, label: project?.code ?? "Projet" }]} title="Depense" />
       {error && <div className="mb-4"><Alert>{error}</Alert></div>}
       <div className="card card-pad">
         <ExpenseForm projects={project ? [project] : []} tasks={tasks ?? []} projectId={projectId} redirect={`/forms/${projectId}`} source="mobile" mobile categories={lists.expense_category} statuses={lists.expense_status} />

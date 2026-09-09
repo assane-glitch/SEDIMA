@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { Badge } from "@/components/ui";
+import { Badge, Breadcrumb } from "@/components/ui";
 import { addDays, formatDate, formatMoney, isoWeek, mondayOf, pct, today } from "@/lib/format";
 import { HEALTH_BADGE, HEALTH_LABELS, projectHealth } from "@/lib/health";
 import { getLists } from "@/lib/reference";
@@ -37,7 +36,7 @@ export default async function WeeklyReport({ searchParams }: { searchParams: Pro
 
   return (
     <div className="mx-auto max-w-5xl print:max-w-none">
-      <div className="mb-4 flex items-center justify-between print:hidden"><Link href="/reports" className="text-[10px] text-ink-muted">‹ Rapports</Link><PrintButton auto={print === "1"} /></div>
+      <div className="mb-4 flex items-center justify-between print:hidden"><Breadcrumb className="!mb-0" crumbs={[{ label: "Organisation" }, { href: "/reports", label: "Rapports" }]} current="Rapport hebdomadaire" /><PrintButton auto={print === "1"} /></div>
       <div className="card card-pad print:border-0 print:p-0">
         <div className="flex items-start justify-between border-b border-line-hair pb-3">
           <div><div className="eyebrow">Rapport hebdomadaire · SEDIMA</div><h1 className="text-[16px] font-bold">{title}</h1><div className="text-[10.5px] text-ink-muted">Semaine {isoWeek(t0)} · du {formatDate(monday)} au {formatDate(sunday)} · edite le {formatDate(t0)} par {me.full_name || me.email}</div></div>

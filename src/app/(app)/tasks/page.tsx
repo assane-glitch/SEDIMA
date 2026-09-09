@@ -22,7 +22,7 @@ export default async function TasksPage() {
   for (const r of spentRows ?? []) if (r.task_id) spentByTask[r.task_id] = (spentByTask[r.task_id] ?? 0) + Number(r.amount);
   return (
     <>
-      <PageHeader title="Taches" subtitle="Toutes les taches, tous projets confondus. Cliquer une ligne pour ouvrir la tache." />
+      <PageHeader crumbs={[{ label: "Activites" }]} title="Taches" subtitle="Toutes les taches, tous projets confondus. Cliquer une ligne pour ouvrir la tache." />
       <TaskList mode="global" tasks={((tasks ?? []) as Task[]).filter((t) => ids.has(t.project_id))} projects={(projects ?? []) as TaskProject[]} people={(people ?? []) as Profile[]}
         spentByTask={spentByTask} lists={lists} me={profile} canEdit={canEdit(profile)} />
     </>

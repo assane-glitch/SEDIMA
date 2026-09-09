@@ -36,7 +36,7 @@ export default async function TeamPage() {
 
   return (
     <>
-      <PageHeader title="Equipe" subtitle={`${list.length} membre${list.length > 1 ? "s" : ""} · charge et responsabilites`} actions={me.role === "admin" ? <Link href="/admin/users" className="btn-secondary">Inviter, gerer les roles</Link> : undefined} />
+      <PageHeader crumbs={[{ label: "Organisation" }]} title="Equipe" subtitle={`${list.length} membre${list.length > 1 ? "s" : ""} · charge et responsabilites`} actions={me.role === "admin" ? <Link href="/admin/users" className="btn-secondary">Inviter, gerer les roles</Link> : undefined} />
       <div className="card overflow-x-auto">
         <table className="tbl">
           <thead><tr><th>Membre</th><th className="hidden md:table-cell">Role</th><th>Projets geres</th><th className="num">Taches ouvertes</th><th className="num">En retard</th><th className="num hidden md:table-cell">Cette semaine</th><th className="num hidden lg:table-cell">Terminees</th><th className="num hidden lg:table-cell">Saisies 30 j</th></tr></thead>

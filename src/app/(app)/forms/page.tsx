@@ -44,7 +44,7 @@ export default async function FormsHome({ searchParams }: { searchParams: Promis
 
   return (
     <div className="mx-auto max-w-4xl">
-      <PageHeader title="Formulaires" subtitle="Saisies de terrain : journal, registres et depenses. Chaque saisie est definitive et tracee." />
+      <PageHeader crumbs={[{ label: "Activites" }]} title="Formulaires" subtitle="Saisies de terrain : journal, registres et depenses. Chaque saisie est definitive et tracee." />
       <InstallHint />
       {ok && <div className="mb-4"><Alert tone="green">Saisie enregistree. Merci.</Alert></div>}
       {!canSubmit(profile) && <div className="mb-4"><Alert tone="amber">Votre compte est en lecture seule.</Alert></div>}

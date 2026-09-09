@@ -7,17 +7,22 @@ export type Tone = "neutral" | "info" | "ok" | "warn" | "alert";
 const TONE_ALIAS: Record<string, Tone> = { slate: "neutral", blue: "info", green: "ok", amber: "warn", red: "alert", good: "ok", bad: "alert", default: "neutral" };
 export function tone(t?: string): Tone { return (t && (TONE_ALIAS[t] ?? (t as Tone))) || "neutral"; }
 
-export interface Crumb { href: string; label: string }
+export interface Crumb { href?: string; label: string }
 
 /** Fil d'Ariane : bouton retour vers le niveau precedent puis le chemin complet jusqu'a la page courante. */
-export function Breadcrumb({ crumbs, current }: { crumbs: Crumb[]; current: string }) {
+export function Breadcrumb({ crumbs, current, className = "" }: { crumbs: Crumb[]; current: string; className?: string }) {
   if (crumbs.length === 0) return null;
-  const back = crumbs[crumbs.length - 1];
+  const back = [...crumbs].reverse().find((c) => c.href) ?? { href: "/dashboard", label: "Tableau de bord" };
   return (
-    <nav aria-label="Fil d'Ariane" className="mb-2 flex flex-wrap items-center gap-1.5 text-[10.5px] text-ink-muted">
-      <Link href={back.href} title={`Retour a ${back.label}`} aria-label={`Retour a ${back.label}`} className="inline-flex h-5 w-5 items-center justify-center rounded-md border border-line bg-surface text-ink-body hover:bg-surface-sub"><Icon name="chevronLeft" className="h-3.5 w-3.5" strokeWidth={2.2} /></Link>
-      {crumbs.map((c) => <span key={c.href} className="flex items-center gap-1.5"><Link href={c.href} className="hover:text-ink hover:underline">{c.label}</Link><span className="text-ink-faint">›</span></span>)}
-      <span className="font-semibold text-ink">{current}</span>
+    <nav aria-label="Fil d'Ariane" className={`mb-2 flex flex-wrap items-center gap-1.5 text-[10.5px] text-ink-muted ${className}`}>
+      <Link href={back.href!} title={`Retour a ${back.label}`} aria-label={`Retour a ${back.label}`} className="inline-flex h-5 w-5 items-center justify-center rounded-md border border-line bg-surface text-ink-body hover:bg-surface-sub"><Icon name="chevronLeft" className="h-3.5 w-3.5" strokeWidth={2.2} /></Link>
+      {crumbs.map((c, i) => (
+        <span key={`${c.label}-${i}`} className={`items-center gap-1.5 ${i < crumbs.length - 1 ? "hidden sm:flex" : "flex"}`}>
+          {c.href ? <Link href={c.href} className="max-w-[260px] truncate hover:text-ink hover:underline">{c.label}</Link> : <span className="max-w-[260px] truncate">{c.label}</span>}
+          <span className="text-ink-faint">›</span>
+        </span>
+      ))}
+      <span className="truncate font-semibold text-ink">{current}</span>
     </nav>
   );
 }

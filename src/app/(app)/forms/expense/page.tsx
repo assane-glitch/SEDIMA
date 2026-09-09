@@ -17,7 +17,7 @@ export default async function GlobalExpensePage({ searchParams }: { searchParams
   ]);
   return (
     <div className="mx-auto max-w-lg">
-      <PageHeader crumbs={[{ href: "/forms", label: "Formulaires" }]} title="Journal des depenses" />
+      <PageHeader crumbs={[{ label: "Activites" }, { href: "/forms", label: "Formulaires" }]} title="Journal des depenses" />
       <p className="hint mb-4">La depense recoit un identifiant automatique et apparait dans l&apos;onglet Evenements du projet.</p>
       {ok && <div className="mb-3"><Alert tone="ok">Depense enregistree.</Alert></div>}
       {error && <div className="mb-3"><Alert>{error}</Alert></div>}

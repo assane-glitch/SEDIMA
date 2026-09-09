@@ -12,7 +12,7 @@ export default async function DocumentsPage() {
   const [{ items, projects, tasks }, lists] = await Promise.all([loadDocuments(), getLists()]);
   return (
     <>
-      <PageHeader title="Documents" subtitle={`Fichiers et photos de tous les projets · ${items.length} document${items.length > 1 ? "s" : ""}`} />
+      <PageHeader crumbs={[{ label: "Activites" }]} title="Documents" subtitle={`Fichiers et photos de tous les projets · ${items.length} document${items.length > 1 ? "s" : ""}`} />
       <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
         <DocumentList docs={items} projects={projects} tasks={tasks} docTypes={lists.doc_type} canEdit={canEdit(profile)} meId={profile.id} mode="global" />
         {canSubmit(profile) && <div className="card card-pad h-fit lg:order-none order-first"><div className="card-title mb-3">Deposer des fichiers</div><DocumentUpload projects={projects} tasks={tasks} docTypes={lists.doc_type} /></div>}

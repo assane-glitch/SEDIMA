@@ -15,7 +15,7 @@ export default async function FieldRegister({ params, searchParams }: { params: 
   const types = lists.register_type.map((r) => ({ value: r.value, label: r.label, fields: registerFields(r) }));
   return (
     <div className="mx-auto max-w-lg">
-      <PageHeader crumbs={[{ href: "/forms", label: "Formulaires" }, { href: `/forms/${projectId}`, label: project?.code ?? "Projet" }]} title="Registre" />
+      <PageHeader crumbs={[{ label: "Activites" }, { href: "/forms", label: "Formulaires" }, { href: `/forms/${projectId}`, label: project?.code ?? "Projet" }]} title="Registre" />
       {error && <div className="mb-4"><Alert>{error}</Alert></div>}
       <RegisterForm projects={project ? [project] : []} tasks={tasks ?? []} projectId={projectId} redirect={`/forms/${projectId}`} types={types} />
     </div>

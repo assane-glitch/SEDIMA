@@ -45,7 +45,7 @@ export default async function PortfolioBudgetPage({ searchParams }: { searchPara
 
   return (
     <>
-      <PageHeader title="Budget du portefeuille" subtitle="Budget, engagement et tranches annuelles de tous les projets. Montants en k F CFA." actions={<><FavoritesToggle fav={onlyFav} hrefFav={link({ fav: "1" })} hrefAll={link({ fav: undefined })} count={favorites.size} /><ViewToggle view="budget" fav={onlyFav} /></>} />
+      <PageHeader crumbs={[{ href: "/projects", label: "Projets" }]} title="Budget du portefeuille" subtitle="Budget, engagement et tranches annuelles de tous les projets. Montants en k F CFA." actions={<><FavoritesToggle fav={onlyFav} hrefFav={link({ fav: "1" })} hrefAll={link({ fav: undefined })} count={favorites.size} /><ViewToggle view="budget" fav={onlyFav} /></>} />
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
         <Stat label="Budget total" value={formatMoney(tot.budget, cur)} hint={tot.kpmg ? `Ref. KPMG : ${formatMoney(tot.kpmg, cur)}` : undefined} />
         <Stat label="Cout reconstitue" value={formatMoney(tot.rebuilt, cur)} hint={`${tot.rebuilt > tot.budget ? "+" : ""}${formatMoney(tot.rebuilt - tot.budget, cur)} vs budget`} tone={tot.rebuilt > tot.budget ? "warn" : "default"} />

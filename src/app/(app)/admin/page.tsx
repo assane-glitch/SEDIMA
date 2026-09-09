@@ -16,7 +16,7 @@ export default async function AdminPage() {
   ];
   return (
     <>
-      <PageHeader title="Administration" />
+      <PageHeader crumbs={[{ href: "/dashboard", label: "Tableau de bord" }]} title="Administration" />
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((i) => (
           <Link key={i.label} href={i.href} className={`card flex items-center justify-between px-4 py-4 ${i.ready ? "hover:bg-surface-alt" : "opacity-60"}`}>
