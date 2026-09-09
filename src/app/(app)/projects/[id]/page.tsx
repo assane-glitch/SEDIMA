@@ -135,7 +135,7 @@ export default async function ProjectOverview({ params }: { params: Promise<{ id
 
   return (
     <>
-      <ProjectHeader project={project} manager={manager} actions={editor ? <Link href={`/projects/${id}/settings#supprimer`} className="btn-ghost text-ink-faint hover:text-alert" title="Supprimer le projet (onglet Parametres)">Supprimer le projet</Link> : undefined} />
+      <ProjectHeader project={project} manager={manager} />
       <ProjectTabs id={id} canEdit={editor} />
 
       {/* Bandeau de decision */}
