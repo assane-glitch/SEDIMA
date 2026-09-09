@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Alert, CategoryIcon, Empty, PageHeader } from "@/components/ui";
+import { Alert, CategoryIcon, Empty } from "@/components/ui";
 import { ProjectCard, isAlert, rebuiltOf } from "@/components/projects/ProjectCard";
 import { PortfolioToolbar } from "@/components/projects/PortfolioToolbar";
+import { PortfolioBand } from "@/components/projects/PortfolioBand";
 import { pct, shortMoney } from "@/lib/format";
 import { projectHealth } from "@/lib/health";
 import { canEdit, requireProfile } from "@/lib/session";
@@ -64,9 +65,10 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
   const contracted = allRows.filter((r) => Number(r.s?.spent ?? 0) > 0);
   return (
     <>
-      <div className="sticky top-11 z-20 -mx-4 -mt-4 border-b border-line-hair bg-[#e9eaed] px-4 pt-3 md:-mx-2 md:px-2">
-      <PageHeader title="Projets" subtitle="Pilotage du portefeuille de projets" actions={canEdit(profile) ? <Link href="/projects/new" className="btn-primary">+ Nouveau projet</Link> : undefined} />
-      <PortfolioToolbar view="list" params={{ category: sp.category, status: sp.status, fav: sp.fav, q: q || undefined, manager: sp.manager }} favCount={favorites.size} search withOutOfScope />
+      <div className="sticky top-11 z-20 -mx-4 -mt-4 border-b border-line-hair bg-[#e9eaed] px-4 md:-mx-6 md:px-6">
+      <PortfolioBand title="Projets" subtitle="Pilotage du portefeuille de projets" action={canEdit(profile) ? <Link href="/projects/new" className="btn-secondary !border-surface !bg-surface !text-ink hover:!bg-surface-sub">+ Nouveau projet</Link> : undefined}>
+        <PortfolioToolbar view="list" params={{ category: sp.category, status: sp.status, fav: sp.fav, q: q || undefined, manager: sp.manager }} favCount={favorites.size} search withOutOfScope embedded />
+      </PortfolioBand>
       {sp.ok && <div className="mb-3"><Alert tone="ok">{sp.ok}</Alert></div>}
       <div className="card mb-3 grid grid-cols-2 divide-line-hair md:grid-cols-4 md:divide-x">
         <div className="px-[15px] py-3"><div className="eyebrow">Cout total TTC</div><div className="mt-1 text-[21px] font-bold tabular-nums text-ink">{short(totalTtc)}</div><div className="hint">{nProj} projets</div></div>

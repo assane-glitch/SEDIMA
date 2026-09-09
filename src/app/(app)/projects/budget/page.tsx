@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Badge, CategoryIcon, PageHeader, Stat } from "@/components/ui";
+import { Badge, CategoryIcon, Stat } from "@/components/ui";
 import { PortfolioToolbar } from "@/components/projects/PortfolioToolbar";
+import { PortfolioBand } from "@/components/projects/PortfolioBand";
 import { formatMoney, pct } from "@/lib/format";
 import { requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
@@ -44,7 +45,9 @@ export default async function PortfolioBudgetPage({ searchParams }: { searchPara
 
   return (
     <>
-      <PageHeader crumbs={[{ href: "/projects", label: "Projets" }]} title="Budget du portefeuille" subtitle="Budget, engagement et tranches annuelles de tous les projets. Montants en k F CFA." />
+      <PortfolioBand flush crumbs={[{ href: "/projects", label: "Projets" }]} title="Budget du portefeuille" subtitle="Budget, engagement et tranches annuelles de tous les projets. Montants en k F CFA.">
+        <PortfolioToolbar view="budget" params={{ category: sp.category, status: sp.status, fav: sp.fav, sort: sp.sort, dir: sp.dir }} favCount={favorites.size} embedded />
+      </PortfolioBand>
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
         <Stat label="Budget total" value={formatMoney(tot.budget, cur)} hint={tot.kpmg ? `Ref. KPMG : ${formatMoney(tot.kpmg, cur)}` : undefined} />
         <Stat label="Cout reconstitue" value={formatMoney(tot.rebuilt, cur)} hint={`${tot.rebuilt > tot.budget ? "+" : ""}${formatMoney(tot.rebuilt - tot.budget, cur)} vs budget`} tone={tot.rebuilt > tot.budget ? "warn" : "default"} />
@@ -52,7 +55,6 @@ export default async function PortfolioBudgetPage({ searchParams }: { searchPara
         <Stat label="Reste a engager" value={formatMoney(tot.budget - tot.spent, cur)} tone={tot.budget - tot.spent < 0 ? "bad" : "default"} />
         <Stat label="Projets" value={rows.length} hint={`${rows.filter((r) => r.spent > r.budget && r.budget > 0).length} en depassement`} />
       </div>
-      <PortfolioToolbar view="budget" params={{ category: sp.category, status: sp.status, fav: sp.fav, sort: sp.sort, dir: sp.dir }} favCount={favorites.size} />
       <div className="card overflow-x-auto">
         <table className="tbl">
           <thead>

@@ -18,7 +18,7 @@ function href(base: string, params: PortfolioParams, patch: Partial<PortfolioPar
  * Barre d'outils unique des vues du portefeuille : selecteur de vue, filtres Categorie et Statut (conserves d'une vue
  * a l'autre), compteur de filtres avec « Effacer », etoile Mes favoris et recherche (liste seulement).
  */
-export function PortfolioToolbar({ view, params, favCount, search = false, withOutOfScope = false }: { view: PortfolioView; params: PortfolioParams; favCount: number; search?: boolean; withOutOfScope?: boolean }) {
+export function PortfolioToolbar({ view, params, favCount, search = false, withOutOfScope = false, embedded = false }: { view: PortfolioView; params: PortfolioParams; favCount: number; search?: boolean; withOutOfScope?: boolean; embedded?: boolean }) {
   const base = BASE[view];
   const fav = params.fav === "1";
   const active = [params.category, params.status].filter(Boolean).length;
@@ -26,7 +26,7 @@ export function PortfolioToolbar({ view, params, favCount, search = false, withO
   const statuses = (Object.keys(PROJECT_STATUS_LABELS) as ProjectStatus[]).filter((s) => withOutOfScope || s !== "hors_perimetre");
   const seg = (on: boolean) => `flex h-10 items-center gap-1.5 border-b-2 px-3 text-[10.5px] font-semibold ${on ? "border-brand text-surface" : "border-transparent text-white/70 hover:text-surface"}`;
   return (
-    <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg bg-ink px-2 py-1 text-surface">
+    <div className={`flex flex-wrap items-center gap-2 text-surface ${embedded ? "-mx-2 border-t border-white/10 px-2 pt-1" : "mb-3 rounded-lg bg-ink px-2 py-1"}`}>
       <div className="flex items-center" role="tablist" aria-label="Vue du portefeuille">
         {VIEWS.map((v) => <Link key={v.view} href={href(BASE[v.view], carried, {})} role="tab" aria-selected={view === v.view} className={seg(view === v.view)}><span aria-hidden="true">{v.glyph}</span>{v.label}</Link>)}
       </div>

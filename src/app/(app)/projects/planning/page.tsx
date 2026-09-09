@@ -1,11 +1,11 @@
 import { Gantt, type GanttMilestone, type GanttRow } from "@/components/gantt/Gantt";
-import { PageHeader } from "@/components/ui";
 import { formatMoney } from "@/lib/format";
 import { projectHealth } from "@/lib/health";
 import { canEdit, requireProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { type Milestone, type Profile, type Project, type ProjectStats } from "@/lib/types";
 import { PortfolioToolbar } from "@/components/projects/PortfolioToolbar";
+import { PortfolioBand } from "@/components/projects/PortfolioBand";
 import { getCalendar } from "@/lib/calendar";
 
 export const metadata = { title: "Planning" };
@@ -39,8 +39,9 @@ export default async function PortfolioPlanningPage({ searchParams }: { searchPa
 
   return (
     <>
-      <PageHeader crumbs={[{ href: "/projects", label: "Projets" }]} title="Planning du portefeuille" subtitle={`Planning multi-projets · ${list.length} projet${list.length > 1 ? "s" : ""} · ${formatMoney(totalBudget)}`} />
-      <PortfolioToolbar view="planning" params={{ category: sp.category, status: sp.status, fav: sp.fav }} favCount={favorites.size} />
+      <PortfolioBand flush crumbs={[{ href: "/projects", label: "Projets" }]} title="Planning du portefeuille" subtitle={`Planning multi-projets · ${list.length} projet${list.length > 1 ? "s" : ""} · ${formatMoney(totalBudget)}`}>
+        <PortfolioToolbar view="planning" params={{ category: sp.category, status: sp.status, fav: sp.fav }} favCount={favorites.size} embedded />
+      </PortfolioBand>
       <Gantt mode="portfolio" rows={rows} milestones={milestones} people={(people ?? []) as Profile[]} currency="XOF" canEdit={canEdit(profile)} projectStart={start} projectEnd={end} calendar={calendar} />
       <p className="hint mt-2">Une barre par projet, du debut a la fin prevus, remplie selon l&apos;avancement. Les losanges sont les jalons. Cliquez sur un projet pour ouvrir son planning detaille. Les projets hors perimetre ne sont pas affiches.</p>
     </>
