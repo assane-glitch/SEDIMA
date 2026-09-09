@@ -62,6 +62,8 @@
 /* Echelle compacte : 1rem = 13px, la plupart du texte reste entre 10 et 11 px */
 html { font-size: 13px; }
 html, body { height: 100%; }
+/* Bureau : barre de defilement verticale toujours presente pour que la largeur du contenu ne bouge pas d'une page a l'autre */
+@media (min-width: 768px) { html { overflow-y: scroll; scrollbar-gutter: stable; } }
 * { scrollbar-width: thin; }
 body { @apply bg-canvas text-ink antialiased; font-size: 13px; line-height: 1.45; }
 * { box-shadow: none !important; }
