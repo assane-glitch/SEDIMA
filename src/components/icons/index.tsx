@@ -15,6 +15,7 @@ const paths: Record<string, string> = {
   search: "M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35",
   chevronRight: "M9 18l6-6-6-6",
   chevronLeft: "M15 18l-6-6 6-6",
+  chevronDown: "M6 9l6 6 6-6",
   more: "M12 5.5a.6.6 0 1 0 0 1.2a.6.6 0 0 0 0-1.2zM12 11.4a.6.6 0 1 0 0 1.2a.6.6 0 0 0 0-1.2zM12 17.3a.6.6 0 1 0 0 1.2a.6.6 0 0 0 0-1.2z",
   flag: "M4 22V4a1 1 0 0 1 1-1h11l-1 4 1 4H5",
   calendar: "M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z",

@@ -2,65 +2,60 @@ import Link from "next/link";
 import Image from "next/image";
 import { Suspense } from "react";
 import type { Profile } from "@/lib/types";
-import { ROLE_LABELS } from "@/lib/types";
 import { signOut } from "@/app/login/actions";
 import { Icon } from "@/components/icons";
-import { Sidebar, type NavGroup, type NavItem } from "./Sidebar";
-import { NavLinks } from "./NavLinks";
 import { GlobalSearch } from "./GlobalSearch";
+import { NavLinks } from "./NavLinks";
+import { ProfileMenu } from "./ProfileMenu";
+import { TopNav, type NavMenu } from "./TopNav";
 
+/**
+ * Coque de l'application : barre superieure anthracite (logo blanc, menu au centre, recherche et profil a droite),
+ * contenu en pleine largeur, barre d'onglets en bas sur mobile.
+ */
 export function AppShell({ profile, children }: { profile: Profile; children: React.ReactNode }) {
-  const isAdmin = profile.role === "admin";
-  const groups: NavGroup[] = [
-    { title: "Pilotage", items: [
-      { href: "/dashboard", label: "Tableau de bord", icon: "dashboard" },
-      { href: "/projects", label: "Projets", icon: "projects" },
-      { href: "/tasks", label: "Taches", icon: "tasks" },
+  const menus: NavMenu[] = [
+    { label: "Tableau de bord", href: "/dashboard" },
+    { label: "Projets", href: "/projects" },
+    { label: "Activites", items: [
+      { href: "/tasks", label: "Taches", icon: "tasks", hint: "Toutes les taches, tous projets" },
+      { href: "/forms", label: "Formulaires", icon: "forms", hint: "Saisies terrain et boite de reception" },
+      { href: "/documents", label: "Documents", icon: "documents", hint: "Plans, contrats, photos, rapports" },
     ] },
-    { title: "Terrain", items: [
-      { href: "/forms", label: "Formulaires", icon: "forms" },
-      { href: "/documents", label: "Documents", icon: "documents" },
+    { label: "Organisation", items: [
+      { href: "/team", label: "Equipe", icon: "team", hint: "Membres et responsabilites" },
+      { href: "/reports", label: "Rapports", icon: "reports", hint: "Rapport hebdomadaire, exports" },
     ] },
-    { title: "Organisation", items: [
-      { href: "/team", label: "Equipe", icon: "team" },
-      { href: "/reports", label: "Rapports", icon: "reports" },
-    ] },
-    ...(isAdmin ? [{ title: "Administration", items: [{ href: "/admin", label: "Administration", icon: "admin" as const }] }] : []),
   ];
-  const mobile: NavItem[] = [
-    { href: "/projects", label: "Projets", icon: "projects" },
-    { href: "/tasks", label: "Taches", icon: "tasks" },
-    { href: "/forms", label: "Formulaires", icon: "forms" },
+  const mobile = [
+    { href: "/dashboard", label: "Accueil", icon: "dashboard" as const },
+    { href: "/projects", label: "Projets", icon: "projects" as const },
+    { href: "/tasks", label: "Taches", icon: "tasks" as const },
+    { href: "/forms", label: "Formulaires", icon: "forms" as const },
   ];
 
   return (
     <div className="min-h-screen bg-canvas">
-      {/* En-tete de l'application : logo, recherche globale centree, utilisateur */}
-      <header className="sticky top-0 z-30 grid h-[52px] grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-line-hair bg-surface px-4 md:h-[60px] md:grid-cols-[220px_1fr_220px] md:px-5">
-        <Link href="/dashboard" className="flex items-center" aria-label="SEDIMA">
-          <Image src="/brand/logo-horizontal.png" alt="SEDIMA" width={150} height={32} priority className="h-6 w-auto md:h-7" />
-        </Link>
-        <div className="flex justify-center"><Suspense fallback={null}><GlobalSearch /></Suspense></div>
-        <div className="flex items-center justify-end gap-3">
-          <Link href="/account" className="hidden items-center gap-3 md:flex" title="Mon compte">
-            <div className="text-right leading-tight">
-              <div className="text-[11px] font-semibold text-ink">{profile.full_name || profile.email}</div>
-              <div className="text-[9.5px] text-ink-faint">{ROLE_LABELS[profile.role]}</div>
-            </div>
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-ink text-[10px] font-bold text-surface">{(profile.full_name || profile.email).slice(0, 1).toUpperCase()}</div>
+      <header className="sticky top-0 z-30 h-[52px] bg-ink text-surface md:h-[60px]">
+        <div className="mx-auto grid h-full max-w-[1600px] grid-cols-[auto_1fr_auto] items-center gap-4 px-4 md:grid-cols-[200px_1fr_auto] md:px-6">
+          <Link href="/dashboard" className="flex items-center" aria-label="SEDIMA">
+            <Image src="/brand/logo-horizontal-white.png" alt="SEDIMA" width={150} height={32} priority className="h-6 w-auto md:h-7" />
           </Link>
-          <form action={signOut} className="md:hidden"><button className="text-ink-muted" aria-label="Se deconnecter"><Icon name="logout" className="h-5 w-5" /></button></form>
+          <div className="hidden justify-center md:flex"><TopNav menus={menus} /></div>
+          <div className="md:hidden" />
+          <div className="flex items-center justify-end gap-2">
+            <div className="hidden w-64 lg:block"><Suspense fallback={null}><GlobalSearch dark compact /></Suspense></div>
+            <Link href="/search" className="flex h-9 w-9 items-center justify-center rounded-full text-white/75 hover:bg-white/10 hover:text-surface lg:hidden" aria-label="Rechercher"><Icon name="search" className="h-5 w-5" /></Link>
+            <ProfileMenu profile={profile} signOut={signOut} />
+          </div>
         </div>
       </header>
-      <div className="flex gap-3 md:px-3">
-        <Sidebar groups={groups} profile={profile} signOut={signOut} />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <main className="flex-1 px-4 pb-24 pt-4 md:px-2 md:pb-6">{children}</main>
-          <nav className="fixed inset-x-0 bottom-0 z-20 flex border-t border-line-hair bg-surface md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-            <NavLinks links={mobile} mobile />
-          </nav>
-        </div>
+      <div className="mx-auto max-w-[1600px]">
+        <main className="px-4 pb-24 pt-4 md:px-6 md:pb-8">{children}</main>
       </div>
+      <nav className="fixed inset-x-0 bottom-0 z-20 flex border-t border-line-hair bg-surface md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <NavLinks links={mobile} mobile />
+      </nav>
     </div>
   );
 }
