@@ -64,7 +64,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
   const contracted = allRows.filter((r) => Number(r.s?.spent ?? 0) > 0);
   return (
     <>
-      <div className="sticky top-[52px] z-20 -mx-4 -mt-4 border-b border-line-hair bg-[#e9eaed] px-4 pt-3 md:top-[60px] md:-mx-2 md:px-2">
+      <div className="sticky top-11 z-20 -mx-4 -mt-4 border-b border-line-hair bg-[#e9eaed] px-4 pt-3 md:-mx-2 md:px-2">
       <PageHeader title="Projets" subtitle="Pilotage du portefeuille de projets" actions={canEdit(profile) ? <Link href="/projects/new" className="btn-primary">+ Nouveau projet</Link> : undefined} />
       <PortfolioToolbar view="list" params={{ category: sp.category, status: sp.status, fav: sp.fav, q: q || undefined, manager: sp.manager }} favCount={favorites.size} search withOutOfScope />
       {sp.ok && <div className="mb-3"><Alert tone="ok">{sp.ok}</Alert></div>}

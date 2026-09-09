@@ -10,10 +10,16 @@ interface Entry { href: string; label: string; icon?: IconName; hint?: string; d
  * Onglets d'un projet : cinq entrees visibles (Apercu, Planning, Taches, Budget, Terrain) et un menu « ⋯ »
  * pour la gouvernance (Changements avec badge, Historique, Parametres, suppression).
  */
-export function ProjectTabsClient({ id, canEdit, pending }: { id: string; canEdit: boolean; pending: number }) {
+export function ProjectTabsClient({ id, canEdit, pending, code, name }: { id: string; canEdit: boolean; pending: number; code?: string; name?: string }) {
   const pathname = usePathname();
   const [open, setOpen] = useState<"terrain" | "more" | null>(null);
+  const [stuck, setStuck] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  // Barre collante sous la barre principale : le nom du projet apparait quand l'en-tete est sorti de l'ecran
+  useEffect(() => {
+    const onScroll = () => { const el = ref.current; if (!el) return; const header = document.querySelector("header"); const h = header ? header.getBoundingClientRect().height : 44; setStuck(el.getBoundingClientRect().top <= h + 1 && window.scrollY > 0); };
+    onScroll(); window.addEventListener("scroll", onScroll, { passive: true }); return () => window.removeEventListener("scroll", onScroll);
+  }, []);
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(null); };
@@ -54,7 +60,8 @@ export function ProjectTabsClient({ id, canEdit, pending }: { id: string; canEdi
     </div>
   );
   return (
-    <div ref={ref} className="mb-5 flex items-center rounded-lg bg-ink px-2 text-surface">
+    <div ref={ref} className={`sticky top-11 z-20 mb-5 flex items-center bg-ink px-2 text-surface transition-[border-radius] ${stuck ? "-mx-4 rounded-none px-6 md:-mx-6 md:px-8" : "rounded-lg"}`}>
+      {stuck && (code || name) && <Link href={`/projects/${id}`} className="mr-3 hidden max-w-[320px] shrink-0 items-center gap-2 truncate border-r border-white/20 pr-3 text-[11px] font-semibold text-surface md:flex" title={name}><span className="font-mono text-white/70">{code}</span><span className="truncate">{name}</span></Link>}
       <div className="flex min-w-0 flex-1 flex-wrap">
         {tabs.map((t) => <Link key={t.href} href={t.href} className={tabCls(isActive(t.href))}>{t.label}</Link>)}
         <div className="relative shrink-0" onMouseEnter={() => setOpen("terrain")} onMouseLeave={() => setOpen((o) => (o === "terrain" ? null : o))}>

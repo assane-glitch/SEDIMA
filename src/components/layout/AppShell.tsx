@@ -1,10 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Suspense } from "react";
 import type { Profile } from "@/lib/types";
 import { signOut } from "@/app/login/actions";
-import { Icon } from "@/components/icons";
-import { GlobalSearch } from "./GlobalSearch";
+import { SearchLauncher } from "./SearchLauncher";
 import { NavLinks } from "./NavLinks";
 import { ProfileMenu } from "./ProfileMenu";
 import { TopNav, type NavMenu } from "./TopNav";
@@ -36,16 +34,15 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
 
   return (
     <div className="min-h-screen bg-canvas">
-      <header className="sticky top-0 z-30 h-[52px] border-b border-line-hair bg-surface text-ink md:h-[60px]">
+      <header className="sticky top-0 z-30 h-11 border-b border-line-hair bg-surface text-ink">
         <div className="mx-auto grid h-full max-w-[1600px] grid-cols-[auto_1fr_auto] items-center gap-4 px-4 md:grid-cols-[200px_1fr_auto] md:px-6">
           <Link href="/dashboard" className="flex items-center" aria-label="SEDIMA">
-            <Image src="/brand/logo-horizontal.png" alt="SEDIMA" width={150} height={32} priority className="h-6 w-auto md:h-7" />
+            <Image src="/brand/logo-horizontal.png" alt="SEDIMA" width={150} height={32} priority className="h-5 w-auto md:h-[22px]" />
           </Link>
           <div className="hidden h-full justify-center md:flex"><TopNav menus={menus} /></div>
           <div className="md:hidden" />
           <div className="flex items-center justify-end gap-2">
-            <div className="hidden w-64 lg:block"><Suspense fallback={null}><GlobalSearch compact /></Suspense></div>
-            <Link href="/search" className="flex h-9 w-9 items-center justify-center rounded-full text-ink-muted hover:bg-surface-sub hover:text-ink lg:hidden" aria-label="Rechercher"><Icon name="search" className="h-5 w-5" /></Link>
+            <SearchLauncher />
             <ProfileMenu profile={profile} signOut={signOut} />
           </div>
         </div>
