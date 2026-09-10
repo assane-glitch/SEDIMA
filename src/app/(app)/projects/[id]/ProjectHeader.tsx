@@ -18,6 +18,7 @@ export function ProjectHeader({ project, manager, favorite, actions }: { project
           {(project.site || project.business_unit) && <><span>{[project.site, project.business_unit].filter(Boolean).join(" · ")}</span>·</>}
           <span>Chef de projet : {manager ? (manager.full_name || manager.email) : project.manager_name || "—"}</span>
           <Badge>{PROJECT_STATUS_LABELS[project.status]}</Badge>
+          {project.baseline_locked ? <Badge>🔒 Reference verrouillee</Badge> : <Badge tone="warn">Reference deverrouillee</Badge>}
         </div>
       </div>
       {actions && <div className="ml-auto flex shrink-0 items-center gap-2 pt-1">{actions}</div>}

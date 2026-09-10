@@ -13,6 +13,7 @@ interface Entry { href: string; label: string; icon?: IconName; hint?: string; d
 export function ProjectTabsClient({ id, canEdit, pending, code, name }: { id: string; canEdit: boolean; pending: number; code?: string; name?: string }) {
   const pathname = usePathname();
   const [open, setOpen] = useState<"terrain" | "more" | null>(null);
+  const [pinned, setPinned] = useState(false);   // ouvert au clic : ne se ferme pas quand la souris sort
   const [stuck, setStuck] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   // Barre collante sous la barre principale : le nom du projet apparait quand l'en-tete est sorti de l'ecran
@@ -22,12 +23,12 @@ export function ProjectTabsClient({ id, canEdit, pending, code, name }: { id: st
   }, []);
   useEffect(() => {
     if (!open) return;
-    const onDown = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(null); };
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(null); };
+    const onDown = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) { setOpen(null); setPinned(false); } };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { setOpen(null); setPinned(false); } };
     document.addEventListener("mousedown", onDown); document.addEventListener("keydown", onKey);
     return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
   }, [open]);
-  useEffect(() => { setOpen(null); }, [pathname]);
+  useEffect(() => { setOpen(null); setPinned(false); }, [pathname]);
   const base = `/projects/${id}`;
   const tabs: { href: string; label: string }[] = [
     { href: base, label: "Apercu" }, { href: `${base}/planning`, label: "Planning" }, { href: `${base}/tasks`, label: "Taches" }, { href: `${base}/budget`, label: "Budget" },
@@ -64,15 +65,15 @@ export function ProjectTabsClient({ id, canEdit, pending, code, name }: { id: st
       {stuck && (code || name) && <Link href={`/projects/${id}`} className="mr-3 hidden max-w-[320px] shrink-0 items-center gap-2 truncate border-r border-white/20 pr-3 text-[11px] font-semibold text-surface md:flex" title={name}><span className="font-mono text-white/70">{code}</span><span className="truncate">{name}</span></Link>}
       <div className="flex min-w-0 flex-1 flex-wrap">
         {tabs.map((t) => <Link key={t.href} href={t.href} className={tabCls(isActive(t.href))}>{t.label}</Link>)}
-        <div className="relative shrink-0" onMouseEnter={() => setOpen("terrain")} onMouseLeave={() => setOpen((o) => (o === "terrain" ? null : o))}>
-          <button type="button" aria-haspopup="menu" aria-expanded={open === "terrain"} onClick={() => setOpen("terrain")} className={`${tabCls(groupActive(terrain))} cursor-pointer`}>
+        <div className="relative shrink-0" onMouseEnter={() => { if (!pinned) setOpen("terrain"); }} onMouseLeave={() => { if (!pinned) setOpen((o) => (o === "terrain" ? null : o)); }}>
+          <button type="button" aria-haspopup="menu" aria-expanded={open === "terrain"} onClick={() => { if (open === "terrain" && pinned) { setOpen(null); setPinned(false); } else { setOpen("terrain"); setPinned(true); } }} className={`${tabCls(groupActive(terrain))} cursor-pointer`}>
             Terrain<Icon name="chevronDown" className={`h-3.5 w-3.5 transition-transform ${open === "terrain" ? "rotate-180" : ""}`} strokeWidth={2.2} />
           </button>
           {open === "terrain" && <Menu items={terrain} />}
         </div>
       </div>
-      <div className="relative shrink-0 pl-2" onMouseEnter={() => setOpen("more")} onMouseLeave={() => setOpen((o) => (o === "more" ? null : o))}>
-        <button type="button" aria-label="Plus d'onglets" aria-haspopup="menu" aria-expanded={open === "more"} onClick={() => setOpen("more")} title="Changements, historique, parametres"
+      <div className="relative shrink-0 pl-2" onMouseEnter={() => { if (!pinned) setOpen("more"); }} onMouseLeave={() => { if (!pinned) setOpen((o) => (o === "more" ? null : o)); }}>
+        <button type="button" aria-label="Plus d'onglets" aria-haspopup="menu" aria-expanded={open === "more"} onClick={() => { if (open === "more" && pinned) { setOpen(null); setPinned(false); } else { setOpen("more"); setPinned(true); } }} title="Changements, historique, parametres"
           className={`relative flex h-10 cursor-pointer items-center gap-1 border-b-2 px-2 text-[10.5px] ${groupActive(more) ? "border-brand text-surface" : "border-transparent text-white/70 hover:text-surface"}`}>
           <Icon name="more" className="h-4 w-4 rotate-90" strokeWidth={2.2} />
           {pending > 0 && <span className="absolute -top-0.5 right-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[9px] font-bold text-ink" title={`${pending} demande${pending > 1 ? "s" : ""} de changement en attente`}>{pending}</span>}

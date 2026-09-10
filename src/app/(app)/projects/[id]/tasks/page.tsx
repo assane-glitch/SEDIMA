@@ -14,7 +14,7 @@ export default async function ProjectTasksPage({ params }: { params: Promise<{ i
     <>
       <ProjectHeader project={project} manager={people.find((p) => p.id === project.manager_id)} />
       <ProjectTabs id={id} canEdit={editor} />
-      <TaskList mode="project" tasks={tasks} projects={[{ id, code: project.code, name: project.name, currency: project.currency, start_date: project.start_date, end_date: project.end_date, status: project.status }]}
+      <TaskList mode="project" tasks={tasks} projects={[{ id, code: project.code, name: project.name, currency: project.currency, start_date: project.start_date, end_date: project.end_date, status: project.status, baseline_locked: project.baseline_locked }]}
         people={people} spentByTask={Object.fromEntries(spentByTask)} lists={lists} me={profile} canEdit={editor} />
     </>
   );

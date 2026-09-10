@@ -32,9 +32,9 @@ const PX: Record<Scale, number> = { day: 26, week: 8, month: 4, year: 1.5 };
 const SCALE_LABEL: Record<Scale, string> = { day: "Jour", week: "Semaine", month: "Mois", year: "Trimestre" };
 
 
-export function Gantt({ rows, milestones, expenses = [], journal = [], registers = [], audit = [], lists, people, currency, canEdit, projectId, projectCode, projectStart, projectEnd, mode, calendar = DEFAULT_CALENDAR }: {
+export function Gantt({ rows, milestones, expenses = [], journal = [], registers = [], audit = [], lists, people, currency, canEdit, projectId, projectCode, projectStart, projectEnd, mode, calendar = DEFAULT_CALENDAR, locked = false }: {
   rows: GanttRow[]; milestones: GanttMilestone[]; expenses?: Expense[]; journal?: JournalEntry[]; registers?: RegisterEntry[]; audit?: AuditEntry[]; lists?: Lists; people: Profile[]; currency: string; canEdit: boolean;
-  projectId?: string; projectCode?: string; projectStart: string; projectEnd: string; mode: "project" | "portfolio"; calendar?: WorkCalendar;
+  projectId?: string; projectCode?: string; projectStart: string; projectEnd: string; mode: "project" | "portfolio"; calendar?: WorkCalendar; locked?: boolean;
 }) {
   const t0 = today();
   const [selected, setSelected] = useState<GanttRow | "new" | null>(null);
@@ -195,6 +195,7 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
             </div>
           </span>
           {showBaseline && hasBaseline && <span className="inline-flex items-center gap-2 rounded-sm border border-line-hair bg-surface-sub px-1.5 py-[1px] font-semibold text-ink-body"><span>vs reference :</span><span className={blSummary.late ? "text-alert" : ""}>{blSummary.late} en retard</span><span className={blSummary.early ? "text-ok" : ""}>{blSummary.early} en avance</span><span className={blSummary.endDelta > 0 ? "text-alert" : blSummary.endDelta < 0 ? "text-ok" : ""}>fin {blSummary.endDelta > 0 ? "+" : blSummary.endDelta < 0 ? "−" : "="}{blSummary.endDelta ? `${Math.abs(blSummary.endDelta)} j` : ""}</span></span>}
+          {mode === "project" && locked && <span className="inline-flex items-center gap-1.5 rounded-sm border border-line-hair bg-surface-sub px-1.5 py-[1px] font-semibold text-ink-muted" title="Structure, noms, responsables et budgets figes ; deverrouillage par un administrateur dans Parametres">🔒 Reference verrouillee</span>}
           {hl && <button onClick={() => setHlWeek(null)} className="inline-flex cursor-pointer items-center gap-1.5 rounded-sm border border-accent bg-accent-bg px-1.5 py-[1px] font-semibold text-ink hover:bg-accent/30" title="Retirer le surlignage"><span className="inline-block h-2 w-2 border-x border-accent bg-accent-bg" />{hl.label} ×</button>}
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
@@ -211,7 +212,7 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
             ...(hl ? [{ label: "Retirer le surlignage", hint: hl.label, onSelect: () => setHlWeek(null) }] : []),
           ] as ToolbarMenuItem[]} />
           {canEdit && mode === "project" && <ToolbarMenu label="+ Ajouter" primary items={[
-            { label: "Tache", hint: "Nouvelle tache dans un lot", onSelect: () => { setNewDefaults({}); setSelected("new"); } },
+            ...(locked ? [] : [{ label: "Tache", hint: "Nouvelle tache dans un lot", onSelect: () => { setNewDefaults({}); setSelected("new"); } }]),
             { label: "Jalon", hint: "Date cle du projet", onSelect: () => setSelMilestone("new") },
           ]} />}
         </div>
@@ -275,7 +276,7 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
                     {r.href
                       ? <Link href={r.href} className="truncate font-semibold hover:underline">{r.name}</Link>
                       : <button onClick={() => setSelected(r)} className={`min-w-0 cursor-pointer truncate text-left ${isLot ? "font-bold text-ink" : "font-normal text-ink-body"}`}>{r.name}</button>}
-                    {isLot && canEdit && mode === "project" && <button onClick={() => addUnder(r)} className="ml-auto hidden shrink-0 cursor-pointer rounded-sm border border-line px-1 text-[9px] font-semibold leading-[14px] text-ink-muted hover:bg-surface-sub hover:text-ink group-hover:inline-block" title={`Ajouter une tache sous ${r.code ?? r.name}`}>+ tache</button>}
+                    {isLot && canEdit && !locked && mode === "project" && <button onClick={() => addUnder(r)} className="ml-auto hidden shrink-0 cursor-pointer rounded-sm border border-line px-1 text-[9px] font-semibold leading-[14px] text-ink-muted hover:bg-surface-sub hover:text-ink group-hover:inline-block" title={`Ajouter une tache sous ${r.code ?? r.name}`}>+ tache</button>}
                   </div>
                   <div className={`truncate pr-1 text-[10px] ${isLot ? "text-ink-body" : "text-ink-muted"}`}>{r.responsible || "—"}</div>
                   <div className="pr-3.5 text-right tabular-nums">{r.progress} %</div>
@@ -349,7 +350,7 @@ export function Gantt({ rows, milestones, expenses = [], journal = [], registers
           expenses={selected === "new" ? [] : expenses.filter((e) => e.task_id === selected.id || (selected.kind === "lot" && rows.some((c) => c.parentId === selected.id && c.id === e.task_id)))}
           journal={selected === "new" ? [] : journal.filter((e) => e.task_id === selected.id)} registers={selected === "new" ? [] : registers.filter((e) => e.task_id === selected.id)}
           audit={selected === "new" ? [] : audit.filter((a) => (a.table_name === "tasks" && a.record_id === selected.id) || (a.table_name === "expenses" && (a.new_data?.task_id === selected.id || a.old_data?.task_id === selected.id)))}
-          people={people} currency={currency} projectId={projectId} projectCode={projectCode} canEdit={canEdit} calendar={calendar} defaults={{ start: newDefaults.start ?? projectStart, end: newDefaults.end ?? projectEnd, parentId: newDefaults.parentId, wbs: newDefaults.wbs }} spent={selected === "new" ? 0 : selected.spent} onClose={() => setSelected(null)} />
+          people={people} currency={currency} projectId={projectId} projectCode={projectCode} canEdit={canEdit} calendar={calendar} locked={locked} defaults={{ start: newDefaults.start ?? projectStart, end: newDefaults.end ?? projectEnd, parentId: newDefaults.parentId, wbs: newDefaults.wbs }} spent={selected === "new" ? 0 : selected.spent} onClose={() => setSelected(null)} />
       )}
       {selMilestone && projectId && <MilestoneDrawer milestone={selMilestone === "new" ? null : (selMilestone.milestone ?? null)} projectId={projectId} defaultDate={projectEnd} onClose={() => setSelMilestone(null)} />}
     </div>

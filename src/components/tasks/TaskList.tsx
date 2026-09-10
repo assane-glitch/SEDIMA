@@ -11,7 +11,7 @@ import { addDays, formatDate, kMoney, mondayOf, today, weekLabel } from "@/lib/f
 import type { Lists } from "@/lib/reference-types";
 import { TASK_STATUS_LABELS, type AuditEntry, type Expense, type JournalEntry, type Profile, type RegisterEntry, type Task } from "@/lib/types";
 
-export interface TaskProject { id: string; code: string; name: string; currency: string; start_date: string; end_date: string; status: string }
+export interface TaskProject { id: string; code: string; name: string; currency: string; start_date: string; end_date: string; status: string; baseline_locked?: boolean }
 
 type Ctx = { expenses: Expense[]; journal: JournalEntry[]; registers: RegisterEntry[]; audit: AuditEntry[] };
 type SortKey = "project" | "wbs" | "name" | "responsible" | "start" | "end" | "progress" | "budget";
@@ -141,7 +141,7 @@ export function TaskList({ tasks, projects, people, spentByTask, lists, me, canE
           </button>
         ))}
         <span className="ml-auto text-[10px] text-ink-muted">{filtered.length} / {items.length} taches</span>
-        {canEdit && !selecting && <button type="button" onClick={() => setSelecting(true)} className="btn-secondary" title="Selectionner des taches a supprimer">Supprimer des taches</button>}
+        {canEdit && !selecting && !(mode === "project" && projects[0]?.baseline_locked) && <button type="button" onClick={() => setSelecting(true)} className="btn-secondary" title="Selectionner des taches a supprimer">Supprimer des taches</button>}
       </div>
       {selecting && (
         <div className="mb-3 flex flex-wrap items-center gap-3 rounded-md border border-alert-bd bg-alert-bg px-3 py-2 text-[10.5px]">
@@ -206,7 +206,7 @@ export function TaskList({ tasks, projects, people, spentByTask, lists, me, canE
       {selected && selProject && (
         <TaskDrawer task={selected} isLot={false} lots={projTasks.filter((t) => !t.parent_id && parents.has(t.id)).map((l) => ({ id: l.id, name: l.name }))}
           tasks={projTasks} lists={lists} expenses={ctx.expenses} journal={ctx.journal} registers={ctx.registers} audit={ctx.audit}
-          people={people} currency={selProject.currency} projectId={selProject.id} projectCode={selProject.code} canEdit={canEdit}
+          people={people} currency={selProject.currency} projectId={selProject.id} projectCode={selProject.code} canEdit={canEdit} locked={!!selProject.baseline_locked}
           defaults={{ start: selProject.start_date, end: selProject.end_date }} spent={spentByTask[selected.id] ?? 0} onClose={close} />
       )}
     </>

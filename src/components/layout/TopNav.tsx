@@ -11,15 +11,16 @@ export interface NavMenu { label: string; href?: string; items?: NavEntry[] }
 export function TopNav({ menus }: { menus: NavMenu[] }) {
   const pathname = usePathname();
   const [open, setOpen] = useState<string | null>(null);
+  const [pinned, setPinned] = useState(false);   // ouvert au clic : ne se ferme pas quand la souris sort
   const ref = useRef<HTMLElement>(null);
   useEffect(() => {
     if (!open) return;
-    const onDown = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(null); };
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(null); };
+    const onDown = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) { setOpen(null); setPinned(false); } };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { setOpen(null); setPinned(false); } };
     document.addEventListener("mousedown", onDown); document.addEventListener("keydown", onKey);
     return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
   }, [open]);
-  useEffect(() => { setOpen(null); }, [pathname]);
+  useEffect(() => { setOpen(null); setPinned(false); }, [pathname]);
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
   const menuActive = (m: NavMenu) => (m.href ? isActive(m.href) : (m.items ?? []).some((i) => isActive(i.href)));
   const btn = (active: boolean) => `flex h-full items-center gap-1 border-b-2 px-3 text-[11.5px] font-semibold transition-colors ${active ? "border-brand text-ink" : "border-transparent text-ink-muted hover:text-ink"}`;
@@ -28,8 +29,8 @@ export function TopNav({ menus }: { menus: NavMenu[] }) {
       {menus.map((m) => m.href ? (
         <Link key={m.label} href={m.href} className={btn(menuActive(m))}>{m.label}</Link>
       ) : (
-        <div key={m.label} className="relative flex" onMouseEnter={() => setOpen(m.label)} onMouseLeave={() => setOpen((o) => (o === m.label ? null : o))}>
-          <button type="button" aria-haspopup="menu" aria-expanded={open === m.label} onClick={() => setOpen(m.label)} className={`${btn(menuActive(m) || open === m.label)} cursor-pointer`}>
+        <div key={m.label} className="relative flex" onMouseEnter={() => { if (!pinned) setOpen(m.label); }} onMouseLeave={() => { if (!pinned) setOpen((o) => (o === m.label ? null : o)); }}>
+          <button type="button" aria-haspopup="menu" aria-expanded={open === m.label} onClick={() => { if (open === m.label && pinned) { setOpen(null); setPinned(false); } else { setOpen(m.label); setPinned(true); } }} className={`${btn(menuActive(m) || open === m.label)} cursor-pointer`}>
             {m.label}<Icon name="chevronDown" className={`h-3.5 w-3.5 transition-transform ${open === m.label ? "rotate-180" : ""}`} strokeWidth={2.2} />
           </button>
           {open === m.label && (

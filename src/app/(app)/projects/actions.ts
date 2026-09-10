@@ -26,6 +26,7 @@ export async function createProject(formData: FormData) {
     currency: str(formData, "currency") || "XOF",
     manager_id: str(formData, "manager_id") || null,
     created_by: profile.id,
+    baseline_locked: false,   // un projet neuf se construit librement ; le gel de la reference pose le verrou
   };
   const { data, error } = await supabase.from("projects").insert(payload).select("id").single();
   if (error) redirect(`/projects/new?error=${encodeURIComponent(error.message)}`);
@@ -56,6 +57,31 @@ export async function updateProject(formData: FormData) {
   revalidatePath(`/projects/${id}`);
   revalidatePath("/dashboard");
   redirect(`/projects/${id}`);
+}
+
+/** Verrou de la reference (administrateur) : pose ou leve le verrou sur la structure, les noms, responsables et budgets. */
+export async function setBaselineLock(formData: FormData) {
+  const profile = await requireProfile();
+  const id = str(formData, "id");
+  if (profile.role !== "admin") redirect(`/projects/${id}/settings?error=${encodeURIComponent("Seul un administrateur peut verrouiller ou deverrouiller la reference")}`);
+  const locked = str(formData, "locked") === "1";
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_baseline_lock", { p_project: id, p_locked: locked });
+  revalidatePath(`/projects/${id}`, "layout");
+  if (error) redirect(`/projects/${id}/settings?error=${encodeURIComponent(error.message)}`);
+  redirect(`/projects/${id}/settings?ok=${encodeURIComponent(locked ? "Reference verrouillee" : "Reference deverrouillee : structure, noms, responsables, budgets et dates de reference modifiables")}`);
+}
+
+/** Aligne les dates de reference sur le planning actuel (administrateur, projet deverrouille). */
+export async function alignBaseline(formData: FormData) {
+  const profile = await requireProfile();
+  const id = str(formData, "id");
+  if (profile.role !== "admin") redirect(`/projects/${id}/settings?error=${encodeURIComponent("Seul un administrateur peut aligner la reference")}`);
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("align_baseline", { p_project: id });
+  revalidatePath(`/projects/${id}`, "layout");
+  if (error) redirect(`/projects/${id}/settings?error=${encodeURIComponent(error.message)}`);
+  redirect(`/projects/${id}/settings?ok=${encodeURIComponent(`Reference alignee sur le planning actuel (${data ?? 0} tache${Number(data) > 1 ? "s" : ""})`)}`);
 }
 
 export async function freezeBaseline(formData: FormData) {

@@ -10,9 +10,9 @@ import { workingDays, type WorkCalendar } from "@/lib/calendar-types";
 import { excludedStatuses, labelOf, registerFields, type Lists } from "@/lib/reference-types";
 import { TASK_STATUS_LABELS, type AuditEntry, type Expense, type JournalEntry, type Profile, type RegisterEntry, type Task } from "@/lib/types";
 
-export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, registers, audit, lists, people, currency, projectId, projectCode, canEdit, defaults, spent, onClose, calendar }: {
+export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, registers, audit, lists, people, currency, projectId, projectCode, canEdit, defaults, spent, onClose, calendar, locked = false }: {
   task: Task | null; isLot: boolean; lots: { id: string; name: string }[]; tasks: Task[]; expenses: Expense[]; journal: JournalEntry[]; registers: RegisterEntry[]; audit: AuditEntry[];
-  lists?: Lists; people: Profile[]; currency: string; projectId: string; projectCode?: string; canEdit: boolean; defaults: { start: string; end: string; parentId?: string; wbs?: string }; spent: number; onClose: () => void; calendar?: WorkCalendar;
+  lists?: Lists; people: Profile[]; currency: string; projectId: string; projectCode?: string; canEdit: boolean; defaults: { start: string; end: string; parentId?: string; wbs?: string }; spent: number; onClose: () => void; calendar?: WorkCalendar; locked?: boolean;
 }) {
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
@@ -163,10 +163,10 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, regist
               <input type="hidden" name="project_id" value={projectId} />
               {task && <input type="hidden" name="id" value={task.id} />}
               <div className="grid grid-cols-[100px_1fr] gap-4">
-                <Field label="Code WBS"><input name="wbs_code" value={wbsVal} onChange={(e) => setWbsVal(e.target.value)} placeholder="L2.3" className="input" /></Field>
-                <Field label="Nom"><input name="name" required defaultValue={task?.name} className="input" /></Field>
+                <Field label="Code WBS"><input name="wbs_code" disabled={locked} value={wbsVal} onChange={(e) => setWbsVal(e.target.value)} placeholder="L2.3" className="input" /></Field>
+                <Field label="Nom"><input name="name" disabled={locked} required defaultValue={task?.name} className="input" /></Field>
               </div>
-              {!isLot && <Field label="Lot"><select name="parent_id" value={parentSel} onChange={(e) => { setParentSel(e.target.value); if (!task && e.target.value) setWbsVal(suggestWbs(e.target.value)); }} className="input"><option value="">Aucun (premier niveau)</option>{lots.filter((l) => l.id !== task?.id).map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}</select><p className="hint mt-1">Sans lot choisi, un code WBS du type L2.3 rattache automatiquement la tache au lot L2.</p></Field>}
+              {!isLot && <Field label="Lot"><select name="parent_id" disabled={locked} value={parentSel} onChange={(e) => { setParentSel(e.target.value); if (!task && e.target.value) setWbsVal(suggestWbs(e.target.value)); }} className="input"><option value="">Aucun (premier niveau)</option>{lots.filter((l) => l.id !== task?.id).map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}</select><p className="hint mt-1">Sans lot choisi, un code WBS du type L2.3 rattache automatiquement la tache au lot L2.</p></Field>}
               {!isLot ? (
                 <div className="grid grid-cols-3 gap-4">
                   <Field label="Debut"><DateInput name="start_date" required defaultValue={task?.start_date ?? defaults.start} className="input" /></Field>
@@ -181,8 +181,8 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, regist
                 </div>
               )}
               <div className="grid grid-cols-2 gap-4">
-                <Field label="Responsable (compte)"><select name="responsible_id" defaultValue={task?.responsible_id ?? ""} className="input"><option value="">—</option>{people.map((p) => <option key={p.id} value={p.id}>{p.full_name || p.email}</option>)}</select></Field>
-                <Field label="Role responsable"><input name="responsible_role" list="roles" defaultValue={task?.responsible_role ?? ""} placeholder="Conducteur de travaux" className="input" /><datalist id="roles">{(lists?.responsible_role ?? []).map((r) => <option key={r.value} value={r.value} />)}</datalist></Field>
+                <Field label="Responsable (compte)"><select name="responsible_id" disabled={locked} defaultValue={task?.responsible_id ?? ""} className="input"><option value="">—</option>{people.map((p) => <option key={p.id} value={p.id}>{p.full_name || p.email}</option>)}</select></Field>
+                <Field label="Role responsable"><input name="responsible_role" disabled={locked} list="roles" defaultValue={task?.responsible_role ?? ""} placeholder="Conducteur de travaux" className="input" /><datalist id="roles">{(lists?.responsible_role ?? []).map((r) => <option key={r.value} value={r.value} />)}</datalist></Field>
               </div>
               {!isLot && earliest && <p className="hint -mt-2">Demarrage au plus tot : lundi {formatDate(earliest)} ({weekLabel(earliest)}), la semaine suivant {linkType === "DD" ? "le debut" : "la fin"} de la tache precedente plus le decalage. Une date plus tot sera recalee automatiquement, ainsi que les taches qui en dependent.</p>}
               {!isLot && (
@@ -194,9 +194,9 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, regist
               )}
               {!isLot && (
                 <div className="grid grid-cols-3 gap-4">
-                  <Field label={`Budget HTVA (${currency})`}><input name="budget" type="number" min={0} step="1" defaultValue={task?.budget ?? 0} className="input" /></Field>
-                  <Field label="Douanes"><input name="customs" type="number" min={0} step="1" defaultValue={task?.customs ?? 0} className="input" /></Field>
-                  <Field label="TVA"><input name="vat" type="number" min={0} step="1" defaultValue={task?.vat ?? 0} className="input" /></Field>
+                  <Field label={`Budget HTVA (${currency})`}><input name="budget" disabled={locked} type="number" min={0} step="1" defaultValue={task?.budget ?? 0} className="input" /></Field>
+                  <Field label="Douanes"><input name="customs" disabled={locked} type="number" min={0} step="1" defaultValue={task?.customs ?? 0} className="input" /></Field>
+                  <Field label="TVA"><input name="vat" disabled={locked} type="number" min={0} step="1" defaultValue={task?.vat ?? 0} className="input" /></Field>
                 </div>
               )}
               {!isLot && (
@@ -207,7 +207,7 @@ export function TaskDrawer({ task, isLot, lots, tasks, expenses, journal, regist
               )}
               <Field label="Notes"><textarea name="notes" rows={4} defaultValue={task?.notes} className="input" /></Field>
               <div className="flex items-center justify-between pt-2">
-                {task ? <button type="button" disabled={pending} className="btn-danger" onClick={() => { if (!confirm(isLot ? "Supprimer ce lot et toutes ses taches ?" : "Supprimer cette tache ?")) return; const fd = new FormData(); fd.set("project_id", projectId); fd.set("id", task.id); run(() => deleteTask(fd)); }}>Supprimer</button> : <span />}
+                {task && !locked ? <button type="button" disabled={pending} className="btn-danger" onClick={() => { if (!confirm(isLot ? "Supprimer ce lot et toutes ses taches ?" : "Supprimer cette tache ?")) return; const fd = new FormData(); fd.set("project_id", projectId); fd.set("id", task.id); run(() => deleteTask(fd)); }}>Supprimer</button> : <span />}
                 <button type="submit" disabled={pending} className="btn-primary">{pending ? "Enregistrement…" : "Enregistrer"}</button>
               </div>
             </form>

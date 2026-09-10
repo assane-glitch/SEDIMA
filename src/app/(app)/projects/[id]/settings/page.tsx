@@ -6,7 +6,7 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 
 import { ProjectForm } from "@/components/ProjectForm";
 import { canEdit, requireProfile } from "@/lib/session";
-import { freezeBaseline, updateProject } from "../../actions";
+import { alignBaseline, freezeBaseline, setBaselineLock, updateProject } from "../../actions";
 import { DeleteProjectForm } from "@/components/projects/DeleteProjectForm";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/format";
@@ -45,6 +45,18 @@ export default async function ProjectSettingsPage({ params, searchParams }: { pa
           {frozen === 0
             ? <form action={freezeBaseline}><input type="hidden" name="id" value={id} /><SubmitButton className="btn-secondary" pendingText="Figeage…">▭ Figer le planning actuel comme reference</SubmitButton></form>
             : <Link href={`/projects/${id}/changes`} className="btn-secondary">Registre des changements</Link>}
+        </div>
+        <div className="mt-4 border-t border-line-hair pt-3">
+          <div className="flex items-center gap-2 text-[10.5px]"><span className={`dot ${project.baseline_locked ? "bg-ink" : "bg-warn-dot"}`} /><span className="font-semibold text-ink">{project.baseline_locked ? "Reference verrouillee" : "Reference deverrouillee"}</span>{!project.baseline_locked && project.baseline_unlocked_at && <span className="text-ink-faint">depuis le {formatDate(project.baseline_unlocked_at.slice(0, 10))}{project.baseline_unlocked_by ? ` par ${people.find((p) => p.id === project.baseline_unlocked_by)?.full_name ?? "un administrateur"}` : ""}</span>}</div>
+          <p className="hint mt-1">{project.baseline_locked
+            ? "Structure des lots et taches, noms, responsables et budgets sont figes. Les dates ne changent que par une demande de changement approuvee. Seul un administrateur peut deverrouiller."
+            : "Les administrateurs et editeurs peuvent ajouter, renommer ou supprimer des lots et des taches, changer responsables et budgets ; les dates de reference sont modifiables et alignables sur le planning. Reverrouillez une fois la reference stabilisee."}</p>
+          {profile.role === "admin" && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <form action={setBaselineLock}><input type="hidden" name="id" value={id} /><input type="hidden" name="locked" value={project.baseline_locked ? "0" : "1"} /><SubmitButton className={project.baseline_locked ? "btn-secondary" : "btn-primary"} pendingText="…">{project.baseline_locked ? "Deverrouiller la reference" : "Verrouiller la reference"}</SubmitButton></form>
+              {!project.baseline_locked && frozen > 0 && <form action={alignBaseline}><input type="hidden" name="id" value={id} /><SubmitButton className="btn-secondary" pendingText="Alignement…">Aligner la reference sur le planning actuel{drift ? ` (${drift} en ecart)` : ""}</SubmitButton></form>}
+            </div>
+          )}
         </div>
       </section>
       <section className="card card-pad">

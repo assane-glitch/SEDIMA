@@ -35,7 +35,7 @@ export default async function ProjectPlanningPage({ params, searchParams }: { pa
       <ProjectTabs id={id} canEdit={editor} />
       {error && <div className="mb-3"><Alert>{error}</Alert></div>}
       {ok && <div className="mb-3"><Alert tone="ok">{ok}</Alert></div>}
-      <Gantt mode="project" rows={rows} milestones={milestones} expenses={(exp ?? []) as Expense[]} journal={(jr ?? []) as JournalEntry[]} registers={(rg ?? []) as RegisterEntry[]} audit={(au ?? []) as AuditEntry[]} lists={lists} people={people} currency={project.currency} canEdit={editor} projectId={id} projectCode={project.code} projectStart={project.start_date} projectEnd={project.end_date} calendar={calendar} />
+      <Gantt mode="project" rows={rows} milestones={milestones} expenses={(exp ?? []) as Expense[]} journal={(jr ?? []) as JournalEntry[]} registers={(rg ?? []) as RegisterEntry[]} audit={(au ?? []) as AuditEntry[]} lists={lists} people={people} currency={project.currency} canEdit={editor} projectId={id} projectCode={project.code} projectStart={project.start_date} projectEnd={project.end_date} calendar={calendar} locked={project.baseline_locked} />
     </>
   );
 }

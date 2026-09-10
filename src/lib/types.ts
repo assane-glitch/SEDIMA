@@ -29,6 +29,9 @@ export interface Project {
   wbs_nature: string;
   data_quality: string;
   budget_kpmg: number;
+  baseline_locked: boolean;
+  baseline_unlocked_by: string | null;
+  baseline_unlocked_at: string | null;
   manager_name: string;
   source_note: string;
   comment: string;
